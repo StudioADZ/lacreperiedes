@@ -1,24 +1,64 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- TODO: Set the document title to the name of your application -->
-    <title>Lovable App</title>
-    <meta name="description" content="Lovable Generated Project" />
-    <meta name="author" content="Lovable" />
-
-    <!-- TODO: Update og:title to match your application name -->
-    <meta property="og:title" content="Lovable App" />
-    <meta property="og:description" content="Lovable Generated Project" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
-
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#C77B30" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    
+    <!-- SEO -->
+    <title>La Crêperie des Saveurs | Crêpes & Galettes artisanales à Mamers</title>
+    <meta name="description" content="Découvrez La Crêperie des Saveurs à Mamers : crêpes et galettes artisanales préparées avec passion. Participez à notre quiz hebdomadaire et gagnez des lots !" />
+    <meta name="keywords" content="crêperie, galettes, crêpes, Mamers, restaurant, artisan, quiz, lots gratuits" />
+    
+    <!-- Open Graph -->
+    <meta property="og:type" content="restaurant" />
+    <meta property="og:title" content="La Crêperie des Saveurs | Mamers" />
+    <meta property="og:description" content="Crêpes et galettes artisanales à Mamers. Participez à notre quiz et gagnez des lots !" />
+    <meta property="og:locale" content="fr_FR" />
+    
+    <!-- Geo -->
+    <meta name="geo.region" content="FR-72" />
+    <meta name="geo.placename" content="Mamers" />
+    <meta name="geo.position" content="48.3506;0.3686" />
+    
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Restaurant",
+      "name": "La Crêperie des Saveurs",
+      "image": "",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "17 Place Carnot – Galerie des Halles",
+        "addressLocality": "Mamers",
+        "postalCode": "72600",
+        "addressCountry": "FR"
+      },
+      "telephone": "+33259660176",
+      "email": "dlacreperie@gmail.com",
+      "servesCuisine": ["Crêpes", "Galettes", "Bretonne"],
+      "priceRange": "€€",
+      "openingHoursSpecification": [
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "11:30",
+          "closes": "14:00"
+        },
+        {
+          "@type": "OpeningHoursSpecification",
+          "dayOfWeek": ["Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+          "opens": "18:30",
+          "closes": "21:00"
+        }
+      ]
+    }
+    </script>
   </head>
-
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

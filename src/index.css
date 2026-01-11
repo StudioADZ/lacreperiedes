@@ -2,95 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* La Crêperie des Saveurs - Design System
+   Warm, artisanal, premium, modern-bistro
+   Colors: caramel, butter, ivory, warm brown, plant green
 */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Core Palette - Warm Artisanal */
+    --background: 40 33% 96%; /* Ivory cream */
+    --foreground: 25 30% 15%; /* Deep espresso */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 40 40% 98%; /* Light cream */
+    --card-foreground: 25 30% 15%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 40 40% 98%;
+    --popover-foreground: 25 30% 15%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Caramel Gold - Primary */
+    --primary: 32 65% 45%; /* Rich caramel */
+    --primary-foreground: 40 33% 98%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Butter Cream - Secondary */
+    --secondary: 42 55% 88%; /* Soft butter */
+    --secondary-foreground: 25 30% 20%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted - Warm neutral */
+    --muted: 35 20% 90%;
+    --muted-foreground: 25 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Plant Green - Accent */
+    --accent: 140 35% 40%; /* Fresh herb green */
+    --accent-foreground: 40 33% 98%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 35 25% 85%;
+    --input: 35 25% 85%;
+    --ring: 32 65% 45%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Extended Palette */
+    --caramel: 32 65% 45%;
+    --caramel-light: 35 60% 60%;
+    --caramel-dark: 28 70% 35%;
+    
+    --butter: 42 55% 88%;
+    --butter-light: 45 60% 94%;
+    --butter-dark: 40 50% 75%;
+    
+    --ivory: 40 33% 96%;
+    --ivory-light: 40 40% 99%;
+    
+    --espresso: 25 30% 15%;
+    --espresso-light: 25 25% 30%;
+    
+    --herb: 140 35% 40%;
+    --herb-light: 140 30% 55%;
+    --herb-dark: 140 40% 28%;
+    
+    --terracotta: 18 55% 50%;
+    --terracotta-light: 18 50% 65%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Shadows */
+    --shadow-warm: 0 4px 20px -4px hsl(32 65% 45% / 0.15);
+    --shadow-soft: 0 2px 12px -2px hsl(25 30% 15% / 0.08);
+    --shadow-elevated: 0 8px 30px -6px hsl(25 30% 15% / 0.12);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Gradients */
+    --gradient-warm: linear-gradient(135deg, hsl(40 33% 96%) 0%, hsl(42 55% 88%) 100%);
+    --gradient-caramel: linear-gradient(135deg, hsl(32 65% 45%) 0%, hsl(28 70% 35%) 100%);
+    --gradient-hero: linear-gradient(180deg, hsl(25 30% 15% / 0.6) 0%, hsl(25 30% 15% / 0.3) 50%, transparent 100%);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Sidebar */
+    --sidebar-background: 40 40% 98%;
+    --sidebar-foreground: 25 30% 20%;
+    --sidebar-primary: 32 65% 45%;
+    --sidebar-primary-foreground: 40 33% 98%;
+    --sidebar-accent: 42 55% 88%;
+    --sidebar-accent-foreground: 25 30% 20%;
+    --sidebar-border: 35 25% 85%;
+    --sidebar-ring: 32 65% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 25 25% 10%;
+    --foreground: 40 33% 96%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 25 25% 14%;
+    --card-foreground: 40 33% 96%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 25 25% 14%;
+    --popover-foreground: 40 33% 96%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 35 60% 55%;
+    --primary-foreground: 25 25% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 25 20% 20%;
+    --secondary-foreground: 40 33% 96%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 25 20% 18%;
+    --muted-foreground: 35 15% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 140 30% 45%;
+    --accent-foreground: 40 33% 96%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 25 20% 22%;
+    --input: 25 20% 22%;
+    --ring: 35 60% 55%;
+
+    --sidebar-background: 25 25% 12%;
+    --sidebar-foreground: 40 33% 96%;
+    --sidebar-primary: 35 60% 55%;
+    --sidebar-primary-foreground: 25 25% 10%;
+    --sidebar-accent: 25 20% 20%;
+    --sidebar-accent-foreground: 40 33% 96%;
+    --sidebar-border: 25 20% 22%;
+    --sidebar-ring: 35 60% 55%;
   }
 }
 
@@ -100,6 +135,161 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-serif {
+    font-family: 'Lora', serif;
+  }
+
+  .font-sans {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  /* Hero Button Variant */
+  .btn-hero {
+    @apply bg-primary text-primary-foreground font-medium px-6 py-3 rounded-full;
+    @apply shadow-[var(--shadow-warm)] transition-all duration-300;
+    @apply hover:scale-105 hover:shadow-[var(--shadow-elevated)];
+  }
+
+  .btn-hero-outline {
+    @apply border-2 border-primary-foreground/30 text-primary-foreground bg-transparent;
+    @apply px-6 py-3 rounded-full font-medium backdrop-blur-sm;
+    @apply transition-all duration-300 hover:bg-primary-foreground/10 hover:border-primary-foreground/50;
+  }
+
+  /* Warm Card */
+  .card-warm {
+    @apply bg-card rounded-2xl p-6;
+    @apply shadow-[var(--shadow-soft)] border border-border/50;
+    @apply transition-all duration-300 hover:shadow-[var(--shadow-warm)];
+  }
+
+  /* Glass Effect */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border/30;
+  }
+
+  /* Gradient Overlays */
+  .overlay-hero {
+    background: var(--gradient-hero);
+  }
+
+  .overlay-warm {
+    background: linear-gradient(180deg, transparent 0%, hsl(var(--background) / 0.8) 100%);
+  }
+
+  /* Text Gradient */
+  .text-gradient-caramel {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-caramel);
+  }
+
+  /* Sticky Bar Styles */
+  .sticky-bar {
+    @apply fixed bottom-0 left-0 right-0 z-50;
+    @apply bg-background/95 backdrop-blur-lg border-t border-border;
+    @apply shadow-[0_-4px_20px_-4px_hsl(25_30%_15%_/_0.1)];
+  }
+
+  .sticky-bar-item {
+    @apply flex flex-col items-center gap-1 p-2 rounded-xl;
+    @apply text-muted-foreground transition-all duration-200;
+    @apply hover:text-primary hover:bg-secondary/50;
+  }
+
+  .sticky-bar-item.active {
+    @apply text-primary bg-secondary;
+  }
+
+  /* Splash Screen */
+  .splash-logo {
+    animation: splash-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes splash-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
+  }
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes scale-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.6s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slide-up 0.8s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.5s ease-out forwards;
+  }
+
+  /* Parallax */
+  .parallax-slow {
+    transform: translateZ(-2px) scale(3);
+  }
+
+  /* Quiz specific */
+  .quiz-progress {
+    @apply h-2 bg-secondary rounded-full overflow-hidden;
+  }
+
+  .quiz-progress-bar {
+    @apply h-full bg-primary rounded-full transition-all duration-500;
+    background-image: var(--gradient-caramel);
+  }
+
+  /* Winner Card */
+  .winner-card {
+    @apply bg-gradient-to-br from-butter to-butter-light rounded-2xl p-4;
+    @apply border-2 border-caramel/20 shadow-[var(--shadow-warm)];
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .bg-caramel { background-color: hsl(var(--caramel)); }
+  .bg-butter { background-color: hsl(var(--butter)); }
+  .bg-ivory { background-color: hsl(var(--ivory)); }
+  .bg-herb { background-color: hsl(var(--herb)); }
+  .bg-espresso { background-color: hsl(var(--espresso)); }
+  .bg-terracotta { background-color: hsl(var(--terracotta)); }
+
+  .text-caramel { color: hsl(var(--caramel)); }
+  .text-butter { color: hsl(var(--butter)); }
+  .text-herb { color: hsl(var(--herb)); }
+  .text-espresso { color: hsl(var(--espresso)); }
+  .text-terracotta { color: hsl(var(--terracotta)); }
+
+  .border-caramel { border-color: hsl(var(--caramel)); }
 }
