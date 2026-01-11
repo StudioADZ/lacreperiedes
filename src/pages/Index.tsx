@@ -3,6 +3,7 @@ import { ArrowRight, MapPin, Clock, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
 import logo from "@/assets/logo.jpg";
+import crepes from "@/assets/crepes.jpg";
 
 const Index = () => {
   return (
@@ -48,7 +49,7 @@ const Index = () => {
               </Button>
             </Link>
             <Link to="/carte">
-              <button className="btn-hero-outline">
+              <button className="btn-secondary-hero">
                 Découvrir la carte
               </button>
             </Link>
@@ -67,7 +68,7 @@ const Index = () => {
       <section className="px-4 -mt-16 relative z-10">
         <div className="max-w-lg mx-auto grid gap-4">
           {/* Location Card */}
-          <div className="card-warm flex items-start gap-4">
+          <div className="card-glow flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <MapPin className="w-6 h-6 text-primary" />
             </div>
@@ -81,23 +82,23 @@ const Index = () => {
           </div>
 
           {/* Hours Card */}
-          <div className="card-warm flex items-start gap-4">
+          <div className="card-glow flex items-start gap-4">
             <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0">
               <Clock className="w-6 h-6 text-accent" />
             </div>
             <div>
               <h3 className="font-display font-semibold text-lg">Horaires</h3>
               <p className="text-muted-foreground text-sm mt-1">
-                Du mardi au samedi
+                Samedi & Dimanche uniquement
               </p>
               <p className="text-muted-foreground text-sm">
-                11h30 – 14h00 • 18h30 – 21h00
+                12h00 – 14h00 • 19h00 – 21h00
               </p>
             </div>
           </div>
 
           {/* Contact Card */}
-          <a href="tel:0259660176" className="card-warm flex items-start gap-4 hover:shadow-warm transition-shadow">
+          <a href="tel:0259660176" className="card-glow flex items-start gap-4 hover:shadow-warm transition-shadow">
             <div className="w-12 h-12 rounded-xl bg-terracotta/10 flex items-center justify-center flex-shrink-0">
               <Phone className="w-6 h-6 text-terracotta" />
             </div>
@@ -111,26 +112,33 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Quiz Promo Section */}
+      {/* Quiz Promo Section - HERO CARD */}
       <section className="px-4 mt-12">
         <div className="max-w-lg mx-auto">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-caramel to-caramel-dark p-6 text-white">
-            {/* Decorative circles */}
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-white/10" />
-            <div className="absolute -right-4 -bottom-12 w-24 h-24 rounded-full bg-white/5" />
+          <div className="card-quiz-hero relative overflow-hidden rounded-3xl">
+            {/* Background Image */}
+            <div className="absolute inset-0">
+              <img
+                src={crepes}
+                alt="Crêpes artisanales"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-br from-butter/90 via-butter/80 to-caramel-light/70" />
+            </div>
             
-            <div className="relative">
-              <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-xs font-medium mb-4">
+            {/* Content */}
+            <div className="relative p-6 md:p-8">
+              <span className="inline-block px-3 py-1 bg-primary/20 backdrop-blur-sm rounded-full text-xs font-medium mb-4 text-espresso border border-caramel/30">
                 🎁 Chaque semaine
               </span>
-              <h2 className="font-display text-2xl font-bold mb-3">
+              <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-espresso">
                 Gagnez des crêpes gratuites !
               </h2>
-              <p className="text-white/80 text-sm mb-6">
+              <p className="text-espresso/80 text-sm mb-6 max-w-xs">
                 Participez à notre quiz hebdomadaire et tentez de remporter une formule complète, une galette ou une crêpe.
               </p>
               <Link to="/quiz">
-                <Button variant="secondary" className="w-full group">
+                <Button className="btn-hero group w-full sm:w-auto">
                   <span>Jouer maintenant</span>
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>

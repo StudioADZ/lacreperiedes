@@ -72,15 +72,15 @@ const Reserver = () => {
           </h2>
           <div className="space-y-3">
             <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="font-medium">Mardi - Samedi</span>
-              <span className="text-muted-foreground">11h30 – 14h00</span>
+              <span className="font-medium">Samedi & Dimanche</span>
+              <span className="text-muted-foreground">12h00 – 14h00</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-border/50">
-              <span className="font-medium">Mardi - Samedi</span>
-              <span className="text-muted-foreground">18h30 – 21h00</span>
+              <span className="font-medium">Samedi & Dimanche</span>
+              <span className="text-muted-foreground">19h00 – 21h00</span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="font-medium text-muted-foreground">Dimanche - Lundi</span>
+              <span className="font-medium text-muted-foreground">Lundi - Vendredi</span>
               <span className="text-destructive">Fermé</span>
             </div>
           </div>
