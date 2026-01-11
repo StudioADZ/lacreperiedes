@@ -135,8 +135,15 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
     font-family: 'Inter', sans-serif;
+    background: linear-gradient(
+      180deg, 
+      hsl(35 45% 92%) 0%, 
+      hsl(40 40% 95%) 30%,
+      hsl(42 50% 96%) 100%
+    );
+    min-height: 100vh;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -170,11 +177,39 @@
     @apply transition-all duration-300 hover:bg-primary-foreground/10 hover:border-primary-foreground/50;
   }
 
+  /* Secondary Hero Button - Visible on dark backgrounds */
+  .btn-secondary-hero {
+    @apply bg-ivory/95 text-espresso font-medium px-6 py-3 rounded-full;
+    @apply border-2 border-caramel/40;
+    @apply shadow-[0_4px_15px_-3px_hsl(25_30%_15%_/_0.2)];
+    @apply transition-all duration-300;
+    @apply hover:bg-butter hover:border-caramel hover:scale-105;
+    @apply active:scale-95 active:shadow-[0_2px_8px_-2px_hsl(25_30%_15%_/_0.3)];
+  }
+
   /* Warm Card */
   .card-warm {
     @apply bg-card rounded-2xl p-6;
     @apply shadow-[var(--shadow-soft)] border border-border/50;
     @apply transition-all duration-300 hover:shadow-[var(--shadow-warm)];
+  }
+
+  /* Glowing Card - Premium effect */
+  .card-glow {
+    @apply bg-card/95 backdrop-blur-sm rounded-2xl p-6;
+    @apply border border-caramel/20;
+    @apply shadow-[0_0_20px_-5px_hsl(32_65%_45%_/_0.15),0_4px_15px_-3px_hsl(25_30%_15%_/_0.08)];
+    @apply transition-all duration-300;
+    @apply hover:shadow-[0_0_25px_-5px_hsl(32_65%_45%_/_0.25),0_8px_20px_-4px_hsl(25_30%_15%_/_0.1)];
+    @apply hover:border-caramel/30;
+  }
+
+  /* Quiz Hero Card */
+  .card-quiz-hero {
+    @apply shadow-[0_0_30px_-8px_hsl(32_65%_45%_/_0.3),0_8px_25px_-5px_hsl(25_30%_15%_/_0.15)];
+    @apply border-2 border-caramel/30;
+    @apply transition-all duration-300;
+    @apply hover:shadow-[0_0_40px_-8px_hsl(32_65%_45%_/_0.4),0_12px_30px_-6px_hsl(25_30%_15%_/_0.2)];
   }
 
   /* Glass Effect */
