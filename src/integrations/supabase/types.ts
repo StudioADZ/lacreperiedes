@@ -14,13 +14,199 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      quiz_participations: {
+        Row: {
+          claimed_at: string | null
+          created_at: string
+          device_fingerprint: string
+          email: string
+          first_name: string
+          id: string
+          phone: string
+          prize_claimed: boolean
+          prize_code: string | null
+          prize_won: string | null
+          rgpd_consent: boolean
+          score: number
+          total_questions: number
+          week_start: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          created_at?: string
+          device_fingerprint: string
+          email: string
+          first_name: string
+          id?: string
+          phone: string
+          prize_claimed?: boolean
+          prize_code?: string | null
+          prize_won?: string | null
+          rgpd_consent?: boolean
+          score?: number
+          total_questions?: number
+          week_start: string
+        }
+        Update: {
+          claimed_at?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          email?: string
+          first_name?: string
+          id?: string
+          phone?: string
+          prize_claimed?: boolean
+          prize_code?: string | null
+          prize_won?: string | null
+          rgpd_consent?: boolean
+          score?: number
+          total_questions?: number
+          week_start?: string
+        }
+        Relationships: []
+      }
+      quiz_questions: {
+        Row: {
+          category: string
+          correct_answer: string
+          created_at: string
+          id: string
+          is_active: boolean
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+        }
+        Insert: {
+          category?: string
+          correct_answer: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          question: string
+        }
+        Update: {
+          category?: string
+          correct_answer?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          question?: string
+        }
+        Relationships: []
+      }
+      quiz_sessions: {
+        Row: {
+          answers: Json
+          completed: boolean
+          current_question: number
+          device_fingerprint: string
+          expires_at: string
+          id: string
+          last_activity: string
+          question_ids: string[]
+          started_at: string
+        }
+        Insert: {
+          answers?: Json
+          completed?: boolean
+          current_question?: number
+          device_fingerprint: string
+          expires_at?: string
+          id?: string
+          last_activity?: string
+          question_ids: string[]
+          started_at?: string
+        }
+        Update: {
+          answers?: Json
+          completed?: boolean
+          current_question?: number
+          device_fingerprint?: string
+          expires_at?: string
+          id?: string
+          last_activity?: string
+          question_ids?: string[]
+          started_at?: string
+        }
+        Relationships: []
+      }
+      weekly_stock: {
+        Row: {
+          created_at: string
+          crepe_remaining: number
+          crepe_total: number
+          formule_complete_remaining: number
+          formule_complete_total: number
+          galette_remaining: number
+          galette_total: number
+          id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          crepe_remaining?: number
+          crepe_total?: number
+          formule_complete_remaining?: number
+          formule_complete_total?: number
+          galette_remaining?: number
+          galette_total?: number
+          id?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          crepe_remaining?: number
+          crepe_total?: number
+          formule_complete_remaining?: number
+          formule_complete_total?: number
+          galette_remaining?: number
+          galette_total?: number
+          id?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      claim_prize: {
+        Args: { p_prize_type: string; p_week_start: string }
+        Returns: boolean
+      }
+      ensure_weekly_stock: {
+        Args: never
+        Returns: {
+          created_at: string
+          crepe_remaining: number
+          crepe_total: number
+          formule_complete_remaining: number
+          formule_complete_total: number
+          galette_remaining: number
+          galette_total: number
+          id: string
+          week_start: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "weekly_stock"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      generate_prize_code: { Args: never; Returns: string }
+      get_current_week_start: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
