@@ -6,7 +6,7 @@ const corsHeaders = {
 }
 
 // Simple admin password check (in production, use proper auth)
-const ADMIN_PASSWORD = 'creperie2024!'
+const ADMIN_PASSWORD = 'j007!'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {

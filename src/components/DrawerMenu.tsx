@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Home, HelpCircle, UtensilsCrossed, Calendar, Star, Share2, FileText } from "lucide-react";
+import { Home, HelpCircle, UtensilsCrossed, Calendar, Star, Share2, FileText, Settings } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 
 interface DrawerMenuProps {
@@ -17,6 +17,8 @@ const menuItems = [
   { path: "/social", label: "Réseaux", icon: Share2 },
   { path: "/legal", label: "Mentions légales", icon: FileText },
 ];
+
+const adminItem = { path: "/admin", label: "Admin", icon: Settings };
 
 const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
   const location = useLocation();
@@ -69,6 +71,16 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
 
           {/* Footer */}
           <div className="p-6 border-t border-border/50 bg-butter/20">
+            {/* Admin Link - discret */}
+            <Link
+              to={adminItem.path}
+              onClick={() => onOpenChange(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs text-muted-foreground hover:bg-secondary/50 hover:text-foreground transition-colors mb-4"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Administration</span>
+            </Link>
+
             <div className="text-center">
               <p className="text-xs text-muted-foreground">
                 17 Place Carnot – Galerie des Halles
