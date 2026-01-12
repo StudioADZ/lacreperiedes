@@ -18,7 +18,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const { action, code, adminPassword } = await req.json()
+    const { action, code, adminPassword, menuId, menuData } = await req.json()
 
     // Verify admin password
     if (adminPassword !== ADMIN_PASSWORD) {
@@ -148,6 +148,36 @@ Deno.serve(async (req) => {
           totalWinners: winners.length,
           totalClaimed: claimed
         }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    if (action === 'update_secret_menu') {
+      if (!menuId || !menuData) {
+        return new Response(
+          JSON.stringify({ error: 'missing_data', message: 'Données requises' }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+        )
+      }
+
+      const { data, error } = await supabase
+        .from('secret_menu')
+        .update({
+          menu_name: menuData.menu_name,
+          secret_code: menuData.secret_code,
+          galette_special: menuData.galette_special || null,
+          galette_special_description: menuData.galette_special_description || null,
+          crepe_special: menuData.crepe_special || null,
+          crepe_special_description: menuData.crepe_special_description || null,
+        })
+        .eq('id', menuId)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      return new Response(
+        JSON.stringify({ success: true, menu: data }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
