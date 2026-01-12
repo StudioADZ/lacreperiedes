@@ -13,6 +13,7 @@ import Reserver from "./pages/Reserver";
 import Avis from "./pages/Avis";
 import Social from "./pages/Social";
 import Legal from "./pages/Legal";
+import About from "./pages/About";
 import Admin from "./pages/Admin";
 import Verify from "./pages/Verify";
 import NotFound from "./pages/NotFound";
@@ -53,6 +54,7 @@ const App = () => {
               <Route path="/avis" element={<Avis />} />
               <Route path="/social" element={<Social />} />
               <Route path="/legal" element={<Legal />} />
+              <Route path="/about" element={<About />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/verify/:code" element={<Verify />} />
             </Route>
