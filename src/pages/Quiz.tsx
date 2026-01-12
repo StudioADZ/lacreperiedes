@@ -352,8 +352,6 @@ const Quiz = () => {
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
           <QuizForm
-            score={score}
-            totalQuestions={10}
             onSubmit={handleFormSubmit}
             isLoading={submitLoading}
             error={submitError || undefined}
@@ -381,7 +379,7 @@ const Quiz = () => {
       );
     }
 
-    // No prize won
+    // No prize won - participation confirmed
     return (
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
@@ -390,19 +388,22 @@ const Quiz = () => {
             animate={{ opacity: 1, y: 0 }}
             className="card-warm text-center py-12"
           >
-            <div className="text-5xl mb-4">😊</div>
+            <div className="text-5xl mb-4">✅</div>
             <h2 className="font-display text-2xl font-bold mb-3">
-              Merci d'avoir participé !
+              Participation enregistrée !
             </h2>
             <p className="text-muted-foreground mb-2">
               Votre score : <strong>{score}/10</strong>
             </p>
             <p className="text-sm text-muted-foreground mb-6">
-              Il faut au moins 80% pour gagner un lot.
-              <br />Revenez la semaine prochaine !
+              Vous êtes éligible au tirage de la semaine.
+              <br />Nous vous contacterons si vous gagnez !
             </p>
 
             <div className="space-y-3">
+              <Button onClick={handlePlayAgain} className="w-full btn-hero">
+                Rejouer
+              </Button>
               <a
                 href="https://wa.me/message/QVZO5N4ZDR64M1"
                 target="_blank"
@@ -412,9 +413,6 @@ const Quiz = () => {
                   💬 Rejoindre notre WhatsApp
                 </Button>
               </a>
-              <Button onClick={handlePlayAgain} className="w-full btn-hero">
-                Retour à l'accueil
-              </Button>
             </div>
           </motion.div>
           <SocialFooter />

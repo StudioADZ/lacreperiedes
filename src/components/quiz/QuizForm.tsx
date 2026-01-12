@@ -7,34 +7,23 @@ import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 
 interface QuizFormProps {
-  score: number;
-  totalQuestions: number;
   onSubmit: (data: { firstName: string; email: string; phone: string; rgpdConsent: boolean }) => void;
   isLoading: boolean;
   error?: string;
 }
 
-const QuizForm = ({ score, totalQuestions, onSubmit, isLoading, error }: QuizFormProps) => {
+const QuizForm = ({ onSubmit, isLoading, error }: QuizFormProps) => {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [rgpdConsent, setRgpdConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const percentage = (score / totalQuestions) * 100;
-  const potentialPrize = percentage === 100
-    ? 'Formule Complète 🏆'
-    : percentage >= 90
-      ? 'Une Galette 🥈'
-      : percentage >= 80
-        ? 'Une Crêpe 🥉'
-        : null;
-
   const validate = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!firstName.trim()) {
-      newErrors.firstName = 'Prénom requis';
+    if (!firstName.trim() || firstName.trim().length < 2) {
+      newErrors.firstName = 'Prénom requis (minimum 2 caractères)';
     }
 
     if (!email.trim()) {
@@ -45,8 +34,8 @@ const QuizForm = ({ score, totalQuestions, onSubmit, isLoading, error }: QuizFor
 
     if (!phone.trim()) {
       newErrors.phone = 'Téléphone requis';
-    } else if (!/^(?:(?:\+|00)33|0)\s*[1-9](?:[\s.-]*\d{2}){4}$/.test(phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Numéro invalide';
+    } else if (phone.replace(/\s/g, '').length < 8) {
+      newErrors.phone = 'Numéro invalide (minimum 8 chiffres)';
     }
 
     if (!rgpdConsent) {
@@ -70,129 +59,112 @@ const QuizForm = ({ score, totalQuestions, onSubmit, isLoading, error }: QuizFor
       animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
-      {/* Score Summary */}
+      {/* Header */}
       <div className="card-warm text-center">
-        <div className="text-5xl font-display font-bold text-primary mb-2">
-          {score}/{totalQuestions}
-        </div>
+        <div className="text-4xl mb-3">🎉</div>
+        <h2 className="font-display text-2xl font-bold mb-2">
+          Validation de votre participation
+        </h2>
         <p className="text-muted-foreground">
-          {percentage}% de bonnes réponses
+          Renseignez vos coordonnées pour valider votre participation au tirage de la semaine
         </p>
-        {potentialPrize && (
-          <div className="mt-4 p-3 rounded-xl bg-gradient-to-r from-caramel/10 to-caramel/5 border border-caramel/20">
-            <p className="text-sm text-muted-foreground">Vous pouvez gagner :</p>
-            <p className="font-display text-lg font-semibold text-primary mt-1">
-              {potentialPrize}
-            </p>
-          </div>
-        )}
-        {!potentialPrize && (
-          <div className="mt-4 p-3 rounded-xl bg-secondary/50">
-            <p className="text-sm text-muted-foreground">
-              Il faut au moins 80% pour gagner un lot.
-              <br />Réessayez la semaine prochaine !
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Form */}
-      {potentialPrize && (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="firstName">Prénom</Label>
-            <Input
-              id="firstName"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              placeholder="Votre prénom"
-              className={errors.firstName ? 'border-destructive' : ''}
-            />
-            {errors.firstName && (
-              <p className="text-xs text-destructive">{errors.firstName}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="votre@email.com"
-              className={errors.email ? 'border-destructive' : ''}
-            />
-            {errors.email && (
-              <p className="text-xs text-destructive">{errors.email}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Téléphone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="06 12 34 56 78"
-              className={errors.phone ? 'border-destructive' : ''}
-            />
-            {errors.phone && (
-              <p className="text-xs text-destructive">{errors.phone}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-start gap-3">
-              <Checkbox
-                id="rgpd"
-                checked={rgpdConsent}
-                onCheckedChange={(checked) => setRgpdConsent(checked as boolean)}
-                className={errors.rgpdConsent ? 'border-destructive' : ''}
-              />
-              <Label htmlFor="rgpd" className="text-sm leading-relaxed cursor-pointer">
-                J'accepte le{' '}
-                <a href="/legal" target="_blank" className="text-primary underline">
-                  règlement du jeu
-                </a>{' '}
-                et la{' '}
-                <a href="/legal" target="_blank" className="text-primary underline">
-                  politique de confidentialité
-                </a>
-              </Label>
-            </div>
-            {errors.rgpdConsent && (
-              <p className="text-xs text-destructive">{errors.rgpdConsent}</p>
-            )}
-          </div>
-
-          {error && (
-            <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-sm text-center">
-              {error}
-            </div>
+      <form onSubmit={handleSubmit} className="card-warm space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="firstName">Prénom *</Label>
+          <Input
+            id="firstName"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Votre prénom"
+            className={errors.firstName ? 'border-destructive' : ''}
+          />
+          {errors.firstName && (
+            <p className="text-xs text-destructive">{errors.firstName}</p>
           )}
+        </div>
 
-          <Button
-            type="submit"
-            className="w-full btn-hero text-lg py-6"
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                Validation...
-              </>
-            ) : (
-              'Valider ma participation'
-            )}
-          </Button>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email *</Label>
+          <Input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="votre@email.com"
+            className={errors.email ? 'border-destructive' : ''}
+          />
+          {errors.email && (
+            <p className="text-xs text-destructive">{errors.email}</p>
+          )}
+        </div>
 
-          <p className="text-xs text-center text-muted-foreground">
-            1 participation gagnante max par semaine et par personne
-          </p>
-        </form>
-      )}
+        <div className="space-y-2">
+          <Label htmlFor="phone">Téléphone *</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="06 12 34 56 78"
+            className={errors.phone ? 'border-destructive' : ''}
+          />
+          {errors.phone && (
+            <p className="text-xs text-destructive">{errors.phone}</p>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="rgpd"
+              checked={rgpdConsent}
+              onCheckedChange={(checked) => setRgpdConsent(checked as boolean)}
+              className={errors.rgpdConsent ? 'border-destructive' : ''}
+            />
+            <Label htmlFor="rgpd" className="text-sm leading-relaxed cursor-pointer">
+              J'accepte le{' '}
+              <a href="/legal" target="_blank" className="text-primary underline">
+                règlement du jeu
+              </a>{' '}
+              et la{' '}
+              <a href="/legal" target="_blank" className="text-primary underline">
+                politique de confidentialité
+              </a>
+            </Label>
+          </div>
+          {errors.rgpdConsent && (
+            <p className="text-xs text-destructive">{errors.rgpdConsent}</p>
+          )}
+        </div>
+
+        {error && (
+          <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-sm text-center">
+            {error}
+          </div>
+        )}
+
+        <Button
+          type="submit"
+          className="w-full btn-hero text-lg py-6"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              Validation...
+            </>
+          ) : (
+            'Valider ma participation'
+          )}
+        </Button>
+
+        <p className="text-xs text-center text-muted-foreground">
+          * Champs obligatoires – 1 participation gagnante max par semaine
+        </p>
+      </form>
     </motion.div>
   );
 };
