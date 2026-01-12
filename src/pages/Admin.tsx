@@ -13,6 +13,7 @@ import {
   AlertCircle,
   CameraOff,
   Newspaper,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
+import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -62,7 +64,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -263,30 +265,42 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div className="grid grid-cols-4 gap-2 mb-6">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
             onClick={() => setActiveTab("scan")}
-            className="flex-1"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
           >
-            <Scan className="w-4 h-4 mr-2" />
-            Scanner
+            <Scan className="w-4 h-4" />
+            <span className="text-xs">Scanner</span>
           </Button>
           <Button
             variant={activeTab === "stats" ? "default" : "outline"}
             onClick={() => setActiveTab("stats")}
-            className="flex-1"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
           >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Stats
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-xs">Stats</span>
           </Button>
           <Button
             variant={activeTab === "actus" ? "default" : "outline"}
             onClick={() => setActiveTab("actus")}
-            className="flex-1"
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
           >
-            <Newspaper className="w-4 h-4 mr-2" />
-            Actus
+            <Newspaper className="w-4 h-4" />
+            <span className="text-xs">Actus</span>
+          </Button>
+          <Button
+            variant={activeTab === "splash" ? "default" : "outline"}
+            onClick={() => setActiveTab("splash")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-xs">Splash</span>
           </Button>
         </div>
 
@@ -537,6 +551,12 @@ const Admin = () => {
         {activeTab === "actus" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <ActusLivePanel adminPassword={storedPassword.current} />
+          </motion.div>
+        )}
+
+        {activeTab === "splash" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <SplashSettingsPanel adminPassword={storedPassword.current} />
           </motion.div>
         )}
       </div>
