@@ -1,9 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { 
+  corsHeaders, 
+  isValidEmail, 
+  isValidPhone, 
+  isValidName, 
+  isValidFingerprint,
+  errorResponse,
+  successResponse,
+  serverErrorResponse,
+  sanitizeForLog
+} from '../_shared/validation.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -15,15 +21,42 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const { sessionId, deviceFingerprint, firstName, email, phone, rgpdConsent } = await req.json()
+    const body = await req.json()
+    const { sessionId, deviceFingerprint, firstName, email, phone, rgpdConsent } = body
+
+    // Log sanitized input for debugging (no PII)
+    console.log('Quiz submit request:', sanitizeForLog(body))
 
     // Validate required fields
-    if (!sessionId || !deviceFingerprint || !firstName || !email || !phone || !rgpdConsent) {
-      return new Response(
-        JSON.stringify({ error: 'missing_fields', message: 'Tous les champs sont requis' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+    if (!sessionId || !deviceFingerprint || !firstName || !email || !phone) {
+      return errorResponse('missing_fields', 'Tous les champs sont requis')
     }
+
+    if (!rgpdConsent) {
+      return errorResponse('rgpd_required', 'Le consentement RGPD est requis')
+    }
+
+    // Validate input formats
+    if (!isValidFingerprint(deviceFingerprint)) {
+      return errorResponse('invalid_fingerprint', 'Session invalide')
+    }
+
+    if (!isValidName(firstName)) {
+      return errorResponse('invalid_name', 'Prénom invalide (lettres uniquement, max 50 caractères)')
+    }
+
+    if (!isValidEmail(email)) {
+      return errorResponse('invalid_email', 'Format d\'email invalide')
+    }
+
+    if (!isValidPhone(phone)) {
+      return errorResponse('invalid_phone', 'Format de téléphone invalide (10 chiffres)')
+    }
+
+    // Sanitize inputs
+    const cleanFirstName = firstName.trim().slice(0, 50)
+    const cleanEmail = email.trim().toLowerCase().slice(0, 100)
+    const cleanPhone = phone.replace(/[\s.-]/g, '').slice(0, 15)
 
     // Get session
     const { data: session, error: sessionError } = await supabase
@@ -34,22 +67,16 @@ Deno.serve(async (req) => {
       .single()
 
     if (sessionError || !session) {
-      return new Response(
-        JSON.stringify({ error: 'invalid_session', message: 'Session invalide' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      return errorResponse('invalid_session', 'Session invalide')
     }
 
     // Check if already completed
     if (session.completed) {
-      return new Response(
-        JSON.stringify({ error: 'already_submitted', message: 'Ce quiz a déjà été soumis' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      return errorResponse('already_submitted', 'Ce quiz a déjà été soumis')
     }
 
     // Calculate score
-    const correctAnswers = (session.answers || []).filter((a: any) => a.isCorrect).length
+    const correctAnswers = (session.answers || []).filter((a: { isCorrect: boolean }) => a.isCorrect).length
     const totalQuestions = 10
     const percentage = (correctAnswers / totalQuestions) * 100
 
@@ -75,24 +102,17 @@ Deno.serve(async (req) => {
     const { data: existingPhoneWin } = await supabase
       .from('quiz_participations')
       .select('id')
-      .eq('phone', phone)
+      .eq('phone', cleanPhone)
       .eq('week_start', weekStart)
       .not('prize_won', 'is', null)
       .maybeSingle()
 
     if (existingPhoneWin) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'phone_already_won', 
-          message: 'Ce numéro de téléphone a déjà gagné cette semaine' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      return errorResponse('phone_already_won', 'Ce numéro de téléphone a déjà gagné cette semaine')
     }
 
     // Check stock and claim prize if won
     let prizeCode: string | null = null
-    let stockClaimed = false
 
     if (prizeType) {
       // Ensure weekly stock exists
@@ -105,7 +125,6 @@ Deno.serve(async (req) => {
       })
 
       if (claimed) {
-        stockClaimed = true
         // Generate unique prize code
         const { data: code } = await supabase.rpc('generate_prize_code')
         prizeCode = code
@@ -117,12 +136,12 @@ Deno.serve(async (req) => {
     }
 
     // Create participation record
-    const { data: participation, error: partError } = await supabase
+    const { error: partError } = await supabase
       .from('quiz_participations')
       .insert({
-        first_name: firstName,
-        email,
-        phone,
+        first_name: cleanFirstName,
+        email: cleanEmail,
+        phone: cleanPhone,
         device_fingerprint: deviceFingerprint,
         score: correctAnswers,
         total_questions: totalQuestions,
@@ -131,12 +150,10 @@ Deno.serve(async (req) => {
         week_start: weekStart,
         rgpd_consent: rgpdConsent
       })
-      .select()
-      .single()
 
     if (partError) {
-      console.error('Participation error:', partError)
-      throw partError
+      console.error('Participation insert error')
+      return serverErrorResponse()
     }
 
     // Mark session as completed
@@ -145,33 +162,26 @@ Deno.serve(async (req) => {
       .update({ completed: true })
       .eq('id', sessionId)
 
-    // Get updated stock
+    // Get updated stock (public info)
     const { data: stock } = await supabase
       .from('weekly_stock')
-      .select('*')
+      .select('galette_remaining, crepe_remaining, formule_complete_remaining')
       .eq('week_start', weekStart)
       .single()
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        score: correctAnswers,
-        totalQuestions,
-        percentage,
-        prizeWon: prizeLabel,
-        prizeCode,
-        firstName,
-        stock
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return successResponse({
+      success: true,
+      score: correctAnswers,
+      totalQuestions,
+      percentage,
+      prizeWon: prizeLabel,
+      prizeCode,
+      firstName: cleanFirstName,
+      stock
+    })
 
   } catch (error: unknown) {
-    console.error('Quiz submit error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: 'server_error', message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error('Quiz submit error:', error instanceof Error ? error.message : 'Unknown')
+    return serverErrorResponse()
   }
 })
