@@ -149,7 +149,7 @@ const QuizWinnerPremium = ({
       `${secretMenu?.secret_code ? `Code secret du menu : ${secretMenu.secret_code}\n\n` : ''}` +
       `Je viens récupérer mon gain ! 🥞`
     );
-    window.open(`https://wa.me/33XXXXXXXXX?text=${message}`, '_blank');
+    window.open(`https://wa.me/33781246918?text=${message}`, '_blank');
   };
 
   return (
