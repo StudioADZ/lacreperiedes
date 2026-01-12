@@ -23,10 +23,10 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const body = await req.json()
-    const { action, code, adminPassword, menuId, menuData } = body
+    const { action, code, adminPassword, menuId, menuData, participationId } = body
 
     // Log sanitized request (no passwords/codes)
-    console.log('Admin request:', sanitizeForLog({ action, menuId }))
+    console.log('Admin request:', sanitizeForLog({ action, menuId, participationId }))
 
     // Verify admin password
     if (!ADMIN_PASSWORD || adminPassword !== ADMIN_PASSWORD) {
@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       // Find participation by code
       const { data: participation, error } = await supabase
         .from('quiz_participations')
-        .select('id, first_name, prize_won, week_start, prize_claimed, claimed_at, created_at')
+        .select('id, first_name, prize_won, week_start, prize_claimed, claimed_at, created_at, status, security_token, token_generated_at')
         .eq('prize_code', code.toUpperCase())
         .maybeSingle()
 
@@ -61,10 +61,22 @@ Deno.serve(async (req) => {
         })
       }
 
+      // Check if invalidated
+      if (participation.status === 'invalidated') {
+        return successResponse({
+          valid: false,
+          message: 'Ce coupon a été invalidé pour fraude',
+          invalidated: true
+        })
+      }
+
       // Calculate week number
       const weekDate = new Date(participation.week_start)
       const startOfYear = new Date(weekDate.getFullYear(), 0, 1)
       const weekNumber = Math.ceil(((weekDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
+
+      // Calculate expected security token (changes every 10 seconds)
+      const currentToken = generateSecurityToken()
 
       return successResponse({
         valid: true,
@@ -75,9 +87,9 @@ Deno.serve(async (req) => {
         weekStart: participation.week_start,
         claimed: participation.prize_claimed,
         claimedAt: participation.claimed_at,
-        createdAt: participation.created_at
-        // NOTE: email, phone NOT returned even to admin via this endpoint
-        // Admin can access full data via backend if needed
+        createdAt: participation.created_at,
+        expectedToken: currentToken,
+        status: participation.status
       })
     }
 
@@ -90,12 +102,34 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_code', 'Format de code invalide')
       }
 
+      // Check status before claiming
+      const { data: existing } = await supabase
+        .from('quiz_participations')
+        .select('status, prize_claimed')
+        .eq('prize_code', code.toUpperCase())
+        .maybeSingle()
+
+      if (existing?.status === 'invalidated') {
+        return successResponse({ 
+          success: false, 
+          message: 'Ce coupon a été invalidé' 
+        })
+      }
+
+      if (existing?.prize_claimed) {
+        return successResponse({ 
+          success: false, 
+          message: 'Ce lot a déjà été réclamé' 
+        })
+      }
+
       // Mark as claimed
       const { data, error } = await supabase
         .from('quiz_participations')
         .update({ 
           prize_claimed: true, 
-          claimed_at: new Date().toISOString() 
+          claimed_at: new Date().toISOString(),
+          status: 'claimed'
         })
         .eq('prize_code', code.toUpperCase())
         .eq('prize_claimed', false)
@@ -103,12 +137,6 @@ Deno.serve(async (req) => {
         .single()
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          return successResponse({ 
-            success: false, 
-            message: 'Ce lot a déjà été réclamé' 
-          })
-        }
         console.error('Admin claim error')
         return serverErrorResponse()
       }
@@ -119,6 +147,50 @@ Deno.serve(async (req) => {
         firstName: data.first_name,
         prize: data.prize_won
       })
+    }
+
+    if (action === 'invalidate') {
+      if (!participationId) {
+        return errorResponse('missing_id', 'ID participation requis')
+      }
+
+      const { data, error } = await supabase
+        .from('quiz_participations')
+        .update({ 
+          status: 'invalidated',
+          prize_claimed: true, // Mark as used so can't be reused
+          claimed_at: new Date().toISOString()
+        })
+        .eq('id', participationId)
+        .select('id, first_name')
+        .single()
+
+      if (error) {
+        console.error('Invalidate error')
+        return serverErrorResponse()
+      }
+
+      return successResponse({ 
+        success: true, 
+        message: 'Participation invalidée',
+        firstName: data.first_name
+      })
+    }
+
+    if (action === 'list_participations') {
+      // Get recent participations with all details for admin
+      const { data: participations, error } = await supabase
+        .from('quiz_participations')
+        .select('id, created_at, first_name, email, phone, score, total_questions, prize_won, prize_code, prize_claimed, claimed_at, status')
+        .order('created_at', { ascending: false })
+        .limit(100)
+
+      if (error) {
+        console.error('List participations error')
+        return serverErrorResponse()
+      }
+
+      return successResponse({ participations })
     }
 
     if (action === 'stats') {
@@ -195,6 +267,14 @@ Deno.serve(async (req) => {
       return successResponse({ success: true, menu: data })
     }
 
+    if (action === 'get_security_token') {
+      // Return current expected security token for verification
+      return successResponse({ 
+        token: generateSecurityToken(),
+        validFor: 10 - (Math.floor(Date.now() / 1000) % 10)
+      })
+    }
+
     return errorResponse('invalid_action', 'Action non reconnue')
 
   } catch (error: unknown) {
@@ -202,3 +282,11 @@ Deno.serve(async (req) => {
     return serverErrorResponse()
   }
 })
+
+// Generate a 4-digit security token that changes every 10 seconds
+function generateSecurityToken(): string {
+  const now = Math.floor(Date.now() / 10000) // Changes every 10 seconds
+  // Simple hash based on time
+  const hash = ((now * 9301 + 49297) % 233280).toString()
+  return hash.padStart(4, '0').slice(-4)
+}

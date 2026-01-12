@@ -23,6 +23,7 @@ import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
+import QuizParticipationsPanel from "@/components/admin/QuizParticipationsPanel";
 import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -66,7 +67,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "quiz">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -267,51 +268,60 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-5 gap-2 mb-6">
+        <div className="grid grid-cols-6 gap-1.5 mb-6">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
             onClick={() => setActiveTab("scan")}
             size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <Scan className="w-4 h-4" />
-            <span className="text-xs">Scanner</span>
+            <span className="text-[10px]">Scanner</span>
+          </Button>
+          <Button
+            variant={activeTab === "quiz" ? "default" : "outline"}
+            onClick={() => setActiveTab("quiz")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Gift className="w-4 h-4" />
+            <span className="text-[10px]">Quiz</span>
           </Button>
           <Button
             variant={activeTab === "stats" ? "default" : "outline"}
             onClick={() => setActiveTab("stats")}
             size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <BarChart3 className="w-4 h-4" />
-            <span className="text-xs">Stats</span>
+            <span className="text-[10px]">Stats</span>
           </Button>
           <Button
             variant={activeTab === "menu" ? "default" : "outline"}
             onClick={() => setActiveTab("menu")}
             size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <ChefHat className="w-4 h-4" />
-            <span className="text-xs">Menu</span>
+            <span className="text-[10px]">Menu</span>
           </Button>
           <Button
             variant={activeTab === "actus" ? "default" : "outline"}
             onClick={() => setActiveTab("actus")}
             size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <Newspaper className="w-4 h-4" />
-            <span className="text-xs">Actus</span>
+            <span className="text-[10px]">Actus</span>
           </Button>
           <Button
             variant={activeTab === "splash" ? "default" : "outline"}
             onClick={() => setActiveTab("splash")}
             size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <Sparkles className="w-4 h-4" />
-            <span className="text-xs">Splash</span>
+            <span className="text-[10px]">Splash</span>
           </Button>
         </div>
 
@@ -561,6 +571,10 @@ const Admin = () => {
               Actualiser les stats
             </Button>
           </motion.div>
+        )}
+
+        {activeTab === "quiz" && (
+          <QuizParticipationsPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "actus" && (
