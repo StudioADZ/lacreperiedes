@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
-import ActusPanel from "@/components/admin/ActusPanel";
+import ActusLivePanel from "@/components/admin/ActusLivePanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -536,7 +536,7 @@ const Admin = () => {
 
         {activeTab === "actus" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <ActusPanel adminPassword={storedPassword.current} />
+            <ActusLivePanel adminPassword={storedPassword.current} />
           </motion.div>
         )}
       </div>
