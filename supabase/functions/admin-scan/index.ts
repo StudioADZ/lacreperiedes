@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Simple admin password check (in production, use proper auth)
-const ADMIN_PASSWORD = 'j007!'
+// Admin password from environment variable
+const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD')
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
