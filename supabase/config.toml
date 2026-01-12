@@ -1,1 +1,13 @@
 project_id = "gwpycfojyekjjddzpqil"
+
+[functions.quiz-session]
+verify_jwt = false
+
+[functions.quiz-submit]
+verify_jwt = false
+
+[functions.verify-prize]
+verify_jwt = false
+
+[functions.admin-scan]
+verify_jwt = false
