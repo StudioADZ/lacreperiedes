@@ -23,7 +23,7 @@ import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
-import SecretMenuPanel from "@/components/admin/SecretMenuPanel";
+import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -316,7 +316,7 @@ const Admin = () => {
         </div>
 
         {activeTab === "menu" && (
-          <SecretMenuPanel adminPassword={storedPassword.current} />
+          <SecretMenuAdminPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "scan" && (

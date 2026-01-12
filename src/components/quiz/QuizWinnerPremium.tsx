@@ -9,13 +9,14 @@ import {
   Calendar, 
   Gift, 
   Mail, 
-  Send,
   Loader2,
   ChefHat,
-  Sparkles
+  Sparkles,
+  Lock
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
+import { useSecretAccess } from '@/hooks/useSecretAccess';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -50,6 +51,8 @@ const QuizWinnerPremium = ({
   const [showSecretMenu, setShowSecretMenu] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const { grantAccessFromQuiz } = useSecretAccess();
 
   useEffect(() => {
     if (!confettiRef.current) {
@@ -152,6 +155,15 @@ const QuizWinnerPremium = ({
     window.open(`https://wa.me/33781246918?text=${message}`, '_blank');
   };
 
+  const handleUnlockMenu = async () => {
+    if (!secretMenu?.secret_code) return;
+    
+    const token = await grantAccessFromQuiz(email, phone, firstName, secretMenu.secret_code);
+    if (token) {
+      setAccessGranted(true);
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
@@ -236,33 +248,59 @@ const QuizWinnerPremium = ({
         </p>
       </motion.div>
 
-      {/* Secret Menu Code */}
+      {/* Secret Menu Unlock */}
       {secretMenu && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9 }}
-          className="card-warm border-2 border-dashed border-caramel/30"
+          className="card-glow border-2 border-dashed border-caramel/40"
         >
           <div className="text-center">
-            <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="flex items-center justify-center gap-2 mb-3">
               <Sparkles className="w-5 h-5 text-caramel" />
-              <span className="font-semibold text-sm">Code secret du Menu</span>
+              <span className="font-display font-bold">Bonus Gagnant</span>
             </div>
-            <p className="font-mono text-xl font-bold text-caramel mb-3">
-              {secretMenu.secret_code}
-            </p>
             
-            {!showSecretMenu ? (
+            <p className="text-sm text-muted-foreground mb-4">
+              Tu débloques aussi l'accès au Menu Secret de la semaine !
+            </p>
+
+            {/* Secret Code Display */}
+            <div className="p-4 rounded-xl bg-caramel/10 mb-4">
+              <p className="text-xs text-muted-foreground mb-1">Ton code secret</p>
+              <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
+                {secretMenu.secret_code}
+              </p>
+            </div>
+
+            {!accessGranted ? (
               <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSecretMenu(true)}
-                className="border-caramel/30"
+                onClick={handleUnlockMenu}
+                className="w-full"
+                variant="outline"
               >
-                🔮 Découvrir le Menu Secret
+                <Lock className="w-5 h-5 mr-2" />
+                Débloquer le Menu Secret
               </Button>
             ) : (
+              <>
+                <div className="p-3 rounded-xl bg-herb/10 border border-herb/30 mb-3">
+                  <p className="text-herb font-semibold text-sm">✓ Accès débloqué !</p>
+                </div>
+
+                <a href="/carte" className="block">
+                  <Button className="w-full" variant="outline">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    Découvrir le Menu Secret
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </a>
+              </>
+            )}
+
+            {/* Preview menu specials */}
+            {showSecretMenu && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
@@ -296,6 +334,17 @@ const QuizWinnerPremium = ({
                   </div>
                 )}
               </motion.div>
+            )}
+
+            {!showSecretMenu && accessGranted && (
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowSecretMenu(true)}
+                className="mt-2"
+              >
+                🔮 Aperçu rapide
+              </Button>
             )}
           </div>
         </motion.div>

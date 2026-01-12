@@ -454,6 +454,8 @@ const Quiz = () => {
         <div className="max-w-lg mx-auto">
           <QuizLoser
             firstName={currentFirstName}
+            email={userData?.email || ''}
+            phone={userData?.phone || ''}
             stockRemaining={stockData || { formule_complete_remaining: 0, galette_remaining: 0, crepe_remaining: 0 }}
             onPlayAgain={handlePlayAgain}
           />
