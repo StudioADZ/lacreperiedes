@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { ExternalLink, Heart, MessageCircle, Share2, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 interface SocialPost {
   id: string;
@@ -10,6 +9,9 @@ interface SocialPost {
   created_at: string;
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
 const SocialWall = () => {
   const [posts, setPosts] = useState<SocialPost[]>([]);
   const [loading, setLoading] = useState(true);
@@ -17,15 +19,19 @@ const SocialWall = () => {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const { data, error } = await supabase
-          .from("social_posts")
-          .select("*")
-          .eq("is_visible", true)
-          .order("created_at", { ascending: false })
-          .limit(4);
+        const response = await fetch(
+          `${SUPABASE_URL}/rest/v1/social_posts?is_visible=eq.true&order=created_at.desc&limit=4`,
+          {
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${SUPABASE_KEY}`,
+            },
+          }
+        );
 
-        if (!error && data) {
-          setPosts(data as SocialPost[]);
+        if (response.ok) {
+          const data = await response.json();
+          setPosts(data);
         }
       } catch (err) {
         console.log("Social posts not available yet");
@@ -104,15 +110,15 @@ const SocialWall = () => {
                 </p>
               </div>
               <div className="flex gap-2 text-muted-foreground">
-                <button className="p-2 hover:bg-secondary rounded-lg transition-colors" onClick={(e) => e.preventDefault()}>
+                <span className="p-2 hover:bg-secondary rounded-lg transition-colors">
                   <Heart className="w-4 h-4" />
-                </button>
-                <button className="p-2 hover:bg-secondary rounded-lg transition-colors" onClick={(e) => e.preventDefault()}>
+                </span>
+                <span className="p-2 hover:bg-secondary rounded-lg transition-colors">
                   <MessageCircle className="w-4 h-4" />
-                </button>
-                <button className="p-2 hover:bg-secondary rounded-lg transition-colors" onClick={(e) => e.preventDefault()}>
+                </span>
+                <span className="p-2 hover:bg-secondary rounded-lg transition-colors">
                   <Share2 className="w-4 h-4" />
-                </button>
+                </span>
               </div>
               <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
             </a>

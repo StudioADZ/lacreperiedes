@@ -140,6 +140,30 @@ export type Database = {
         }
         Relationships: []
       }
+      social_posts: {
+        Row: {
+          created_at: string
+          id: string
+          is_visible: boolean
+          network: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          network: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_visible?: boolean
+          network?: string
+          url?: string
+        }
+        Relationships: []
+      }
       weekly_stock: {
         Row: {
           created_at: string

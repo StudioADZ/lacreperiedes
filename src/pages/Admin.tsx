@@ -12,12 +12,14 @@ import {
   BarChart3,
   AlertCircle,
   CameraOff,
+  Newspaper,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
+import ActusPanel from "@/components/admin/ActusPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -60,7 +62,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -278,6 +280,14 @@ const Admin = () => {
             <BarChart3 className="w-4 h-4 mr-2" />
             Stats
           </Button>
+          <Button
+            variant={activeTab === "actus" ? "default" : "outline"}
+            onClick={() => setActiveTab("actus")}
+            className="flex-1"
+          >
+            <Newspaper className="w-4 h-4 mr-2" />
+            Actus
+          </Button>
         </div>
 
         {activeTab === "scan" && (
@@ -486,28 +496,31 @@ const Admin = () => {
             {stats.stock && (
               <div className="card-warm">
                 <h3 className="font-display font-semibold mb-4">Stock restant</h3>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <span>🏆</span> Formule Complète
+                      <span className="text-xl">🏆</span>
+                      <span>Formules</span>
                     </span>
-                    <span className="font-bold">
+                    <span className="font-bold text-lg">
                       {stats.stock.formule_complete_remaining}/{stats.stock.formule_complete_total}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <span>🥈</span> Galette
+                      <span className="text-xl">🥈</span>
+                      <span>Galettes</span>
                     </span>
-                    <span className="font-bold">
+                    <span className="font-bold text-lg">
                       {stats.stock.galette_remaining}/{stats.stock.galette_total}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="flex items-center gap-2">
-                      <span>🥉</span> Crêpe
+                      <span className="text-xl">🥉</span>
+                      <span>Crêpes</span>
                     </span>
-                    <span className="font-bold">
+                    <span className="font-bold text-lg">
                       {stats.stock.crepe_remaining}/{stats.stock.crepe_total}
                     </span>
                   </div>
@@ -515,9 +528,15 @@ const Admin = () => {
               </div>
             )}
 
-            <Button variant="outline" onClick={() => fetchStats(storedPassword.current)} className="w-full">
-              Actualiser
+            <Button onClick={() => fetchStats(storedPassword.current)} variant="outline" className="w-full">
+              Actualiser les stats
             </Button>
+          </motion.div>
+        )}
+
+        {activeTab === "actus" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <ActusPanel adminPassword={storedPassword.current} />
           </motion.div>
         )}
       </div>
