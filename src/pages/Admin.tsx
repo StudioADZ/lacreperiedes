@@ -14,6 +14,7 @@ import {
   CameraOff,
   Newspaper,
   Sparkles,
+  ChefHat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
+import SecretMenuPanel from "@/components/admin/SecretMenuPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -64,7 +66,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -265,7 +267,7 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        <div className="grid grid-cols-5 gap-2 mb-6">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
             onClick={() => setActiveTab("scan")}
@@ -283,6 +285,15 @@ const Admin = () => {
           >
             <BarChart3 className="w-4 h-4" />
             <span className="text-xs">Stats</span>
+          </Button>
+          <Button
+            variant={activeTab === "menu" ? "default" : "outline"}
+            onClick={() => setActiveTab("menu")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2"
+          >
+            <ChefHat className="w-4 h-4" />
+            <span className="text-xs">Menu</span>
           </Button>
           <Button
             variant={activeTab === "actus" ? "default" : "outline"}
@@ -303,6 +314,10 @@ const Admin = () => {
             <span className="text-xs">Splash</span>
           </Button>
         </div>
+
+        {activeTab === "menu" && (
+          <SecretMenuPanel adminPassword={storedPassword.current} />
+        )}
 
         {activeTab === "scan" && (
           <div className="space-y-6">
