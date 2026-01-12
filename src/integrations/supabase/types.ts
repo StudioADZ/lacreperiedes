@@ -63,6 +63,9 @@ export type Database = {
           prize_won: string | null
           rgpd_consent: boolean
           score: number
+          security_token: string | null
+          status: string
+          token_generated_at: string | null
           total_questions: number
           week_start: string
         }
@@ -79,6 +82,9 @@ export type Database = {
           prize_won?: string | null
           rgpd_consent?: boolean
           score?: number
+          security_token?: string | null
+          status?: string
+          token_generated_at?: string | null
           total_questions?: number
           week_start: string
         }
@@ -95,6 +101,9 @@ export type Database = {
           prize_won?: string | null
           rgpd_consent?: boolean
           score?: number
+          security_token?: string | null
+          status?: string
+          token_generated_at?: string | null
           total_questions?: number
           week_start?: string
         }

@@ -12,7 +12,11 @@ import {
   Loader2,
   ChefHat,
   Sparkles,
-  Lock
+  Lock,
+  Shield,
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +42,13 @@ interface QuizWinnerPremiumProps {
   onPlayAgain: () => void;
 }
 
+// Generate security token that changes every 10 seconds (must match server)
+const generateSecurityToken = (): string => {
+  const now = Math.floor(Date.now() / 10000);
+  const hash = ((now * 9301 + 49297) % 233280).toString();
+  return hash.padStart(4, '0').slice(-4);
+};
+
 const QuizWinnerPremium = ({ 
   firstName, 
   email,
@@ -53,6 +64,26 @@ const QuizWinnerPremium = ({
   const [emailSent, setEmailSent] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
+  
+  // Anti-fraud: Security token that changes every 10 seconds
+  const [currentToken, setCurrentToken] = useState(generateSecurityToken());
+  const [tokenCountdown, setTokenCountdown] = useState(10);
+  const [showCode, setShowCode] = useState(false);
+
+  // Update token every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const newToken = generateSecurityToken();
+      if (newToken !== currentToken) {
+        setCurrentToken(newToken);
+        setTokenCountdown(10);
+      } else {
+        setTokenCountdown(prev => Math.max(0, prev - 1));
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [currentToken]);
 
   useEffect(() => {
     if (!confettiRef.current) {
@@ -115,7 +146,8 @@ const QuizWinnerPremium = ({
     }
   };
 
-  const verifyUrl = `${window.location.origin}/verify/${prizeCode}`;
+  // Updated verify URL with query param format
+  const verifyUrl = `${window.location.origin}/verify?code=${prizeCode}`;
   const isFormuleComplete = prize.toLowerCase().includes('formule');
 
   const handleSendEmail = async () => {
@@ -216,7 +248,7 @@ const QuizWinnerPremium = ({
         </motion.div>
       </motion.div>
 
-      {/* QR Code & Coupon */}
+      {/* QR Code & Coupon with Security */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -236,10 +268,60 @@ const QuizWinnerPremium = ({
           />
         </div>
 
+        {/* Security Token - Anti-fraud */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.8 }}
+          className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20"
+        >
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-xs font-medium text-primary">Jeton de sécurité</span>
+          </div>
+          <div className="flex items-center justify-center gap-3">
+            <span className="font-mono text-3xl font-bold tracking-widest text-primary">
+              {currentToken}
+            </span>
+            <div className="flex flex-col items-center">
+              <RefreshCw className={`w-4 h-4 text-muted-foreground ${tokenCountdown <= 3 ? 'animate-spin' : ''}`} />
+              <span className="text-xs text-muted-foreground">{tokenCountdown}s</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ce jeton change toutes les 10 secondes
+          </p>
+        </motion.div>
+
+        {/* Code - Hidden by default */}
         <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Ton code unique</p>
-          <p className="font-mono text-2xl font-bold tracking-wider text-primary">
-            {prizeCode}
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-muted-foreground">Ton code unique</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCode(!showCode)}
+              className="h-6 px-2"
+            >
+              {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <span className="ml-1 text-xs">{showCode ? 'Masquer' : 'Afficher'}</span>
+            </Button>
+          </div>
+          {showCode ? (
+            <p className="font-mono text-2xl font-bold tracking-wider text-primary">
+              {prizeCode}
+            </p>
+          ) : (
+            <p className="font-mono text-2xl font-bold tracking-wider text-muted-foreground">
+              ••••••••
+            </p>
+          )}
+        </div>
+
+        {/* Warning */}
+        <div className="mt-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+          <p className="text-xs text-destructive">
+            ⚠️ Ne partage pas ce coupon. Il est nominatif et vérifié par le staff.
           </p>
         </div>
 

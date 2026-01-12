@@ -10,7 +10,7 @@ import QuizWinnerPremium from "@/components/quiz/QuizWinnerPremium";
 import QuizLoser from "@/components/quiz/QuizLoser";
 import StockIndicator from "@/components/quiz/StockIndicator";
 import QuizTimer from "@/components/quiz/QuizTimer";
-import WinnersSection from "@/components/quiz/WinnersSection";
+import WinnersHero from "@/components/quiz/WinnersHero";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -206,14 +206,14 @@ const Quiz = () => {
             </p>
           </motion.div>
 
-          {/* Winners Section */}
+          {/* Winners Hero Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
             className="card-warm mb-6"
           >
-            <WinnersSection />
+            <WinnersHero />
           </motion.div>
 
           {/* Stock */}
