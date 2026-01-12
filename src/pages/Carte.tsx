@@ -1,6 +1,45 @@
-import { UtensilsCrossed, Flame, Snowflake, Leaf } from "lucide-react";
+import { UtensilsCrossed, Flame, Snowflake, Leaf, AlertCircle } from "lucide-react";
+import { motion } from "framer-motion";
+import SocialFooter from "@/components/SocialFooter";
+
+// Set to false when menu is ready
+const MENU_UNDER_CONSTRUCTION = false;
 
 const Carte = () => {
+  // Show under construction message if not ready
+  if (MENU_UNDER_CONSTRUCTION) {
+    return (
+      <div className="min-h-screen pt-20 pb-24 px-4">
+        <div className="max-w-lg mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="card-warm text-center py-16"
+          >
+            <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-6">
+              <UtensilsCrossed className="w-10 h-10 text-primary" />
+            </div>
+            <h1 className="font-display text-2xl font-bold mb-3">
+              Menu en cours de mise à jour
+            </h1>
+            <p className="text-muted-foreground">
+              Notre carte sera bientôt disponible.
+              <br />
+              En attendant, n'hésitez pas à nous appeler !
+            </p>
+            <a
+              href="tel:0259660176"
+              className="inline-block mt-6 px-6 py-3 bg-primary text-primary-foreground rounded-full font-medium hover:opacity-90 transition-opacity"
+            >
+              📞 02 59 66 01 76
+            </a>
+          </motion.div>
+          <SocialFooter />
+        </div>
+      </div>
+    );
+  }
+
   const galettesSalees = [
     { name: "La Complète", description: "Œuf, jambon, emmental", price: "8,50 €", popular: true },
     { name: "La Forestière", description: "Champignons, lardons, crème fraîche", price: "9,00 €" },
@@ -110,6 +149,8 @@ const Carte = () => {
             📍 Carte sujette à modifications selon la saison et les arrivages
           </p>
         </div>
+
+        <SocialFooter />
       </div>
     </div>
   );

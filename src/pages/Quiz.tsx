@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ArrowRight, Trophy, Gift, Clock, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuizSession } from "@/hooks/useQuizSession";
@@ -7,9 +7,12 @@ import QuizQuestion from "@/components/quiz/QuizQuestion";
 import QuizForm from "@/components/quiz/QuizForm";
 import QuizWinner from "@/components/quiz/QuizWinner";
 import StockIndicator from "@/components/quiz/StockIndicator";
+import QuizTimer from "@/components/quiz/QuizTimer";
+import SocialFooter from "@/components/SocialFooter";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const QUESTION_TIME_LIMIT = 30; // 30 seconds per question
 
 type QuizPhase = 'intro' | 'playing' | 'form' | 'result';
 
@@ -25,6 +28,8 @@ const Quiz = () => {
     prize: string;
     prizeCode: string;
   } | null>(null);
+  const [timerKey, setTimerKey] = useState(0);
+  const [timerActive, setTimerActive] = useState(false);
 
   const { data: stock, isLoading: stockLoading } = useWeeklyStock();
   const {
@@ -46,16 +51,26 @@ const Quiz = () => {
     const result = await startSession();
     if (result?.success) {
       setPhase('playing');
+      setTimerKey(prev => prev + 1);
+      setTimerActive(true);
     } else if (result?.error === 'already_won') {
       setSubmitError('Vous avez déjà gagné cette semaine ! Revenez dimanche prochain.');
     }
   };
 
+  // Handle time up - auto submit wrong answer
+  const handleTimeUp = useCallback(() => {
+    if (showResult || isLoading) return;
+    // Submit empty answer which will be wrong
+    handleAnswer('TIMEOUT');
+  }, [showResult, isLoading]);
+
   // Handle answering a question
   const handleAnswer = async (answer: string) => {
     if (showResult || isLoading) return;
 
-    setSelectedAnswer(answer);
+    setTimerActive(false);
+    setSelectedAnswer(answer === 'TIMEOUT' ? null : answer);
     const result = await submitAnswer(answer);
 
     if (result?.success) {
@@ -71,6 +86,10 @@ const Quiz = () => {
         // Check if quiz is complete
         if (currentQuestionIndex + 1 >= 10) {
           setPhase('form');
+        } else {
+          // Reset timer for next question
+          setTimerKey(prev => prev + 1);
+          setTimerActive(true);
         }
       }, 1500);
     }
@@ -124,6 +143,7 @@ const Quiz = () => {
     setPhase('intro');
     setWinnerData(null);
     setSubmitError(null);
+    setTimerActive(false);
   };
 
   // Intro Screen
@@ -148,11 +168,81 @@ const Quiz = () => {
             </p>
           </motion.div>
 
-          {/* Rules */}
+          {/* Prizes of the week - NEW SECTION */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="card-warm mb-6 bg-gradient-to-br from-butter/50 to-caramel/10 border-caramel/30"
+          >
+            <h2 className="font-display text-xl font-bold mb-4 text-center">
+              🎁 Lots de la semaine
+            </h2>
+            {stockLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : stock ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 rounded-xl bg-gradient-to-r from-caramel/20 to-caramel/10 border border-caramel/30">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🏆</span>
+                    <div>
+                      <p className="font-display font-bold text-lg">10 Formules complètes</p>
+                      <p className="text-xs text-muted-foreground">100% de bonnes réponses</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-2xl font-bold ${stock.formule_complete_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                      {stock.formule_complete_remaining}
+                    </span>
+                    <p className="text-xs text-muted-foreground">restant{stock.formule_complete_remaining !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🥈</span>
+                    <div>
+                      <p className="font-display font-bold text-lg">20 Galettes</p>
+                      <p className="text-xs text-muted-foreground">90-99% de bonnes réponses</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-2xl font-bold ${stock.galette_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                      {stock.galette_remaining}
+                    </span>
+                    <p className="text-xs text-muted-foreground">restant{stock.galette_remaining !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">🥉</span>
+                    <div>
+                      <p className="font-display font-bold text-lg">30 Crêpes</p>
+                      <p className="text-xs text-muted-foreground">80-89% de bonnes réponses</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className={`text-2xl font-bold ${stock.crepe_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                      {stock.crepe_remaining}
+                    </span>
+                    <p className="text-xs text-muted-foreground">restant{stock.crepe_remaining !== 1 ? 's' : ''}</p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+            <p className="text-xs text-muted-foreground text-center mt-4">
+              Nouvelle semaine chaque dimanche à minuit
+            </p>
+          </motion.div>
+
+          {/* Rules */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
             className="card-warm mb-6"
           >
             <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
@@ -166,97 +256,13 @@ const Quiz = () => {
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">2</span>
-                <span>Obtenez votre score et découvrez votre lot</span>
+                <span><strong>30 secondes</strong> par question – soyez rapide !</span>
               </li>
               <li className="flex items-start gap-3 text-sm">
                 <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">3</span>
                 <span>Présentez votre QR code au restaurant pour récupérer votre gain</span>
               </li>
             </ul>
-          </motion.div>
-
-          {/* Prizes */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="card-warm mb-6"
-          >
-            <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-              <Gift className="w-5 h-5 text-herb" />
-              Les lots à gagner
-            </h2>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-caramel/10 to-caramel/5 border border-caramel/20">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🏆</span>
-                  <div>
-                    <p className="font-medium">Formule Complète</p>
-                    <p className="text-xs text-muted-foreground">100% de bonnes réponses</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🥈</span>
-                  <div>
-                    <p className="font-medium">Une Galette</p>
-                    <p className="text-xs text-muted-foreground">90-99% de bonnes réponses</p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">🥉</span>
-                  <div>
-                    <p className="font-medium">Une Crêpe</p>
-                    <p className="text-xs text-muted-foreground">80-89% de bonnes réponses</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Stock */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="card-warm mb-8"
-          >
-            <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-terracotta" />
-              Stock de la semaine
-            </h2>
-            {stockLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-primary" />
-              </div>
-            ) : stock ? (
-              <div className="space-y-3">
-                <StockIndicator
-                  label="Formule Complète"
-                  remaining={stock.formule_complete_remaining}
-                  total={stock.formule_complete_total}
-                  emoji="🏆"
-                />
-                <StockIndicator
-                  label="Galette"
-                  remaining={stock.galette_remaining}
-                  total={stock.galette_total}
-                  emoji="🥈"
-                />
-                <StockIndicator
-                  label="Crêpe"
-                  remaining={stock.crepe_remaining}
-                  total={stock.crepe_total}
-                  emoji="🥉"
-                />
-              </div>
-            ) : null}
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Nouvelle semaine chaque dimanche à minuit
-            </p>
           </motion.div>
 
           {/* Error */}
@@ -275,7 +281,7 @@ const Quiz = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
           >
             <Button
               className="w-full btn-hero text-lg py-6 group"
@@ -299,6 +305,8 @@ const Quiz = () => {
           <p className="text-xs text-center text-muted-foreground mt-4">
             1 participation gagnante max par semaine et par personne
           </p>
+
+          <SocialFooter />
         </div>
       </div>
     );
@@ -309,6 +317,16 @@ const Quiz = () => {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
+          {/* Timer */}
+          <div className="mb-4">
+            <QuizTimer
+              duration={QUESTION_TIME_LIMIT}
+              onTimeUp={handleTimeUp}
+              isActive={timerActive}
+              resetKey={timerKey}
+            />
+          </div>
+
           <AnimatePresence mode="wait">
             <QuizQuestion
               key={currentQuestionIndex}
@@ -357,6 +375,7 @@ const Quiz = () => {
               prizeCode={winnerData.prizeCode}
               onPlayAgain={handlePlayAgain}
             />
+            <SocialFooter />
           </div>
         </div>
       );
@@ -398,6 +417,7 @@ const Quiz = () => {
               </Button>
             </div>
           </motion.div>
+          <SocialFooter />
         </div>
       </div>
     );

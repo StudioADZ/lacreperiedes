@@ -3,8 +3,6 @@ import { Plus, Trash2, Eye, EyeOff, Loader2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SocialPost {
@@ -14,6 +12,9 @@ interface SocialPost {
   is_visible: boolean;
   created_at: string;
 }
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 interface ActusPanelProps {
   adminPassword: string;
@@ -28,13 +29,19 @@ const ActusPanel = ({ adminPassword }: ActusPanelProps) => {
 
   const fetchPosts = async () => {
     try {
-      const { data, error } = await supabase
-        .from("social_posts")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/social_posts?order=created_at.desc`,
+        {
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
 
-      if (!error && data) {
-        setPosts(data as SocialPost[]);
+      if (response.ok) {
+        const data = await response.json();
+        setPosts(data);
       }
     } catch (err) {
       console.log("Could not fetch posts");
@@ -66,15 +73,25 @@ const ActusPanel = ({ adminPassword }: ActusPanelProps) => {
     setError("");
 
     try {
-      const { error } = await supabase
-        .from("social_posts")
-        .insert({
-          url: newUrl.trim(),
-          network,
-          is_visible: true,
-        });
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/social_posts`,
+        {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            url: newUrl.trim(),
+            network,
+            is_visible: true,
+          }),
+        }
+      );
 
-      if (error) throw error;
+      if (!response.ok) throw new Error("Insert failed");
 
       setNewUrl("");
       fetchPosts();
@@ -87,12 +104,21 @@ const ActusPanel = ({ adminPassword }: ActusPanelProps) => {
 
   const handleToggleVisibility = async (id: string, currentVisibility: boolean) => {
     try {
-      const { error } = await supabase
-        .from("social_posts")
-        .update({ is_visible: !currentVisibility })
-        .eq("id", id);
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/social_posts?id=eq.${id}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({ is_visible: !currentVisibility }),
+        }
+      );
 
-      if (!error) {
+      if (response.ok) {
         setPosts(posts.map(p => p.id === id ? { ...p, is_visible: !currentVisibility } : p));
       }
     } catch (err) {
@@ -104,12 +130,18 @@ const ActusPanel = ({ adminPassword }: ActusPanelProps) => {
     if (!confirm("Supprimer ce post ?")) return;
 
     try {
-      const { error } = await supabase
-        .from("social_posts")
-        .delete()
-        .eq("id", id);
+      const response = await fetch(
+        `${SUPABASE_URL}/rest/v1/social_posts?id=eq.${id}`,
+        {
+          method: "DELETE",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
 
-      if (!error) {
+      if (response.ok) {
         setPosts(posts.filter(p => p.id !== id));
       }
     } catch (err) {
