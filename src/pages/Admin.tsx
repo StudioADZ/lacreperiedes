@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
@@ -11,11 +11,13 @@ import {
   Scan,
   BarChart3,
   AlertCircle,
+  CameraOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
+import QRScanner from "@/components/admin/QRScanner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -59,6 +61,8 @@ const Admin = () => {
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
   const [activeTab, setActiveTab] = useState<"scan" | "stats">("scan");
+  const [scannerActive, setScannerActive] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
   const storedPassword = useRef("");
 
@@ -119,11 +123,19 @@ const Admin = () => {
     }
   };
 
-  const handleVerify = async (code: string) => {
+  const handleVerify = useCallback(async (code: string) => {
     if (!code.trim()) return;
+
+    // Prevent duplicate scans
+    if (code.toUpperCase() === lastScannedCode) return;
+    setLastScannedCode(code.toUpperCase());
 
     setIsLoading(true);
     setResult(null);
+    setManualCode(code.toUpperCase());
+
+    // Stop scanner while showing result
+    setScannerActive(false);
 
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
@@ -153,7 +165,7 @@ const Admin = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [lastScannedCode]);
 
   const handleClaim = async () => {
     if (!result?.id) return;
@@ -195,6 +207,7 @@ const Admin = () => {
   const handleReset = () => {
     setResult(null);
     setManualCode("");
+    setLastScannedCode(null);
   };
 
   // Login screen
@@ -269,26 +282,67 @@ const Admin = () => {
 
         {activeTab === "scan" && (
           <div className="space-y-6">
-            {/* Manual Input */}
-            <div className="card-warm">
-              <Label htmlFor="code" className="mb-2 block">
-                Code du lot
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="code"
-                  value={manualCode}
-                  onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                  onKeyDown={(e) => e.key === "Enter" && handleVerify(manualCode)}
-                  placeholder="XXXXXXXX"
-                  className="font-mono text-lg tracking-wider"
-                  maxLength={8}
-                />
-                <Button onClick={() => handleVerify(manualCode)} disabled={isLoading || !manualCode.trim()}>
-                  {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
-                </Button>
+            {/* QR Scanner */}
+            {!result && (
+              <div className="card-warm">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Scanner QR
+                  </Label>
+                  <Button
+                    variant={scannerActive ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setScannerActive(!scannerActive)}
+                  >
+                    {scannerActive ? (
+                      <>
+                        <CameraOff className="w-4 h-4 mr-1" />
+                        Arrêter
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-4 h-4 mr-1" />
+                        Activer
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {scannerActive ? (
+                  <QRScanner onScan={handleVerify} isActive={scannerActive} />
+                ) : (
+                  <div className="aspect-square rounded-xl bg-muted/50 flex flex-col items-center justify-center text-muted-foreground">
+                    <Camera className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">Appuyez sur Activer pour scanner</p>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Manual Input */}
+            {!result && (
+              <div className="card-warm">
+                <Label htmlFor="code" className="mb-2 block flex items-center gap-2">
+                  <Scan className="w-4 h-4" />
+                  Ou saisir manuellement
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="code"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === "Enter" && handleVerify(manualCode)}
+                    placeholder="XXXXXXXX"
+                    className="font-mono text-lg tracking-wider"
+                    maxLength={8}
+                  />
+                  <Button onClick={() => handleVerify(manualCode)} disabled={isLoading || !manualCode.trim()}>
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {/* Result */}
             <AnimatePresence mode="wait">
