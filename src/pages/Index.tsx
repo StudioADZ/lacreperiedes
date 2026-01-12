@@ -11,7 +11,7 @@ import SocialWall from "@/components/home/SocialWall";
 
 const Index = () => {
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]">
       {/* Hero Section - Premium quality */}
       <section className="relative h-[85vh] min-h-[600px] overflow-hidden">
         {/* Background Image with blur and darkening */}
@@ -205,6 +205,9 @@ const Index = () => {
       {/* Google Map */}
       <GoogleMap />
 
+      {/* Social Wall - Actus Live */}
+      <SocialWall />
+
       {/* Story Section */}
       <section className="px-4 mt-12">
         <div className="max-w-lg mx-auto text-center">
@@ -219,9 +222,6 @@ const Index = () => {
           </p>
         </div>
       </section>
-
-      {/* Social Wall */}
-      <SocialWall />
 
       {/* Social Footer */}
       <SocialFooter />
