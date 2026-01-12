@@ -1,9 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { 
+  corsHeaders, 
+  isValidFingerprint,
+  errorResponse,
+  successResponse,
+  serverErrorResponse
+} from '../_shared/validation.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -16,6 +18,11 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     const { action, deviceFingerprint, sessionId, answer, questionIndex } = await req.json()
+
+    // Validate device fingerprint for all actions
+    if (!isValidFingerprint(deviceFingerprint)) {
+      return errorResponse('invalid_fingerprint', 'Session invalide')
+    }
 
     if (action === 'start') {
       // Check if device already has a winning participation this week
@@ -30,10 +37,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (existingWin) {
-        return new Response(
-          JSON.stringify({ error: 'already_won', message: 'Vous avez déjà gagné cette semaine !' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('already_won', 'Vous avez déjà gagné cette semaine !')
       }
 
       // Check for existing active session
@@ -52,10 +56,7 @@ Deno.serve(async (req) => {
           .select('id, question, option_a, option_b, option_c, option_d')
           .in('id', existingSession.question_ids)
 
-        return new Response(
-          JSON.stringify({ session: existingSession, questions }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return successResponse({ session: existingSession, questions })
       }
 
       // Get 10 random active questions (80% local, 20% food)
@@ -81,10 +82,7 @@ Deno.serve(async (req) => {
         .map(q => q.id)
 
       if (selectedIds.length < 10) {
-        return new Response(
-          JSON.stringify({ error: 'not_enough_questions', message: 'Pas assez de questions disponibles' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('not_enough_questions', 'Pas assez de questions disponibles')
       }
 
       // Create session
@@ -98,11 +96,11 @@ Deno.serve(async (req) => {
         .single()
 
       if (sessionError) {
-        console.error('Session creation error:', sessionError)
-        throw sessionError
+        console.error('Session creation error')
+        return serverErrorResponse()
       }
 
-      // Get full questions
+      // Get full questions (without correct_answer for security)
       const { data: questions } = await supabase
         .from('quiz_questions')
         .select('id, question, option_a, option_b, option_c, option_d')
@@ -113,13 +111,25 @@ Deno.serve(async (req) => {
         questions?.find(q => q.id === id)
       ).filter(Boolean)
 
-      return new Response(
-        JSON.stringify({ session, questions: orderedQuestions }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ session, questions: orderedQuestions })
     }
 
     if (action === 'answer') {
+      // Validate session ID format
+      if (!sessionId || typeof sessionId !== 'string') {
+        return errorResponse('invalid_session', 'Session invalide')
+      }
+
+      // Validate answer
+      if (!answer || !['A', 'B', 'C', 'D'].includes(answer)) {
+        return errorResponse('invalid_answer', 'Réponse invalide')
+      }
+
+      // Validate question index
+      if (typeof questionIndex !== 'number' || questionIndex < 0 || questionIndex > 9) {
+        return errorResponse('invalid_question', 'Question invalide')
+      }
+
       // Get session
       const { data: session, error: sessionError } = await supabase
         .from('quiz_sessions')
@@ -129,18 +139,12 @@ Deno.serve(async (req) => {
         .single()
 
       if (sessionError || !session) {
-        return new Response(
-          JSON.stringify({ error: 'invalid_session', message: 'Session invalide' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('invalid_session', 'Session invalide')
       }
 
       // Check if session expired
       if (new Date(session.expires_at) < new Date()) {
-        return new Response(
-          JSON.stringify({ error: 'session_expired', message: 'Session expirée, veuillez recommencer' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('session_expired', 'Session expirée, veuillez recommencer')
       }
 
       // Get the question to verify answer
@@ -167,12 +171,12 @@ Deno.serve(async (req) => {
         })
         .eq('id', sessionId)
 
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error('Session update error')
+        return serverErrorResponse()
+      }
 
-      return new Response(
-        JSON.stringify({ isCorrect, correctAnswer: question?.correct_answer }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ isCorrect, correctAnswer: question?.correct_answer })
     }
 
     if (action === 'reset') {
@@ -183,23 +187,13 @@ Deno.serve(async (req) => {
         .eq('device_fingerprint', deviceFingerprint)
         .eq('completed', false)
 
-      return new Response(
-        JSON.stringify({ success: true }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ success: true })
     }
 
-    return new Response(
-      JSON.stringify({ error: 'invalid_action' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+    return errorResponse('invalid_action', 'Action non reconnue')
 
   } catch (error: unknown) {
-    console.error('Quiz session error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: 'server_error', message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error('Quiz session error:', error instanceof Error ? error.message : 'Unknown')
+    return serverErrorResponse()
   }
 })

@@ -1,9 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { 
+  corsHeaders, 
+  isValidPrizeCode,
+  errorResponse,
+  successResponse,
+  serverErrorResponse
+} from '../_shared/validation.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -18,30 +20,31 @@ Deno.serve(async (req) => {
     const { code } = await req.json()
 
     if (!code) {
-      return new Response(
-        JSON.stringify({ error: 'missing_code', message: 'Code requis' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-      )
+      return errorResponse('missing_code', 'Code requis')
     }
 
-    // Find participation by code
+    // Validate code format
+    if (!isValidPrizeCode(code)) {
+      return errorResponse('invalid_code', 'Format de code invalide')
+    }
+
+    // Find participation by code - only select non-sensitive fields
     const { data: participation, error } = await supabase
       .from('quiz_participations')
-      .select('*')
+      .select('first_name, prize_won, week_start, prize_claimed, claimed_at')
       .eq('prize_code', code.toUpperCase())
       .maybeSingle()
 
-    if (error) throw error
+    if (error) {
+      console.error('Prize lookup error')
+      return serverErrorResponse()
+    }
 
     if (!participation) {
-      return new Response(
-        JSON.stringify({ 
-          valid: false, 
-          error: 'not_found', 
-          message: 'Code non trouvé' 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ 
+        valid: false, 
+        message: 'Code non trouvé' 
+      })
     }
 
     // Calculate week number for display
@@ -49,26 +52,19 @@ Deno.serve(async (req) => {
     const startOfYear = new Date(weekDate.getFullYear(), 0, 1)
     const weekNumber = Math.ceil(((weekDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
 
-    return new Response(
-      JSON.stringify({
-        valid: true,
-        firstName: participation.first_name,
-        prize: participation.prize_won,
-        weekNumber,
-        weekStart: participation.week_start,
-        claimed: participation.prize_claimed,
-        claimedAt: participation.claimed_at,
-        createdAt: participation.created_at
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    // Return ONLY non-sensitive information
+    return successResponse({
+      valid: true,
+      firstName: participation.first_name,
+      prize: participation.prize_won,
+      weekNumber,
+      claimed: participation.prize_claimed,
+      claimedAt: participation.claimed_at
+      // NOTE: email, phone, device_fingerprint, internal IDs are NOT returned
+    })
 
   } catch (error: unknown) {
-    console.error('Verify prize error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: 'server_error', message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error('Verify prize error:', error instanceof Error ? error.message : 'Unknown')
+    return serverErrorResponse()
   }
 })

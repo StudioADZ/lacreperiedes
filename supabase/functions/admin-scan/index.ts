@@ -1,9 +1,13 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { 
+  corsHeaders, 
+  isValidPrizeCode,
+  isValidName,
+  errorResponse,
+  successResponse,
+  serverErrorResponse,
+  sanitizeForLog
+} from '../_shared/validation.ts'
 
 // Admin password from environment variable
 const ADMIN_PASSWORD = Deno.env.get('ADMIN_PASSWORD')
@@ -18,42 +22,43 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    const { action, code, adminPassword, menuId, menuData } = await req.json()
+    const body = await req.json()
+    const { action, code, adminPassword, menuId, menuData } = body
+
+    // Log sanitized request (no passwords/codes)
+    console.log('Admin request:', sanitizeForLog({ action, menuId }))
 
     // Verify admin password
-    if (adminPassword !== ADMIN_PASSWORD) {
-      return new Response(
-        JSON.stringify({ error: 'unauthorized', message: 'Mot de passe incorrect' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
-      )
+    if (!ADMIN_PASSWORD || adminPassword !== ADMIN_PASSWORD) {
+      return errorResponse('unauthorized', 'Mot de passe incorrect', 401)
     }
 
     if (action === 'verify') {
       if (!code) {
-        return new Response(
-          JSON.stringify({ error: 'missing_code', message: 'Code requis' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('missing_code', 'Code requis')
+      }
+
+      if (!isValidPrizeCode(code)) {
+        return errorResponse('invalid_code', 'Format de code invalide')
       }
 
       // Find participation by code
       const { data: participation, error } = await supabase
         .from('quiz_participations')
-        .select('*')
+        .select('id, first_name, prize_won, week_start, prize_claimed, claimed_at, created_at')
         .eq('prize_code', code.toUpperCase())
         .maybeSingle()
 
-      if (error) throw error
+      if (error) {
+        console.error('Admin verify error')
+        return serverErrorResponse()
+      }
 
       if (!participation) {
-        return new Response(
-          JSON.stringify({ 
-            valid: false, 
-            error: 'not_found', 
-            message: 'Code non trouvé' 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+        return successResponse({ 
+          valid: false, 
+          message: 'Code non trouvé' 
+        })
       }
 
       // Calculate week number
@@ -61,28 +66,28 @@ Deno.serve(async (req) => {
       const startOfYear = new Date(weekDate.getFullYear(), 0, 1)
       const weekNumber = Math.ceil(((weekDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
 
-      return new Response(
-        JSON.stringify({
-          valid: true,
-          id: participation.id,
-          firstName: participation.first_name,
-          prize: participation.prize_won,
-          weekNumber,
-          weekStart: participation.week_start,
-          claimed: participation.prize_claimed,
-          claimedAt: participation.claimed_at,
-          createdAt: participation.created_at
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({
+        valid: true,
+        id: participation.id,
+        firstName: participation.first_name,
+        prize: participation.prize_won,
+        weekNumber,
+        weekStart: participation.week_start,
+        claimed: participation.prize_claimed,
+        claimedAt: participation.claimed_at,
+        createdAt: participation.created_at
+        // NOTE: email, phone NOT returned even to admin via this endpoint
+        // Admin can access full data via backend if needed
+      })
     }
 
     if (action === 'claim') {
       if (!code) {
-        return new Response(
-          JSON.stringify({ error: 'missing_code', message: 'Code requis' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('missing_code', 'Code requis')
+      }
+
+      if (!isValidPrizeCode(code)) {
+        return errorResponse('invalid_code', 'Format de code invalide')
       }
 
       // Mark as claimed
@@ -94,31 +99,26 @@ Deno.serve(async (req) => {
         })
         .eq('prize_code', code.toUpperCase())
         .eq('prize_claimed', false)
-        .select()
+        .select('id, first_name, prize_won')
         .single()
 
       if (error) {
         if (error.code === 'PGRST116') {
-          return new Response(
-            JSON.stringify({ 
-              success: false, 
-              error: 'already_claimed', 
-              message: 'Ce lot a déjà été réclamé' 
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          )
+          return successResponse({ 
+            success: false, 
+            message: 'Ce lot a déjà été réclamé' 
+          })
         }
-        throw error
+        console.error('Admin claim error')
+        return serverErrorResponse()
       }
 
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          message: 'Lot marqué comme utilisé',
-          participation: data
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ 
+        success: true, 
+        message: 'Lot marqué comme utilisé',
+        firstName: data.first_name,
+        prize: data.prize_won
+      })
     }
 
     if (action === 'stats') {
@@ -131,44 +131,52 @@ Deno.serve(async (req) => {
         .eq('week_start', weekStart)
         .maybeSingle()
 
-      const { data: participations } = await supabase
+      // Get aggregated stats only, no PII
+      const { count: totalParticipations } = await supabase
         .from('quiz_participations')
-        .select('id, prize_won, prize_claimed')
+        .select('id', { count: 'exact', head: true })
         .eq('week_start', weekStart)
 
-      const totalParticipations = participations?.length || 0
-      const winners = participations?.filter(p => p.prize_won) || []
-      const claimed = winners.filter(p => p.prize_claimed).length
+      const { count: totalWinners } = await supabase
+        .from('quiz_participations')
+        .select('id', { count: 'exact', head: true })
+        .eq('week_start', weekStart)
+        .not('prize_won', 'is', null)
 
-      return new Response(
-        JSON.stringify({
-          weekStart,
-          stock,
-          totalParticipations,
-          totalWinners: winners.length,
-          totalClaimed: claimed
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      const { count: totalClaimed } = await supabase
+        .from('quiz_participations')
+        .select('id', { count: 'exact', head: true })
+        .eq('week_start', weekStart)
+        .eq('prize_claimed', true)
+
+      return successResponse({
+        weekStart,
+        stock,
+        totalParticipations: totalParticipations || 0,
+        totalWinners: totalWinners || 0,
+        totalClaimed: totalClaimed || 0
+      })
     }
 
     if (action === 'update_secret_menu') {
       if (!menuId || !menuData) {
-        return new Response(
-          JSON.stringify({ error: 'missing_data', message: 'Données requises' }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        return errorResponse('missing_data', 'Données requises')
+      }
+
+      // Validate menu data
+      if (menuData.menu_name && !isValidName(menuData.menu_name)) {
+        return errorResponse('invalid_menu_name', 'Nom de menu invalide')
       }
 
       const { data, error } = await supabase
         .from('secret_menu')
         .update({
-          menu_name: menuData.menu_name,
-          secret_code: menuData.secret_code,
-          galette_special: menuData.galette_special || null,
-          galette_special_description: menuData.galette_special_description || null,
-          crepe_special: menuData.crepe_special || null,
-          crepe_special_description: menuData.crepe_special_description || null,
+          menu_name: menuData.menu_name?.slice(0, 100),
+          secret_code: menuData.secret_code?.toUpperCase().slice(0, 20),
+          galette_special: menuData.galette_special?.slice(0, 100) || null,
+          galette_special_description: menuData.galette_special_description?.slice(0, 500) || null,
+          crepe_special: menuData.crepe_special?.slice(0, 100) || null,
+          crepe_special_description: menuData.crepe_special_description?.slice(0, 500) || null,
           galette_items: menuData.galette_items || [],
           crepe_items: menuData.crepe_items || [],
           valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
@@ -179,25 +187,18 @@ Deno.serve(async (req) => {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Menu update error')
+        return serverErrorResponse()
+      }
 
-      return new Response(
-        JSON.stringify({ success: true, menu: data }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return successResponse({ success: true, menu: data })
     }
 
-    return new Response(
-      JSON.stringify({ error: 'invalid_action' }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-    )
+    return errorResponse('invalid_action', 'Action non reconnue')
 
   } catch (error: unknown) {
-    console.error('Admin scan error:', error)
-    const message = error instanceof Error ? error.message : 'Unknown error'
-    return new Response(
-      JSON.stringify({ error: 'server_error', message }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-    )
+    console.error('Admin scan error:', error instanceof Error ? error.message : 'Unknown')
+    return serverErrorResponse()
   }
 })
