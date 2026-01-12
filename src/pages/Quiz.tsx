@@ -8,6 +8,7 @@ import QuizForm from "@/components/quiz/QuizForm";
 import QuizWinner from "@/components/quiz/QuizWinner";
 import StockIndicator from "@/components/quiz/StockIndicator";
 import QuizTimer from "@/components/quiz/QuizTimer";
+import WinnersSection from "@/components/quiz/WinnersSection";
 import SocialFooter from "@/components/SocialFooter";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -168,7 +169,15 @@ const Quiz = () => {
             </p>
           </motion.div>
 
-          {/* Prizes of the week - NEW SECTION */}
+          {/* Winners Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="card-warm mb-6"
+          >
+            <WinnersSection />
+          </motion.div>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
