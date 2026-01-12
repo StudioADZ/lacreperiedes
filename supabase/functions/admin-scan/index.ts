@@ -169,6 +169,11 @@ Deno.serve(async (req) => {
           galette_special_description: menuData.galette_special_description || null,
           crepe_special: menuData.crepe_special || null,
           crepe_special_description: menuData.crepe_special_description || null,
+          galette_items: menuData.galette_items || [],
+          crepe_items: menuData.crepe_items || [],
+          valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
+          valid_to: menuData.valid_to ? new Date(menuData.valid_to).toISOString() : null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', menuId)
         .select()

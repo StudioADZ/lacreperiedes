@@ -175,11 +175,49 @@ export type Database = {
         }
         Relationships: []
       }
+      secret_access: {
+        Row: {
+          access_token: string
+          created_at: string
+          email: string
+          expires_at: string
+          first_name: string
+          id: string
+          phone: string
+          secret_code: string
+          week_start: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          first_name: string
+          id?: string
+          phone: string
+          secret_code: string
+          week_start: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          first_name?: string
+          id?: string
+          phone?: string
+          secret_code?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       secret_menu: {
         Row: {
           created_at: string
+          crepe_items: Json | null
           crepe_special: string | null
           crepe_special_description: string | null
+          galette_items: Json | null
           galette_special: string | null
           galette_special_description: string | null
           id: string
@@ -187,12 +225,16 @@ export type Database = {
           menu_name: string
           secret_code: string
           updated_at: string
+          valid_from: string | null
+          valid_to: string | null
           week_start: string
         }
         Insert: {
           created_at?: string
+          crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
           id?: string
@@ -200,12 +242,16 @@ export type Database = {
           menu_name?: string
           secret_code?: string
           updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
           week_start: string
         }
         Update: {
           created_at?: string
+          crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
           id?: string
@@ -213,6 +259,8 @@ export type Database = {
           menu_name?: string
           secret_code?: string
           updated_at?: string
+          valid_from?: string | null
+          valid_to?: string | null
           week_start?: string
         }
         Relationships: []
@@ -343,8 +391,20 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_access_token: { Args: never; Returns: string }
       generate_prize_code: { Args: never; Returns: string }
       get_current_week_start: { Args: never; Returns: string }
+      grant_secret_access: {
+        Args: {
+          p_email: string
+          p_first_name: string
+          p_phone: string
+          p_secret_code: string
+          p_week_start: string
+        }
+        Returns: string
+      }
+      verify_secret_access: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

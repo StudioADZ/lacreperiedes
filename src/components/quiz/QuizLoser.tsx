@@ -1,9 +1,14 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, Gift, Clock } from 'lucide-react';
+import { RefreshCw, Gift, Clock, Sparkles, Lock, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useSecretAccess } from '@/hooks/useSecretAccess';
 
 interface QuizLoserProps {
   firstName: string;
+  email: string;
+  phone: string;
   stockRemaining: {
     formule_complete_remaining: number;
     galette_remaining: number;
@@ -12,13 +17,49 @@ interface QuizLoserProps {
   onPlayAgain: () => void;
 }
 
-const QuizLoser = ({ firstName, stockRemaining, onPlayAgain }: QuizLoserProps) => {
+const QuizLoser = ({ firstName, email, phone, stockRemaining, onPlayAgain }: QuizLoserProps) => {
+  const [secretCode, setSecretCode] = useState<string | null>(null);
+  const [accessGranted, setAccessGranted] = useState(false);
+  const { grantAccessFromQuiz } = useSecretAccess();
+
   const totalRemaining = 
     stockRemaining.formule_complete_remaining + 
     stockRemaining.galette_remaining + 
     stockRemaining.crepe_remaining;
 
   const hasStockLeft = totalRemaining > 0;
+
+  useEffect(() => {
+    // Fetch secret code
+    fetchSecretCode();
+  }, []);
+
+  const fetchSecretCode = async () => {
+    try {
+      const { data } = await supabase
+        .from('secret_menu')
+        .select('secret_code')
+        .eq('is_active', true)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setSecretCode(data.secret_code);
+      }
+    } catch (error) {
+      console.error('Error fetching secret code:', error);
+    }
+  };
+
+  const handleUnlockMenu = async () => {
+    if (!secretCode) return;
+    
+    const token = await grantAccessFromQuiz(email, phone, firstName, secretCode);
+    if (token) {
+      setAccessGranted(true);
+    }
+  };
 
   return (
     <motion.div
@@ -48,7 +89,7 @@ const QuizLoser = ({ firstName, stockRemaining, onPlayAgain }: QuizLoserProps) =
 
         <p className="text-muted-foreground mb-4">
           {hasStockLeft 
-            ? "Pas de chance cette fois-ci, mais tu peux rejouer !"
+            ? "Pas de chance cette fois-ci, mais tu as quand même un cadeau !"
             : "Les lots de cette semaine sont épuisés. Reviens dimanche prochain !"
           }
         </p>
@@ -81,22 +122,75 @@ const QuizLoser = ({ firstName, stockRemaining, onPlayAgain }: QuizLoserProps) =
             </div>
           </motion.div>
         )}
+      </motion.div>
 
-        {/* Replay button */}
+      {/* Secret Menu Unlock - BONUS for participants */}
+      {secretCode && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.6 }}
+          className="card-glow border-2 border-dashed border-caramel/40 text-center"
         >
-          <Button 
-            onClick={onPlayAgain} 
-            className="w-full btn-hero text-lg py-6"
-            disabled={!hasStockLeft}
-          >
-            <RefreshCw className="w-5 h-5 mr-2" />
-            {hasStockLeft ? 'Rejouer maintenant' : 'Lots épuisés'}
-          </Button>
+          <div className="flex items-center justify-center gap-2 mb-3">
+            <Sparkles className="w-5 h-5 text-caramel" />
+            <span className="font-display font-bold">Cadeau de consolation</span>
+          </div>
+          
+          <p className="text-sm text-muted-foreground mb-4">
+            Même sans gagner, tu débloques l'accès au Menu Secret de la semaine !
+          </p>
+
+          {!accessGranted ? (
+            <>
+              <div className="p-4 rounded-xl bg-caramel/10 mb-4">
+                <p className="text-xs text-muted-foreground mb-1">Ton code secret</p>
+                <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
+                  {secretCode}
+                </p>
+              </div>
+
+              <Button 
+                onClick={handleUnlockMenu}
+                className="w-full btn-hero"
+              >
+                <Lock className="w-5 h-5 mr-2" />
+                Débloquer le Menu Secret
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="p-4 rounded-xl bg-herb/10 border border-herb/30 mb-4">
+                <p className="text-herb font-semibold">✓ Accès débloqué !</p>
+              </div>
+
+              <a href="/carte" className="block">
+                <Button className="w-full btn-hero">
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Découvrir le Menu Secret
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Button>
+              </a>
+            </>
+          )}
         </motion.div>
+      )}
+
+      {/* Replay button */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+      >
+        <Button 
+          onClick={onPlayAgain} 
+          variant="outline"
+          className="w-full py-6"
+          disabled={!hasStockLeft}
+        >
+          <RefreshCw className="w-5 h-5 mr-2" />
+          {hasStockLeft ? 'Rejouer pour tenter de gagner' : 'Lots épuisés'}
+        </Button>
       </motion.div>
 
       {/* Info */}
