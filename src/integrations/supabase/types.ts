@@ -175,6 +175,48 @@ export type Database = {
         }
         Relationships: []
       }
+      secret_menu: {
+        Row: {
+          created_at: string
+          crepe_special: string | null
+          crepe_special_description: string | null
+          galette_special: string | null
+          galette_special_description: string | null
+          id: string
+          is_active: boolean
+          menu_name: string
+          secret_code: string
+          updated_at: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          crepe_special?: string | null
+          crepe_special_description?: string | null
+          galette_special?: string | null
+          galette_special_description?: string | null
+          id?: string
+          is_active?: boolean
+          menu_name?: string
+          secret_code?: string
+          updated_at?: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          crepe_special?: string | null
+          crepe_special_description?: string | null
+          galette_special?: string | null
+          galette_special_description?: string | null
+          id?: string
+          is_active?: boolean
+          menu_name?: string
+          secret_code?: string
+          updated_at?: string
+          week_start?: string
+        }
+        Relationships: []
+      }
       social_posts: {
         Row: {
           created_at: string
@@ -280,6 +322,7 @@ export type Database = {
         Args: { p_prize_type: string; p_week_start: string }
         Returns: boolean
       }
+      ensure_secret_menu: { Args: never; Returns: string }
       ensure_weekly_stock: {
         Args: never
         Returns: {

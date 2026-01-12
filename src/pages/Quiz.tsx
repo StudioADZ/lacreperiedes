@@ -1,21 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowRight, Trophy, Gift, Clock, Loader2, AlertCircle } from "lucide-react";
+import { ArrowRight, Trophy, Gift, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { useWeeklyStock } from "@/hooks/useWeeklyStock";
+import { useUserMemory } from "@/hooks/useUserMemory";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
-import QuizForm from "@/components/quiz/QuizForm";
-import QuizWinner from "@/components/quiz/QuizWinner";
+import QuizPreForm from "@/components/quiz/QuizPreForm";
+import QuizWinnerPremium from "@/components/quiz/QuizWinnerPremium";
+import QuizLoser from "@/components/quiz/QuizLoser";
 import StockIndicator from "@/components/quiz/StockIndicator";
 import QuizTimer from "@/components/quiz/QuizTimer";
 import WinnersSection from "@/components/quiz/WinnersSection";
-import SocialFooter from "@/components/SocialFooter";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const QUESTION_TIME_LIMIT = 30; // 30 seconds per question
+const QUESTION_TIME_LIMIT = 30;
 
-type QuizPhase = 'intro' | 'playing' | 'form' | 'result';
+type QuizPhase = 'intro' | 'playing' | 'form' | 'processing' | 'winner' | 'loser';
 
 const Quiz = () => {
   const [phase, setPhase] = useState<QuizPhase>('intro');
@@ -26,13 +27,22 @@ const Quiz = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [winnerData, setWinnerData] = useState<{
     firstName: string;
+    email: string;
+    phone: string;
     prize: string;
     prizeCode: string;
   } | null>(null);
+  const [stockData, setStockData] = useState<{
+    formule_complete_remaining: number;
+    galette_remaining: number;
+    crepe_remaining: number;
+  } | null>(null);
+  const [currentFirstName, setCurrentFirstName] = useState<string>('');
   const [timerKey, setTimerKey] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
 
   const { data: stock, isLoading: stockLoading } = useWeeklyStock();
+  const { userData, saveUserData, hasPlayedBefore } = useUserMemory();
   const {
     isLoading,
     error,
@@ -55,14 +65,13 @@ const Quiz = () => {
       setTimerKey(prev => prev + 1);
       setTimerActive(true);
     } else if (result?.error === 'already_won') {
-      setSubmitError('Vous avez déjà gagné cette semaine ! Revenez dimanche prochain.');
+      setSubmitError('Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊');
     }
   };
 
-  // Handle time up - auto submit wrong answer
+  // Handle time up
   const handleTimeUp = useCallback(() => {
     if (showResult || isLoading) return;
-    // Submit empty answer which will be wrong
     handleAnswer('TIMEOUT');
   }, [showResult, isLoading]);
 
@@ -78,17 +87,15 @@ const Quiz = () => {
       setLastResult({ isCorrect: result.isCorrect, correctAnswer: result.correctAnswer });
       setShowResult(true);
 
-      // Auto-advance after showing result
       setTimeout(() => {
         setSelectedAnswer(null);
         setShowResult(false);
         setLastResult(null);
 
-        // Check if quiz is complete
         if (currentQuestionIndex + 1 >= 10) {
+          // Quiz complete -> show form (or skip if already known)
           setPhase('form');
         } else {
-          // Reset timer for next question
           setTimerKey(prev => prev + 1);
           setTimerActive(true);
         }
@@ -102,6 +109,8 @@ const Quiz = () => {
 
     setSubmitLoading(true);
     setSubmitError(null);
+    setCurrentFirstName(data.firstName);
+    setPhase('processing');
 
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-submit`, {
@@ -117,22 +126,49 @@ const Quiz = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        setSubmitError(result.message || 'Erreur lors de la soumission');
+        if (result.error === 'phone_already_won' || result.error === 'email_already_won') {
+          setSubmitError('Tu as déjà gagné cette semaine 😊 Reviens la semaine prochaine !');
+          setPhase('form');
+        } else {
+          setSubmitError(result.message || 'Erreur lors de la soumission');
+          setPhase('form');
+        }
         setSubmitLoading(false);
         return;
+      }
+
+      // Save user data for future plays
+      saveUserData({
+        firstName: data.firstName,
+        email: data.email,
+        phone: data.phone,
+      });
+
+      // Store stock info
+      if (result.stock) {
+        setStockData({
+          formule_complete_remaining: result.stock.formule_complete_remaining,
+          galette_remaining: result.stock.galette_remaining,
+          crepe_remaining: result.stock.crepe_remaining,
+        });
       }
 
       if (result.prizeWon && result.prizeCode) {
         setWinnerData({
           firstName: result.firstName,
+          email: data.email,
+          phone: data.phone,
           prize: result.prizeWon,
           prizeCode: result.prizeCode,
         });
+        setPhase('winner');
+      } else {
+        setCurrentFirstName(result.firstName);
+        setPhase('loser');
       }
-
-      setPhase('result');
     } catch (err) {
       setSubmitError('Erreur de connexion');
+      setPhase('form');
     } finally {
       setSubmitLoading(false);
     }
@@ -145,6 +181,7 @@ const Quiz = () => {
     setWinnerData(null);
     setSubmitError(null);
     setTimerActive(false);
+    setStockData(null);
   };
 
   // Intro Screen
@@ -178,6 +215,8 @@ const Quiz = () => {
           >
             <WinnersSection />
           </motion.div>
+
+          {/* Stock */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -314,8 +353,6 @@ const Quiz = () => {
           <p className="text-xs text-center text-muted-foreground mt-4">
             1 participation gagnante max par semaine et par personne
           </p>
-
-          <SocialFooter />
         </div>
       </div>
     );
@@ -324,7 +361,7 @@ const Quiz = () => {
   // Playing phase
   if (phase === 'playing' && currentQuestion) {
     return (
-      <div className="min-h-screen pt-20 pb-24 px-4">
+      <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
           {/* Timer */}
           <div className="mb-4">
@@ -358,73 +395,68 @@ const Quiz = () => {
   // Form phase
   if (phase === 'form') {
     return (
-      <div className="min-h-screen pt-20 pb-24 px-4">
+      <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
-          <QuizForm
+          <QuizPreForm
             onSubmit={handleFormSubmit}
             isLoading={submitLoading}
             error={submitError || undefined}
+            savedData={userData}
           />
         </div>
       </div>
     );
   }
 
-  // Result phase
-  if (phase === 'result') {
-    if (winnerData) {
-      return (
-        <div className="min-h-screen pt-20 pb-24 px-4">
-          <div className="max-w-lg mx-auto">
-            <QuizWinner
-              firstName={winnerData.firstName}
-              prize={winnerData.prize}
-              prizeCode={winnerData.prizeCode}
-              onPlayAgain={handlePlayAgain}
-            />
-            <SocialFooter />
-          </div>
-        </div>
-      );
-    }
-
-    // No prize won - participation confirmed
+  // Processing phase
+  if (phase === 'processing') {
     return (
-      <div className="min-h-screen pt-20 pb-24 px-4">
-        <div className="max-w-lg mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="card-warm text-center py-12"
-          >
-            <div className="text-5xl mb-4">✅</div>
-            <h2 className="font-display text-2xl font-bold mb-3">
-              Participation enregistrée !
-            </h2>
-            <p className="text-muted-foreground mb-2">
-              Votre score : <strong>{score}/10</strong>
-            </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Vous êtes éligible au tirage de la semaine.
-              <br />Nous vous contacterons si vous gagnez !
-            </p>
+      <div className="min-h-screen pt-20 pb-8 px-4 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="card-warm text-center py-12 max-w-sm"
+        >
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+          <h2 className="font-display text-xl font-bold mb-2">
+            Calcul de ton résultat...
+          </h2>
+          <p className="text-muted-foreground">
+            Un instant {currentFirstName} ! 🎯
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
 
-            <div className="space-y-3">
-              <Button onClick={handlePlayAgain} className="w-full btn-hero">
-                Rejouer
-              </Button>
-              <a
-                href="https://wa.me/message/QVZO5N4ZDR64M1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline" className="w-full">
-                  💬 Rejoindre notre WhatsApp
-                </Button>
-              </a>
-            </div>
-          </motion.div>
-          <SocialFooter />
+  // Winner phase
+  if (phase === 'winner' && winnerData) {
+    return (
+      <div className="min-h-screen pt-20 pb-8 px-4">
+        <div className="max-w-lg mx-auto">
+          <QuizWinnerPremium
+            firstName={winnerData.firstName}
+            email={winnerData.email}
+            phone={winnerData.phone}
+            prize={winnerData.prize}
+            prizeCode={winnerData.prizeCode}
+            onPlayAgain={handlePlayAgain}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Loser phase
+  if (phase === 'loser') {
+    return (
+      <div className="min-h-screen pt-20 pb-8 px-4">
+        <div className="max-w-lg mx-auto">
+          <QuizLoser
+            firstName={currentFirstName}
+            stockRemaining={stockData || { formule_complete_remaining: 0, galette_remaining: 0, crepe_remaining: 0 }}
+            onPlayAgain={handlePlayAgain}
+          />
         </div>
       </div>
     );
@@ -432,7 +464,7 @@ const Quiz = () => {
 
   // Loading state
   return (
-    <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
+    <div className="min-h-screen pt-20 pb-8 px-4 flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   );
