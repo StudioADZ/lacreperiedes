@@ -14,7 +14,6 @@ interface SocialPost {
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 interface ActusLivePanelProps {
   adminPassword: string;
@@ -29,22 +28,31 @@ const ActusLivePanel = ({ adminPassword }: ActusLivePanelProps) => {
   const [error, setError] = useState("");
   const [forceSquareCrop, setForceSquareCrop] = useState(true);
 
+  const callEdgeFunction = async (action: string, data: Record<string, unknown> = {}) => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-social-posts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action,
+        password: adminPassword,
+        ...data,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "Request failed");
+    }
+
+    return response.json();
+  };
+
   const fetchPosts = async () => {
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/social_posts?order=created_at.desc`,
-        {
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setPosts(data);
-      }
+      const result = await callEdgeFunction("list");
+      setPosts(result.posts || []);
     } catch (err) {
       console.log("Could not fetch posts");
     } finally {
@@ -77,25 +85,10 @@ const ActusLivePanel = ({ adminPassword }: ActusLivePanelProps) => {
     setError("");
 
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/social_posts`,
-        {
-          method: "POST",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            url: newUrl.trim(),
-            network,
-            is_visible: true,
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Insert failed");
+      await callEdgeFunction("create", {
+        url: newUrl.trim(),
+        network,
+      });
 
       setNewUrl("");
       fetchPosts();
@@ -108,23 +101,11 @@ const ActusLivePanel = ({ adminPassword }: ActusLivePanelProps) => {
 
   const handleToggleVisibility = async (id: string, currentVisibility: boolean) => {
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/social_posts?id=eq.${id}`,
-        {
-          method: "PATCH",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({ is_visible: !currentVisibility }),
-        }
-      );
-
-      if (response.ok) {
-        setPosts(posts.map(p => p.id === id ? { ...p, is_visible: !currentVisibility } : p));
-      }
+      await callEdgeFunction("update", {
+        id,
+        is_visible: !currentVisibility,
+      });
+      setPosts(posts.map(p => p.id === id ? { ...p, is_visible: !currentVisibility } : p));
     } catch (err) {
       console.error("Toggle error:", err);
     }
@@ -134,20 +115,8 @@ const ActusLivePanel = ({ adminPassword }: ActusLivePanelProps) => {
     if (!confirm("Supprimer ce post ?")) return;
 
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/social_posts?id=eq.${id}`,
-        {
-          method: "DELETE",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        setPosts(posts.filter(p => p.id !== id));
-      }
+      await callEdgeFunction("delete", { id });
+      setPosts(posts.filter(p => p.id !== id));
     } catch (err) {
       console.error("Delete error:", err);
     }
