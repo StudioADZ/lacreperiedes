@@ -199,6 +199,42 @@ export type Database = {
         }
         Relationships: []
       }
+      splash_settings: {
+        Row: {
+          background_image_url: string | null
+          created_at: string
+          cta_text: string
+          event_subtitle: string
+          event_title: string
+          game_line: string
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          background_image_url?: string | null
+          created_at?: string
+          cta_text?: string
+          event_subtitle?: string
+          event_title?: string
+          game_line?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          background_image_url?: string | null
+          created_at?: string
+          cta_text?: string
+          event_subtitle?: string
+          event_title?: string
+          game_line?: string
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       weekly_stock: {
         Row: {
           created_at: string
