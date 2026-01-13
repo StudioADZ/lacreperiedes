@@ -55,8 +55,11 @@ const AssistantChat = () => {
   const handleQuickAction = (action: string) => {
     switch (action) {
       case 'quiz':
-        addBotMessage("🎯 Le Quiz vous permet de gagner des crêpes gratuites chaque semaine ! Répondez à 10 questions et tentez votre chance.");
-        setTimeout(() => navigate('/quiz'), 1000);
+        addBotMessage("🎯 C'est parti ! Je vous emmène au quiz...");
+        setTimeout(() => {
+          setIsOpen(false);
+          navigate('/quiz');
+        }, 500);
         break;
       case 'reserver':
         addBotMessage("📅 Super ! Vous pouvez réserver via notre calendrier en ligne. Je vous y emmène !");
