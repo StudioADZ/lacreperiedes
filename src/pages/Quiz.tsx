@@ -12,6 +12,7 @@ import StockIndicator from "@/components/quiz/StockIndicator";
 import QuizTimer from "@/components/quiz/QuizTimer";
 import WinnersHero from "@/components/quiz/WinnersHero";
 import RealtimeWins from "@/components/quiz/RealtimeWins";
+import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -207,11 +208,21 @@ const Quiz = () => {
             </p>
           </motion.div>
 
-          {/* Realtime Wins - Preuve sociale en temps réel */}
+          {/* Weekly Countdown */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
+            className="mb-6"
+          >
+            <WeeklyCountdown />
+          </motion.div>
+
+          {/* Realtime Wins - Preuve sociale en temps réel */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
             className="card-warm mb-6 bg-gradient-to-br from-herb/5 to-butter/30 border-herb/20"
           >
             <RealtimeWins />
