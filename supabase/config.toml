@@ -11,3 +11,7 @@ verify_jwt = false
 
 [functions.admin-scan]
 verify_jwt = false
+
+[functions.weekly-health-check]
+verify_jwt = false
+schedule = "30 0 * * 0"
