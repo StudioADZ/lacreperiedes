@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ArrowRight, Trophy, Gift, Loader2, AlertCircle } from "lucide-react";
+import { ArrowRight, Trophy, Gift, Loader2, AlertCircle, Star, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { useWeeklyStock } from "@/hooks/useWeeklyStock";
@@ -306,6 +306,32 @@ const Quiz = () => {
             <p className="text-xs text-muted-foreground text-center mt-4">
               Nouvelle semaine chaque dimanche à minuit
             </p>
+
+            {/* Google Reviews Buttons */}
+            <div className="flex gap-3 mt-4 pt-4 border-t border-border/50">
+              <a
+                href="https://g.page/r/CfHqAKfL6g4XEAE"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1"
+              >
+                <Button variant="outline" size="sm" className="w-full gap-2 h-10">
+                  <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <span className="text-xs">Voir les avis</span>
+                </Button>
+              </a>
+              <a
+                href="https://g.page/r/CfHqAKfL6g4XEAE/review"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1"
+              >
+                <Button variant="default" size="sm" className="w-full gap-2 h-10">
+                  <MessageSquare className="w-4 h-4" />
+                  <span className="text-xs">Laisser un avis</span>
+                </Button>
+              </a>
+            </div>
           </motion.div>
 
           {/* Rules */}
