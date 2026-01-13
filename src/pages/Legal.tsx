@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { FileText, Mail, Phone, Shield, Scale, Gift, Lock, ScrollText } from "lucide-react";
+import SocialFooter from "@/components/SocialFooter";
 
 const Legal = () => {
   const location = useLocation();
@@ -261,6 +262,9 @@ const Legal = () => {
             </a>
           </div>
         </section>
+
+        {/* Social Footer */}
+        <SocialFooter />
       </div>
     </div>
   );

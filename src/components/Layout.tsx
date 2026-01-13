@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import DrawerMenu from "./DrawerMenu";
 import StickyBar from "./StickyBar";
+import AssistantChat from "./AssistantChat";
 
 const Layout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -18,6 +19,9 @@ const Layout = () => {
     window.scrollTo(0, 0);
   }, [location.pathname]);
 
+  // Don't show assistant on admin page
+  const showAssistant = !location.pathname.startsWith('/admin');
+
   return (
     <div className="min-h-screen bg-background">
       <Header onMenuClick={() => setMenuOpen(true)} />
@@ -28,6 +32,7 @@ const Layout = () => {
       </main>
       
       <StickyBar />
+      {showAssistant && <AssistantChat />}
     </div>
   );
 };
