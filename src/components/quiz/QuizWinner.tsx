@@ -153,9 +153,9 @@ const QuizWinner = ({ firstName, prize, prizeCode, onPlayAgain }: QuizWinnerProp
           </Button>
         </a>
 
-        {/* WhatsApp */}
+        {/* WhatsApp - Direct number */}
         <a
-          href="https://wa.me/message/QVZO5N4ZDR64M1"
+          href="https://wa.me/33781246918?text=Bonjour%20!%20J%27ai%20gagn%C3%A9%20au%20Quiz%20%F0%9F%8E%89"
           target="_blank"
           rel="noopener noreferrer"
           className="w-full"
@@ -165,7 +165,7 @@ const QuizWinner = ({ firstName, prize, prizeCode, onPlayAgain }: QuizWinnerProp
             className="w-full flex items-center justify-center gap-2 py-5 border-2 border-herb/30 hover:bg-herb/5"
           >
             <MessageCircle className="w-5 h-5 text-herb" />
-            <span>Rejoindre le WhatsApp</span>
+            <span>WhatsApp • 07 81 24 69 18</span>
             <ExternalLink className="w-4 h-4 ml-1 opacity-50" />
           </Button>
         </a>
@@ -173,7 +173,7 @@ const QuizWinner = ({ firstName, prize, prizeCode, onPlayAgain }: QuizWinnerProp
         {/* Book (only for Formule Complete) */}
         {isFormuleComplete && (
           <a
-            href="https://calendar.app.google/tCVyfeC7s1hNXcQ77"
+            href="https://calendar.app.google/u5ibf9hWCsxUHDB68"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full"

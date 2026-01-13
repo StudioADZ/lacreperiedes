@@ -501,7 +501,7 @@ const QuizWinnerPremium = ({
         {/* Book (only for Formule Complete) */}
         {isFormuleComplete && (
           <a
-            href="https://calendar.app.google/tCVyfeC7s1hNXcQ77"
+            href="https://calendar.app.google/u5ibf9hWCsxUHDB68"
             target="_blank"
             rel="noopener noreferrer"
             className="w-full"
