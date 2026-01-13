@@ -1,4 +1,5 @@
 import { Instagram, Facebook, Youtube, ExternalLink } from "lucide-react";
+import NetworkPreviewCards from "@/components/social/NetworkPreviewCards";
 
 const Social = () => {
   const socials = [
@@ -56,8 +57,16 @@ const Social = () => {
           </p>
         </div>
 
-        {/* Social Links */}
+        {/* Network Preview Cards - New feature */}
+        <div className="-mx-4 mb-8">
+          <NetworkPreviewCards />
+        </div>
+
+        {/* Social Links - Original list */}
         <div className="space-y-4">
+          <h2 className="font-display text-lg font-semibold text-center mb-4">
+            Tous nos réseaux
+          </h2>
           {socials.map((social) => {
             const Icon = social.icon;
             return (
