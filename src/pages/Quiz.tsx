@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useQuizSession } from "@/hooks/useQuizSession";
 import { useWeeklyStock } from "@/hooks/useWeeklyStock";
 import { useUserMemory } from "@/hooks/useUserMemory";
+import { useRGPDConsent } from "@/hooks/useRGPDConsent";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
 import QuizPreForm from "@/components/quiz/QuizPreForm";
 import QuizWinnerPremium from "@/components/quiz/QuizWinnerPremium";
@@ -13,6 +14,7 @@ import QuizTimer from "@/components/quiz/QuizTimer";
 import WinnersHero from "@/components/quiz/WinnersHero";
 import RealtimeWins from "@/components/quiz/RealtimeWins";
 import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
+import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import { motion, AnimatePresence } from "framer-motion";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -45,6 +47,7 @@ const Quiz = () => {
 
   const { data: stock, isLoading: stockLoading } = useWeeklyStock();
   const { userData, saveUserData, hasPlayedBefore } = useUserMemory();
+  const { hasConsented, isLoading: consentLoading, acceptConsent } = useRGPDConsent();
   const {
     isLoading,
     error,
@@ -185,6 +188,35 @@ const Quiz = () => {
     setTimerActive(false);
     setStockData(null);
   };
+
+  // RGPD Consent Screen - Show before intro if not consented
+  if (!consentLoading && !hasConsented && phase === 'intro') {
+    return (
+      <div className="min-h-screen pt-20 pb-24 px-4">
+        <div className="max-w-lg mx-auto">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-8"
+          >
+            <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
+              🎯 Quiz Hebdomadaire
+            </span>
+            <h1 className="font-display text-3xl font-bold mb-3">
+              Testez vos connaissances !
+            </h1>
+            <p className="text-muted-foreground">
+              Répondez à 10 questions et gagnez des crêpes gratuites
+            </p>
+          </motion.div>
+
+          {/* RGPD Consent Banner */}
+          <RGPDConsentBanner onAccept={acceptConsent} context="quiz" />
+        </div>
+      </div>
+    );
+  }
 
   // Intro Screen
   if (phase === 'intro') {
