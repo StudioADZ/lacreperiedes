@@ -1,5 +1,6 @@
 import { Star, ExternalLink, ThumbsUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SocialFooter from "@/components/SocialFooter";
 
 const Avis = () => {
   const googleReviewLink = "https://share.google/S2rTY32yn85OO48yT";
@@ -116,6 +117,9 @@ const Avis = () => {
             <ExternalLink className="w-4 h-4 ml-2" />
           </Button>
         </a>
+
+        {/* Social Footer */}
+        <SocialFooter />
       </div>
     </div>
   );

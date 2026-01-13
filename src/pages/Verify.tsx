@@ -5,6 +5,7 @@ import { CheckCircle, XCircle, Loader2, Gift, Calendar, AlertCircle, Shield, Ref
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import SocialFooter from "@/components/SocialFooter";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -149,6 +150,7 @@ const Verify = () => {
               </Button>
             </Link>
           </motion.div>
+          <SocialFooter />
         </div>
       </div>
     );
@@ -350,6 +352,9 @@ const Verify = () => {
             )}
           </motion.div>
         )}
+
+        {/* Social Footer */}
+        <SocialFooter />
       </div>
     </div>
   );
