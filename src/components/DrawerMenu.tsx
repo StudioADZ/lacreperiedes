@@ -1,6 +1,6 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
-import { Home, HelpCircle, UtensilsCrossed, Calendar, Star, Share2, FileText, Settings, Heart } from "lucide-react";
+import { Home, HelpCircle, UtensilsCrossed, Calendar, Star, Share2, FileText, Settings, Heart, User } from "lucide-react";
 import logo from "@/assets/logo.jpg";
 
 interface DrawerMenuProps {
@@ -10,6 +10,7 @@ interface DrawerMenuProps {
 
 const menuItems = [
   { path: "/", label: "Accueil", icon: Home },
+  { path: "/client", label: "Mon Compte", icon: User },
   { path: "/quiz", label: "Quiz", icon: HelpCircle },
   { path: "/carte", label: "La Carte", icon: UtensilsCrossed },
   { path: "/reserver", label: "Réserver", icon: Calendar },
