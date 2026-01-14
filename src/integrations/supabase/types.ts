@@ -49,6 +49,90 @@ export type Database = {
           },
         ]
       }
+      prize_history: {
+        Row: {
+          claimed_at: string | null
+          id: string
+          is_claimed: boolean | null
+          loyalty_points_earned: number | null
+          prize_code: string | null
+          prize_type: string
+          user_id: string | null
+          won_at: string | null
+        }
+        Insert: {
+          claimed_at?: string | null
+          id?: string
+          is_claimed?: boolean | null
+          loyalty_points_earned?: number | null
+          prize_code?: string | null
+          prize_type: string
+          user_id?: string | null
+          won_at?: string | null
+        }
+        Update: {
+          claimed_at?: string | null
+          id?: string
+          is_claimed?: boolean | null
+          loyalty_points_earned?: number | null
+          prize_code?: string | null
+          prize_type?: string
+          user_id?: string | null
+          won_at?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          loyalty_points: number | null
+          phone: string | null
+          secret_menu_code: string | null
+          secret_menu_unlocked: boolean | null
+          secret_menu_unlocked_at: string | null
+          total_visits: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          loyalty_points?: number | null
+          phone?: string | null
+          secret_menu_code?: string | null
+          secret_menu_unlocked?: boolean | null
+          secret_menu_unlocked_at?: string | null
+          total_visits?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          loyalty_points?: number | null
+          phone?: string | null
+          secret_menu_code?: string | null
+          secret_menu_unlocked?: boolean | null
+          secret_menu_unlocked_at?: string | null
+          total_visits?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       quiz_participations: {
         Row: {
           claimed_at: string | null
@@ -181,6 +265,39 @@ export type Database = {
           last_activity?: string
           question_ids?: string[]
           started_at?: string
+        }
+        Relationships: []
+      }
+      reservations: {
+        Row: {
+          created_at: string | null
+          id: string
+          party_size: number | null
+          reservation_date: string
+          reservation_time: string
+          special_requests: string | null
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          party_size?: number | null
+          reservation_date: string
+          reservation_time: string
+          special_requests?: string | null
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          party_size?: number | null
+          reservation_date?: string
+          reservation_time?: string
+          special_requests?: string | null
+          status?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -334,6 +451,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_stock: {
         Row: {
           created_at: string
@@ -372,9 +510,99 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      quiz_questions_public: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          option_a: string | null
+          option_b: string | null
+          option_c: string | null
+          option_d: string | null
+          question: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          option_a?: string | null
+          option_b?: string | null
+          option_c?: string | null
+          option_d?: string | null
+          question?: string | null
+        }
+        Relationships: []
+      }
+      secret_menu_public: {
+        Row: {
+          created_at: string | null
+          crepe_items: Json | null
+          crepe_special: string | null
+          crepe_special_description: string | null
+          galette_items: Json | null
+          galette_special: string | null
+          galette_special_description: string | null
+          id: string | null
+          is_active: boolean | null
+          menu_name: string | null
+          updated_at: string | null
+          valid_from: string | null
+          valid_to: string | null
+          week_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          crepe_items?: Json | null
+          crepe_special?: string | null
+          crepe_special_description?: string | null
+          galette_items?: Json | null
+          galette_special?: string | null
+          galette_special_description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          menu_name?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          crepe_items?: Json | null
+          crepe_special?: string | null
+          crepe_special_description?: string | null
+          galette_items?: Json | null
+          galette_special?: string | null
+          galette_special_description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          menu_name?: string | null
+          updated_at?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+          week_start?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      add_loyalty_points: {
+        Args: { p_points: number; p_user_id: string }
+        Returns: number
+      }
       claim_prize: {
         Args: { p_prize_type: string; p_week_start: string }
         Returns: boolean
@@ -413,10 +641,21 @@ export type Database = {
         }
         Returns: string
       }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      unlock_secret_menu_for_user: {
+        Args: { p_secret_code: string; p_user_id: string }
+        Returns: boolean
+      }
       verify_secret_access: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "moderator" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -543,6 +782,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "moderator", "user"],
+    },
   },
 } as const
