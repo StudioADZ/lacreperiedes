@@ -16,6 +16,7 @@ import Legal from "./pages/Legal";
 import About from "./pages/About";
 import Admin from "./pages/Admin";
 import Verify from "./pages/Verify";
+import Client from "./pages/Client";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,8 @@ const App = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/admin" element={<Admin />} />
                 <Route path="/verify/:code" element={<Verify />} />
+                <Route path="/client" element={<Client />} />
+                <Route path="/mon-compte" element={<Client />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
