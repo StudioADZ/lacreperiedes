@@ -1,9 +1,10 @@
-import { Calendar, Clock, Phone, ExternalLink, MessageCircle } from "lucide-react";
+import { Calendar, Clock, Phone, ExternalLink, MessageCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GoogleMap from "@/components/home/GoogleMap";
+import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
-// Lien unique de réservation
-const BOOKING_LINK = "https://calendar.app.google/u5ibf9hWCsxUHDB68";
+// Lien unique de réservation - CORRIGÉ
+const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 const WHATSAPP_NUMBER = "33781246918";
 const PHONE_DISPLAY = "02 59 66 01 76";
 const WHATSAPP_DISPLAY = "07 81 24 69 18";
@@ -68,29 +69,43 @@ const Reserver = () => {
         {/* Booking Options */}
         <div className="space-y-4 mb-8">
           {/* Google Calendar - Primary CTA */}
-          <a 
-            href={BOOKING_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block"
-          >
-            <div className="card-warm hover:shadow-warm transition-all duration-300 group bg-gradient-to-r from-primary/10 to-caramel/10 border-primary/30">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center flex-shrink-0">
-                  <Calendar className="w-7 h-7 text-primary-foreground" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-display text-lg font-semibold flex items-center gap-2">
-                    Réserver en ligne
-                    <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                  </h3>
-                  <p className="text-sm text-muted-foreground">
-                    Choisissez votre créneau via Google Calendar
-                  </p>
+          <div>
+            <a 
+              href={BOOKING_LINK}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block"
+            >
+              <div className="card-warm hover:shadow-warm transition-all duration-300 group bg-gradient-to-r from-primary/10 to-caramel/10 border-primary/30">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-7 h-7 text-primary-foreground" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-display text-lg font-semibold flex items-center gap-2">
+                      Réserver en ligne
+                      <ExternalLink className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Choisissez votre créneau via Google Calendar
+                    </p>
+                  </div>
                 </div>
               </div>
+            </a>
+            {/* Fallback link */}
+            <div className="mt-2 text-center">
+              <a 
+                href={BOOKING_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                <AlertCircle className="w-3 h-3" />
+                Si le calendrier ne s'ouvre pas, cliquez ici
+              </a>
             </div>
-          </a>
+          </div>
 
           {/* WhatsApp */}
           <a 
@@ -177,6 +192,9 @@ const Reserver = () => {
           </a>
         </div>
 
+        {/* Google Review CTA */}
+        <GoogleReviewCTA variant="card" className="mb-8" />
+
         {/* Social Icons */}
         <div className="card-warm">
           <h2 className="font-display text-lg font-semibold mb-4 text-center">📱 Suivez-nous</h2>
@@ -215,7 +233,7 @@ const Reserver = () => {
             
             {/* Google */}
             <a
-              href="https://g.page/r/CfHqAKfL6g4XEAE"
+              href="https://g.page/r/CVTqauGmET0TEAE/preview"
               target="_blank"
               rel="noopener noreferrer"
               className="w-12 h-12 rounded-full bg-white border border-border flex items-center justify-center hover:opacity-80 transition-opacity"

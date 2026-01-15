@@ -483,7 +483,7 @@ const QuizWinnerPremium = ({
       >
         {/* Google Review */}
         <a
-          href="https://share.google/S2rTY32yn85OO48yT"
+          href="https://g.page/r/CVTqauGmET0TEAE/preview"
           target="_blank"
           rel="noopener noreferrer"
           className="w-full"
@@ -497,6 +497,9 @@ const QuizWinnerPremium = ({
             <ExternalLink className="w-4 h-4 ml-1 opacity-50" />
           </Button>
         </a>
+        <p className="text-xs text-muted-foreground text-center mt-2">
+          Merci, ça aide énormément une petite crêperie locale. 💛
+        </p>
 
         {/* Book (only for Formule Complete) */}
         {isFormuleComplete && (

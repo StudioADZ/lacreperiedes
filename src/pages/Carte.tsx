@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { UtensilsCrossed, Flame, Snowflake, Leaf, Lock, Loader2, Star, MessageSquare, ExternalLink } from "lucide-react";
+import { UtensilsCrossed, Flame, Snowflake, Leaf, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
 import SocialFooter from "@/components/SocialFooter";
 import SecretCodeForm from "@/components/carte/SecretCodeForm";
 import SecretMenuDisplay from "@/components/carte/SecretMenuDisplay";
 import { useSecretAccess } from "@/hooks/useSecretAccess";
+import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
 const Carte = () => {
   const { hasAccess, isLoading: accessLoading, verifyCode } = useSecretAccess();
@@ -37,61 +37,14 @@ const Carte = () => {
           </p>
         </div>
 
-        {/* Google Rating & Review Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card-warm mb-8 text-center"
-        >
-          {/* Rating Display */}
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="flex items-center gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star
-                  key={star}
-                  className={`w-5 h-5 ${star <= 5 ? 'fill-yellow-400 text-yellow-400' : 'text-muted'}`}
-                />
-              ))}
-            </div>
-            <span className="font-bold text-lg">4.8</span>
-            <span className="text-sm text-muted-foreground">(127 avis)</span>
-          </div>
-
-          <p className="text-sm text-muted-foreground mb-4">
-            Nos clients adorent La Crêperie des Saveurs !
-          </p>
-
-          {/* Review Buttons */}
-          <div className="flex gap-3">
-            <a
-              href="https://g.page/r/CfHqAKfL6g4XEAE"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1"
-            >
-              <Button variant="outline" className="w-full gap-2">
-                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                Voir les avis
-                <ExternalLink className="w-3 h-3 opacity-50" />
-              </Button>
-            </a>
-            <a
-              href="https://g.page/r/CfHqAKfL6g4XEAE/review"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1"
-            >
-              <Button variant="default" className="w-full gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Laisser un avis
-              </Button>
-            </a>
-          </div>
-        </motion.div>
-
         {hasAccess ? (
           /* Unlocked: Show full menu */
-          <SecretMenuDisplay />
+          <>
+            <SecretMenuDisplay />
+            
+            {/* Google Review CTA after menu */}
+            <GoogleReviewCTA variant="card" className="mt-8" />
+          </>
         ) : (
           /* Locked: Show blurred preview + code form */
           <>

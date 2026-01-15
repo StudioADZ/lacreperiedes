@@ -1,11 +1,12 @@
-import { MessageCircle, Star, Calendar } from "lucide-react";
+import { MessageCircle, Star } from "lucide-react";
 import { useLocation } from "react-router-dom";
+import { GOOGLE_REVIEW_LINK } from "./common/GoogleReviewCTA";
 
 // Ordre fixe: Google / Facebook / Instagram / TikTok / YouTube / WhatsApp
 const socialLinks = [
   {
     name: "Google",
-    href: "https://share.google/3yzlHLSz4HKnxMmR4",
+    href: GOOGLE_REVIEW_LINK,
     icon: (
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -76,6 +77,27 @@ const SocialFooter = () => {
   return (
     <footer className="mt-12 pb-8">
       <div className="max-w-lg mx-auto px-4">
+        {/* Google Review CTA */}
+        <div className="text-center mb-6 p-4 rounded-2xl bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200">
+          <div className="flex items-center justify-center gap-1 mb-2">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star key={star} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+            ))}
+          </div>
+          <a
+            href={GOOGLE_REVIEW_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-yellow-300 text-sm font-medium hover:bg-yellow-50 transition-colors"
+          >
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            Laisser un avis Google
+          </a>
+          <p className="text-xs text-muted-foreground mt-2">
+            Merci, ça aide énormément une petite crêperie locale. 💛
+          </p>
+        </div>
+
         <div className="text-center mb-6">
           <h3 className="font-display text-lg font-semibold">Suivez-nous</h3>
           <p className="text-sm text-muted-foreground">Retrouvez-nous sur les réseaux</p>
