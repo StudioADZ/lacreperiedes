@@ -342,7 +342,7 @@ const Quiz = () => {
             {/* Google Reviews Buttons */}
             <div className="flex gap-3 mt-4 pt-4 border-t border-border/50">
               <a
-                href="https://g.page/r/CfHqAKfL6g4XEAE"
+                href="https://g.page/r/CVTqauGmET0TEAE/preview"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"
@@ -353,7 +353,7 @@ const Quiz = () => {
                 </Button>
               </a>
               <a
-                href="https://g.page/r/CfHqAKfL6g4XEAE/review"
+                href="https://g.page/r/CVTqauGmET0TEAE/preview"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"
@@ -364,6 +364,9 @@ const Quiz = () => {
                 </Button>
               </a>
             </div>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              Merci, ça aide énormément une petite crêperie locale. 💛
+            </p>
           </motion.div>
 
           {/* Rules */}

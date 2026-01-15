@@ -3,6 +3,10 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot, X, Send, MapPin, Calendar, Star, Phone, HelpCircle, UtensilsCrossed, FileText, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GOOGLE_REVIEW_LINK } from "@/components/common/GoogleReviewCTA";
+
+// Lien de réservation CORRIGÉ
+const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 
 interface Message {
   id: string;
@@ -64,13 +68,13 @@ const AssistantChat = () => {
       case 'reserver':
         addBotMessage("📅 Super ! Vous pouvez réserver via notre calendrier en ligne. Je vous y emmène !");
         setTimeout(() => {
-          window.open('https://calendar.app.google/u5ibf9hWCsxUHDB68', '_blank');
+          window.open(BOOKING_LINK, '_blank');
         }, 1000);
         break;
       case 'avis':
-        addBotMessage("⭐ Merci de vouloir nous laisser un avis ! Votre feedback nous aide à nous améliorer.");
+        addBotMessage("⭐ Merci de vouloir nous laisser un avis ! Votre feedback nous aide à nous améliorer. Ça aide énormément une petite crêperie locale. 💛");
         setTimeout(() => {
-          window.open('https://share.google/S2rTY32yn85OO48yT', '_blank');
+          window.open(GOOGLE_REVIEW_LINK, '_blank');
         }, 1000);
         break;
       case 'trouver':

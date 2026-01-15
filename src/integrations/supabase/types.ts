@@ -343,9 +343,15 @@ export type Database = {
           crepe_items: Json | null
           crepe_special: string | null
           crepe_special_description: string | null
+          crepe_special_image_url: string | null
+          crepe_special_price: string | null
+          crepe_special_video_url: string | null
           galette_items: Json | null
           galette_special: string | null
           galette_special_description: string | null
+          galette_special_image_url: string | null
+          galette_special_price: string | null
+          galette_special_video_url: string | null
           id: string
           is_active: boolean
           menu_name: string
@@ -360,9 +366,15 @@ export type Database = {
           crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          crepe_special_image_url?: string | null
+          crepe_special_price?: string | null
+          crepe_special_video_url?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
+          galette_special_image_url?: string | null
+          galette_special_price?: string | null
+          galette_special_video_url?: string | null
           id?: string
           is_active?: boolean
           menu_name?: string
@@ -377,9 +389,15 @@ export type Database = {
           crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          crepe_special_image_url?: string | null
+          crepe_special_price?: string | null
+          crepe_special_video_url?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
+          galette_special_image_url?: string | null
+          galette_special_price?: string | null
+          galette_special_video_url?: string | null
           id?: string
           is_active?: boolean
           menu_name?: string
@@ -552,9 +570,15 @@ export type Database = {
           crepe_items: Json | null
           crepe_special: string | null
           crepe_special_description: string | null
+          crepe_special_image_url: string | null
+          crepe_special_price: string | null
+          crepe_special_video_url: string | null
           galette_items: Json | null
           galette_special: string | null
           galette_special_description: string | null
+          galette_special_image_url: string | null
+          galette_special_price: string | null
+          galette_special_video_url: string | null
           id: string | null
           is_active: boolean | null
           menu_name: string | null
@@ -568,9 +592,15 @@ export type Database = {
           crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          crepe_special_image_url?: string | null
+          crepe_special_price?: string | null
+          crepe_special_video_url?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
+          galette_special_image_url?: string | null
+          galette_special_price?: string | null
+          galette_special_video_url?: string | null
           id?: string | null
           is_active?: boolean | null
           menu_name?: string | null
@@ -584,9 +614,15 @@ export type Database = {
           crepe_items?: Json | null
           crepe_special?: string | null
           crepe_special_description?: string | null
+          crepe_special_image_url?: string | null
+          crepe_special_price?: string | null
+          crepe_special_video_url?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
+          galette_special_image_url?: string | null
+          galette_special_price?: string | null
+          galette_special_video_url?: string | null
           id?: string | null
           is_active?: boolean | null
           menu_name?: string | null

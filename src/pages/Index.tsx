@@ -126,7 +126,7 @@ const Index = () => {
 
           {/* Hours Card - Opens booking calendar */}
           <a
-            href="https://calendar.app.google/u5ibf9hWCsxUHDB68"
+            href="https://calendar.app.google/nZShjcjWUyTcGLR97"
             target="_blank"
             rel="noopener noreferrer"
             className="card-glow flex items-start gap-4 group cursor-pointer hover:border-accent/40 transition-all"

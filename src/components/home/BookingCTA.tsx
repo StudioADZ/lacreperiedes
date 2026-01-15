@@ -1,12 +1,15 @@
-import { Calendar, ArrowRight } from "lucide-react";
+import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Lien de réservation CORRIGÉ
+const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 
 const BookingCTA = () => {
   return (
     <section className="px-4 mt-12">
       <div className="max-w-lg mx-auto">
         <a
-          href="https://calendar.app.google/u5ibf9hWCsxUHDB68"
+          href={BOOKING_LINK}
           target="_blank"
           rel="noopener noreferrer"
           className="block"
@@ -32,6 +35,18 @@ const BookingCTA = () => {
             </div>
           </div>
         </a>
+        {/* Fallback link */}
+        <div className="mt-2 text-center">
+          <a 
+            href={BOOKING_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            <AlertCircle className="w-3 h-3" />
+            Si le calendrier ne s'ouvre pas, cliquez ici
+          </a>
+        </div>
       </div>
     </section>
   );

@@ -193,6 +193,28 @@ const QuizLoser = ({ firstName, email, phone, stockRemaining, onPlayAgain }: Qui
         </Button>
       </motion.div>
 
+      {/* Google Review CTA */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.85 }}
+        className="card-warm text-center"
+      >
+        <p className="text-sm text-muted-foreground mb-3">Votre avis compte pour nous !</p>
+        <a
+          href="https://g.page/r/CVTqauGmET0TEAE/preview"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-50 border border-yellow-200 text-sm font-medium hover:bg-yellow-100 transition-colors">
+            ⭐ Laisser un avis Google
+          </button>
+        </a>
+        <p className="text-xs text-muted-foreground mt-2">
+          Merci, ça aide énormément une petite crêperie locale. 💛
+        </p>
+      </motion.div>
+
       {/* Info */}
       <motion.div
         initial={{ opacity: 0 }}
