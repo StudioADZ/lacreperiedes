@@ -25,6 +25,9 @@ import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
 import QuizParticipationsPanel from "@/components/admin/QuizParticipationsPanel";
 import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
+import MessagesPanel from "@/components/admin/MessagesPanel";
+import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
+import { Mail, CreditCard } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -67,7 +70,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "quiz">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "quiz" | "messages" | "payment">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -268,7 +271,7 @@ const Admin = () => {
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-6 gap-1.5 mb-6">
+        <div className="grid grid-cols-4 gap-1.5 mb-4">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
             onClick={() => setActiveTab("scan")}
@@ -305,6 +308,26 @@ const Admin = () => {
             <ChefHat className="w-4 h-4" />
             <span className="text-[10px]">Menu</span>
           </Button>
+        </div>
+        <div className="grid grid-cols-4 gap-1.5 mb-6">
+          <Button
+            variant={activeTab === "messages" ? "default" : "outline"}
+            onClick={() => setActiveTab("messages")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Mail className="w-4 h-4" />
+            <span className="text-[10px]">Messages</span>
+          </Button>
+          <Button
+            variant={activeTab === "payment" ? "default" : "outline"}
+            onClick={() => setActiveTab("payment")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span className="text-[10px]">Paiement</span>
+          </Button>
           <Button
             variant={activeTab === "actus" ? "default" : "outline"}
             onClick={() => setActiveTab("actus")}
@@ -327,6 +350,14 @@ const Admin = () => {
 
         {activeTab === "menu" && (
           <SecretMenuAdminPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "messages" && (
+          <MessagesPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "payment" && (
+          <PaymentQRPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "scan" && (

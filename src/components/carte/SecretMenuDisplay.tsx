@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, Sparkles, Flame, Snowflake, Euro, Loader2 } from 'lucide-react';
+import { ChefHat, Sparkles, Flame, Snowflake, Euro, Loader2, Play } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MenuItem {
@@ -14,8 +14,14 @@ interface SecretMenuData {
   menu_name: string;
   galette_special: string | null;
   galette_special_description: string | null;
+  galette_special_price: string | null;
+  galette_special_image_url: string | null;
+  galette_special_video_url: string | null;
   crepe_special: string | null;
   crepe_special_description: string | null;
+  crepe_special_price: string | null;
+  crepe_special_image_url: string | null;
+  crepe_special_video_url: string | null;
   galette_items: MenuItem[];
   crepe_items: MenuItem[];
   valid_from: string;
@@ -34,7 +40,7 @@ const SecretMenuDisplay = () => {
     try {
       const { data, error } = await supabase
         .from('secret_menu')
-        .select('menu_name, galette_special, galette_special_description, crepe_special, crepe_special_description, galette_items, crepe_items, valid_from, valid_to')
+        .select('menu_name, galette_special, galette_special_description, galette_special_price, galette_special_image_url, galette_special_video_url, crepe_special, crepe_special_description, crepe_special_price, crepe_special_image_url, crepe_special_video_url, galette_items, crepe_items, valid_from, valid_to')
         .eq('is_active', true)
         .order('week_start', { ascending: false })
         .limit(1)
@@ -142,9 +148,46 @@ const SecretMenuDisplay = () => {
                 <Flame className="w-5 h-5 text-terracotta" />
                 <span className="font-semibold text-sm text-terracotta">Galette Signature</span>
               </div>
+              
+              {/* Media - Image or Video */}
+              {(menu.galette_special_image_url || menu.galette_special_video_url) && (
+                <div className="mb-4 rounded-lg overflow-hidden">
+                  {menu.galette_special_video_url ? (
+                    <div className="aspect-video bg-black">
+                      {menu.galette_special_video_url.includes('youtube') || menu.galette_special_video_url.includes('youtu.be') ? (
+                        <iframe
+                          src={menu.galette_special_video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                          className="w-full h-full"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={menu.galette_special_video_url}
+                          controls
+                          className="w-full h-full object-contain"
+                          poster={menu.galette_special_image_url || undefined}
+                        />
+                      )}
+                    </div>
+                  ) : menu.galette_special_image_url && (
+                    <img 
+                      src={menu.galette_special_image_url} 
+                      alt={menu.galette_special}
+                      className="w-full aspect-video object-cover"
+                    />
+                  )}
+                </div>
+              )}
+              
               <h4 className="font-display text-xl font-bold text-primary">{menu.galette_special}</h4>
               {menu.galette_special_description && (
                 <p className="text-muted-foreground mt-2">{menu.galette_special_description}</p>
+              )}
+              {menu.galette_special_price && (
+                <p className="mt-3 font-display text-lg font-bold text-terracotta flex items-center gap-1">
+                  <Euro className="w-4 h-4" />
+                  {menu.galette_special_price}
+                </p>
               )}
             </motion.div>
           )}
@@ -160,9 +203,46 @@ const SecretMenuDisplay = () => {
                 <Snowflake className="w-5 h-5 text-caramel" />
                 <span className="font-semibold text-sm text-caramel">Crêpe Signature</span>
               </div>
+              
+              {/* Media - Image or Video */}
+              {(menu.crepe_special_image_url || menu.crepe_special_video_url) && (
+                <div className="mb-4 rounded-lg overflow-hidden">
+                  {menu.crepe_special_video_url ? (
+                    <div className="aspect-video bg-black">
+                      {menu.crepe_special_video_url.includes('youtube') || menu.crepe_special_video_url.includes('youtu.be') ? (
+                        <iframe
+                          src={menu.crepe_special_video_url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                          className="w-full h-full"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video
+                          src={menu.crepe_special_video_url}
+                          controls
+                          className="w-full h-full object-contain"
+                          poster={menu.crepe_special_image_url || undefined}
+                        />
+                      )}
+                    </div>
+                  ) : menu.crepe_special_image_url && (
+                    <img 
+                      src={menu.crepe_special_image_url} 
+                      alt={menu.crepe_special}
+                      className="w-full aspect-video object-cover"
+                    />
+                  )}
+                </div>
+              )}
+              
               <h4 className="font-display text-xl font-bold text-primary">{menu.crepe_special}</h4>
               {menu.crepe_special_description && (
                 <p className="text-muted-foreground mt-2">{menu.crepe_special_description}</p>
+              )}
+              {menu.crepe_special_price && (
+                <p className="mt-3 font-display text-lg font-bold text-caramel flex items-center gap-1">
+                  <Euro className="w-4 h-4" />
+                  {menu.crepe_special_price}
+                </p>
               )}
             </motion.div>
           )}
