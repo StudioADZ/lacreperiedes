@@ -8,7 +8,7 @@ import { useSecretAccess } from "@/hooks/useSecretAccess";
 import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
 const Carte = () => {
-  const { hasAccess, isLoading: accessLoading, verifyCode } = useSecretAccess();
+  const { hasAccess, isLoading: accessLoading, verifyCode, verifyAdminAccess, isAdminAccess } = useSecretAccess();
   const [showBlurredPreview, setShowBlurredPreview] = useState(true);
 
   // Loading state
@@ -103,9 +103,19 @@ const Carte = () => {
             {/* Code Entry Form */}
             <SecretCodeForm 
               onSubmit={verifyCode}
+              onAdminSubmit={verifyAdminAccess}
               isLoading={false}
             />
           </>
+        )}
+
+        {/* Admin indicator */}
+        {isAdminAccess && (
+          <div className="mt-4 p-2 rounded-lg bg-primary/10 text-center">
+            <p className="text-xs text-primary font-medium">
+              🔓 Accès Admin actif (permanent)
+            </p>
+          </div>
         )}
 
         <SocialFooter />

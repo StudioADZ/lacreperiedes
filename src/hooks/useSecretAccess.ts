@@ -6,10 +6,14 @@ interface SecretAccessState {
   isLoading: boolean;
   accessToken: string | null;
   secretCode: string | null;
+  isAdminAccess: boolean;
 }
 
-// Session duration: 30 minutes max
+// Session duration: 30 minutes max for regular users
 const SESSION_DURATION_MS = 30 * 60 * 1000;
+
+// Admin access key in localStorage
+const ADMIN_ACCESS_KEY = 'admin_secret_menu_access';
 
 export const useSecretAccess = () => {
   const [state, setState] = useState<SecretAccessState>({
@@ -17,6 +21,7 @@ export const useSecretAccess = () => {
     isLoading: true,
     accessToken: null,
     secretCode: null,
+    isAdminAccess: false,
   });
 
   useEffect(() => {
@@ -24,6 +29,19 @@ export const useSecretAccess = () => {
   }, []);
 
   const checkAccess = async () => {
+    // First check for admin permanent access
+    const adminAccess = localStorage.getItem(ADMIN_ACCESS_KEY);
+    if (adminAccess === 'true') {
+      setState({
+        hasAccess: true,
+        isLoading: false,
+        accessToken: 'admin',
+        secretCode: 'ADMIN',
+        isAdminAccess: true,
+      });
+      return;
+    }
+
     const storedToken = localStorage.getItem('secret_access_token');
     const storedTimestamp = localStorage.getItem('secret_access_timestamp');
     
@@ -34,13 +52,13 @@ export const useSecretAccess = () => {
       if (now - timestamp > SESSION_DURATION_MS) {
         // Session expired - clear and require code again
         clearLocalStorage();
-        setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null });
+        setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
         return;
       }
     }
     
     if (!storedToken) {
-      setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null });
+      setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
       return;
     }
 
@@ -56,7 +74,7 @@ export const useSecretAccess = () => {
       if (error || !data) {
         // Token expired or invalid
         clearLocalStorage();
-        setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null });
+        setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
         return;
       }
 
@@ -68,11 +86,12 @@ export const useSecretAccess = () => {
         isLoading: false,
         accessToken: data.access_token,
         secretCode: data.secret_code,
+        isAdminAccess: false,
       });
     } catch (error) {
       console.error('Error checking secret access:', error);
       clearLocalStorage();
-      setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null });
+      setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
     }
   };
 
@@ -125,6 +144,7 @@ export const useSecretAccess = () => {
           isLoading: false,
           accessToken: token,
           secretCode: code.toUpperCase(),
+          isAdminAccess: false,
         });
         return true;
       }
@@ -132,6 +152,35 @@ export const useSecretAccess = () => {
       return false;
     } catch (error) {
       console.error('Error verifying code:', error);
+      return false;
+    }
+  };
+
+  // Admin bypass: verify admin password and grant permanent access
+  const verifyAdminAccess = async (adminPassword: string): Promise<boolean> => {
+    try {
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'stats', adminPassword }),
+      });
+
+      if (response.ok) {
+        // Admin password valid - grant permanent access
+        localStorage.setItem(ADMIN_ACCESS_KEY, 'true');
+        setState({
+          hasAccess: true,
+          isLoading: false,
+          accessToken: 'admin',
+          secretCode: 'ADMIN',
+          isAdminAccess: true,
+        });
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error verifying admin access:', error);
       return false;
     }
   };
@@ -173,6 +222,7 @@ export const useSecretAccess = () => {
         isLoading: false,
         accessToken: token,
         secretCode,
+        isAdminAccess: false,
       });
       return token;
     } catch (error) {
@@ -183,12 +233,14 @@ export const useSecretAccess = () => {
 
   const revokeAccess = () => {
     clearLocalStorage();
-    setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null });
+    localStorage.removeItem(ADMIN_ACCESS_KEY);
+    setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
   };
 
   return {
     ...state,
     verifyCode,
+    verifyAdminAccess,
     grantAccessFromQuiz,
     revokeAccess,
     refreshAccess: checkAccess,
