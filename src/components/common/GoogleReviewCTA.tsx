@@ -1,7 +1,7 @@
 import { Star, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const GOOGLE_REVIEW_LINK = "https://g.page/r/CVTqauGmET0TEAE/preview";
+const GOOGLE_REVIEW_LINK = "https://g.page/r/CVTqauGmET0TEBM/review";
 
 interface GoogleReviewCTAProps {
   variant?: "default" | "compact" | "card";
