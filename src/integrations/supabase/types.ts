@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_settings: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          setting_key: string
+          setting_value: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          setting_key: string
+          setting_value?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          setting_key?: string
+          setting_value?: Json | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean | null
+          message: string
+          replied_at: string | null
+          sender_email: string | null
+          sender_name: string
+          sender_phone: string | null
+          sender_type: string
+          subject: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message: string
+          replied_at?: string | null
+          sender_email?: string | null
+          sender_name: string
+          sender_phone?: string | null
+          sender_type: string
+          subject?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          replied_at?: string | null
+          sender_email?: string | null
+          sender_name?: string
+          sender_phone?: string | null
+          sender_type?: string
+          subject?: string | null
+        }
+        Relationships: []
+      }
       post_interactions: {
         Row: {
           comment_text: string | null

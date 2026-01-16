@@ -10,7 +10,12 @@ import {
   Upload,
   Flame,
   Snowflake,
-  Calendar
+  Calendar,
+  Video,
+  Image,
+  ExternalLink,
+  Eye,
+  Euro
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,8 +39,14 @@ interface SecretMenu {
   secret_code: string;
   galette_special: string | null;
   galette_special_description: string | null;
+  galette_special_price: string | null;
+  galette_special_image_url: string | null;
+  galette_special_video_url: string | null;
   crepe_special: string | null;
   crepe_special_description: string | null;
+  crepe_special_price: string | null;
+  crepe_special_image_url: string | null;
+  crepe_special_video_url: string | null;
   galette_items: MenuItem[];
   crepe_items: MenuItem[];
   valid_from: string;
@@ -58,8 +69,14 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
     secret_code: '',
     galette_special: '',
     galette_special_description: '',
+    galette_special_price: '',
+    galette_special_image_url: '',
+    galette_special_video_url: '',
     crepe_special: '',
     crepe_special_description: '',
+    crepe_special_price: '',
+    crepe_special_image_url: '',
+    crepe_special_video_url: '',
     galette_items: [{ ...emptyMenuItem }, { ...emptyMenuItem }, { ...emptyMenuItem }] as MenuItem[],
     crepe_items: [{ ...emptyMenuItem }, { ...emptyMenuItem }, { ...emptyMenuItem }] as MenuItem[],
     valid_from: '',
@@ -67,6 +84,7 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
   });
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMenu();
@@ -115,8 +133,14 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
           secret_code: menuData.secret_code || '',
           galette_special: menuData.galette_special || '',
           galette_special_description: menuData.galette_special_description || '',
+          galette_special_price: menuData.galette_special_price || '',
+          galette_special_image_url: menuData.galette_special_image_url || '',
+          galette_special_video_url: menuData.galette_special_video_url || '',
           crepe_special: menuData.crepe_special || '',
           crepe_special_description: menuData.crepe_special_description || '',
+          crepe_special_price: menuData.crepe_special_price || '',
+          crepe_special_image_url: menuData.crepe_special_image_url || '',
+          crepe_special_video_url: menuData.crepe_special_video_url || '',
           galette_items: galetteItems.slice(0, 3),
           crepe_items: crepeItems.slice(0, 3),
           valid_from: menuData.valid_from?.split('T')[0] || '',
@@ -212,6 +236,93 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
     } finally {
       setUploadingImage(null);
     }
+  };
+
+  // Upload special image
+  const handleSpecialImageUpload = async (type: 'galette' | 'crepe', file: File) => {
+    const key = `special-${type}-image`;
+    setUploadingImage(key);
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `special-${type}-image-${Date.now()}.${fileExt}`;
+      const filePath = `secret-menu/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      if (type === 'galette') {
+        setFormData(prev => ({ ...prev, galette_special_image_url: publicUrl }));
+      } else {
+        setFormData(prev => ({ ...prev, crepe_special_image_url: publicUrl }));
+      }
+    } catch (error) {
+      console.error('Error uploading special image:', error);
+      setSaveMessage({ type: 'error', text: 'Erreur lors du téléchargement de l\'image' });
+    } finally {
+      setUploadingImage(null);
+    }
+  };
+
+  // Upload special video
+  const handleSpecialVideoUpload = async (type: 'galette' | 'crepe', file: File) => {
+    const key = `special-${type}-video`;
+    setUploadingVideo(key);
+
+    // Check file size (max 50MB)
+    if (file.size > 50 * 1024 * 1024) {
+      setSaveMessage({ type: 'error', text: 'Vidéo trop volumineuse (max 50MB). Utilisez un lien YouTube/externe.' });
+      setUploadingVideo(null);
+      return;
+    }
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `special-${type}-video-${Date.now()}.${fileExt}`;
+      const filePath = `secret-menu/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('images')
+        .getPublicUrl(filePath);
+
+      if (type === 'galette') {
+        setFormData(prev => ({ ...prev, galette_special_video_url: publicUrl }));
+      } else {
+        setFormData(prev => ({ ...prev, crepe_special_video_url: publicUrl }));
+      }
+    } catch (error) {
+      console.error('Error uploading special video:', error);
+      setSaveMessage({ type: 'error', text: 'Erreur lors du téléchargement de la vidéo' });
+    } finally {
+      setUploadingVideo(null);
+    }
+  };
+
+  // Check if URL is a video
+  const isVideoUrl = (url: string): boolean => {
+    if (!url) return false;
+    return url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') || 
+           url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
+  };
+
+  // Get YouTube embed URL
+  const getYoutubeEmbedUrl = (url: string): string | null => {
+    if (!url) return null;
+    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
+    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
   };
 
   const updateMenuItem = (type: 'galette' | 'crepe', index: number, field: keyof MenuItem, value: string) => {
@@ -404,14 +515,26 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
 
       {/* Signature Specials */}
       <div className="card-warm space-y-4">
-        <h3 className="font-display font-bold">✨ Spécialités Signatures</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display font-bold">✨ Spécialités du Week-end</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => window.open('/carte', '_blank')}
+            className="gap-2"
+          >
+            <Eye className="w-4 h-4" />
+            Voir rendu public
+          </Button>
+        </div>
 
         {/* Galette Special */}
-        <div className="p-4 rounded-xl bg-terracotta/5 border border-terracotta/20 space-y-3">
+        <div className="p-4 rounded-xl bg-terracotta/5 border border-terracotta/20 space-y-4">
           <div className="flex items-center gap-2">
             <Flame className="w-5 h-5 text-terracotta" />
-            <Label className="font-semibold">Galette Signature</Label>
+            <Label className="font-semibold">Spécial #1 - Galette Signature</Label>
           </div>
+          
           <Input
             value={formData.galette_special}
             onChange={(e) => setFormData(prev => ({ ...prev, galette_special: e.target.value }))}
@@ -423,14 +546,150 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             placeholder="Ingrédients et description..."
             rows={2}
           />
+          <div className="flex items-center gap-2">
+            <Euro className="w-4 h-4 text-muted-foreground" />
+            <Input
+              value={formData.galette_special_price}
+              onChange={(e) => setFormData(prev => ({ ...prev, galette_special_price: e.target.value }))}
+              placeholder="Prix (ex: 12,50 €)"
+              className="font-mono"
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1">
+              <Image className="w-3 h-3" /> Photo
+            </Label>
+            {formData.galette_special_image_url ? (
+              <div className="relative aspect-video rounded-lg overflow-hidden max-w-xs">
+                <img 
+                  src={formData.galette_special_image_url} 
+                  alt="Galette special" 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, galette_special_image_url: '' }))}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-white hover:bg-destructive/90"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 cursor-pointer hover:border-terracotta/50 transition-colors">
+                {uploadingImage === 'special-galette-image' ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">Ajouter photo</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleSpecialImageUpload('galette', file);
+                  }}
+                  disabled={uploadingImage === 'special-galette-image'}
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Video Upload/URL */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1">
+              <Video className="w-3 h-3" /> Vidéo (upload MP4 ou lien YouTube)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={formData.galette_special_video_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, galette_special_video_url: e.target.value }))}
+                placeholder="https://youtube.com/... ou upload"
+                className="flex-1"
+              />
+              <label className="flex items-center justify-center px-3 rounded-lg border border-input cursor-pointer hover:bg-accent transition-colors">
+                {uploadingVideo === 'special-galette-video' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleSpecialVideoUpload('galette', file);
+                  }}
+                  disabled={uploadingVideo === 'special-galette-video'}
+                />
+              </label>
+              {formData.galette_special_video_url && (
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, galette_special_video_url: '' }))}
+                  className="p-2 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {/* Video Preview */}
+            {formData.galette_special_video_url && (
+              <div className="aspect-video rounded-lg overflow-hidden max-w-xs bg-black">
+                {getYoutubeEmbedUrl(formData.galette_special_video_url) ? (
+                  <iframe
+                    src={getYoutubeEmbedUrl(formData.galette_special_video_url) || ''}
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    src={formData.galette_special_video_url}
+                    controls
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Preview Card */}
+          {formData.galette_special && (
+            <div className="mt-4 p-3 rounded-lg bg-background/80 border border-terracotta/30">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Eye className="w-3 h-3" /> Aperçu
+              </p>
+              <div className="flex gap-3">
+                {formData.galette_special_image_url && (
+                  <img 
+                    src={formData.galette_special_image_url} 
+                    alt="Preview" 
+                    className="w-16 h-16 rounded object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{formData.galette_special}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{formData.galette_special_description}</p>
+                  {formData.galette_special_price && (
+                    <p className="text-sm font-mono text-terracotta mt-1">{formData.galette_special_price}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Crepe Special */}
-        <div className="p-4 rounded-xl bg-caramel/5 border border-caramel/20 space-y-3">
+        <div className="p-4 rounded-xl bg-caramel/5 border border-caramel/20 space-y-4">
           <div className="flex items-center gap-2">
             <Snowflake className="w-5 h-5 text-caramel" />
-            <Label className="font-semibold">Crêpe Signature</Label>
+            <Label className="font-semibold">Spécial #2 - Crêpe Signature</Label>
           </div>
+          
           <Input
             value={formData.crepe_special}
             onChange={(e) => setFormData(prev => ({ ...prev, crepe_special: e.target.value }))}
@@ -442,6 +701,141 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             placeholder="Ingrédients et description..."
             rows={2}
           />
+          <div className="flex items-center gap-2">
+            <Euro className="w-4 h-4 text-muted-foreground" />
+            <Input
+              value={formData.crepe_special_price}
+              onChange={(e) => setFormData(prev => ({ ...prev, crepe_special_price: e.target.value }))}
+              placeholder="Prix (ex: 8,50 €)"
+              className="font-mono"
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1">
+              <Image className="w-3 h-3" /> Photo
+            </Label>
+            {formData.crepe_special_image_url ? (
+              <div className="relative aspect-video rounded-lg overflow-hidden max-w-xs">
+                <img 
+                  src={formData.crepe_special_image_url} 
+                  alt="Crepe special" 
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, crepe_special_image_url: '' }))}
+                  className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-white hover:bg-destructive/90"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 cursor-pointer hover:border-caramel/50 transition-colors">
+                {uploadingImage === 'special-crepe-image' ? (
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                ) : (
+                  <>
+                    <Upload className="w-5 h-5 text-muted-foreground mb-1" />
+                    <span className="text-xs text-muted-foreground">Ajouter photo</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleSpecialImageUpload('crepe', file);
+                  }}
+                  disabled={uploadingImage === 'special-crepe-image'}
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Video Upload/URL */}
+          <div className="space-y-2">
+            <Label className="text-xs flex items-center gap-1">
+              <Video className="w-3 h-3" /> Vidéo (upload MP4 ou lien YouTube)
+            </Label>
+            <div className="flex gap-2">
+              <Input
+                value={formData.crepe_special_video_url}
+                onChange={(e) => setFormData(prev => ({ ...prev, crepe_special_video_url: e.target.value }))}
+                placeholder="https://youtube.com/... ou upload"
+                className="flex-1"
+              />
+              <label className="flex items-center justify-center px-3 rounded-lg border border-input cursor-pointer hover:bg-accent transition-colors">
+                {uploadingVideo === 'special-crepe-video' ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Upload className="w-4 h-4" />
+                )}
+                <input
+                  type="file"
+                  accept="video/mp4,video/webm"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleSpecialVideoUpload('crepe', file);
+                  }}
+                  disabled={uploadingVideo === 'special-crepe-video'}
+                />
+              </label>
+              {formData.crepe_special_video_url && (
+                <button
+                  onClick={() => setFormData(prev => ({ ...prev, crepe_special_video_url: '' }))}
+                  className="p-2 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            {/* Video Preview */}
+            {formData.crepe_special_video_url && (
+              <div className="aspect-video rounded-lg overflow-hidden max-w-xs bg-black">
+                {getYoutubeEmbedUrl(formData.crepe_special_video_url) ? (
+                  <iframe
+                    src={getYoutubeEmbedUrl(formData.crepe_special_video_url) || ''}
+                    className="w-full h-full"
+                    allowFullScreen
+                  />
+                ) : (
+                  <video
+                    src={formData.crepe_special_video_url}
+                    controls
+                    className="w-full h-full object-contain"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Preview Card */}
+          {formData.crepe_special && (
+            <div className="mt-4 p-3 rounded-lg bg-background/80 border border-caramel/30">
+              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
+                <Eye className="w-3 h-3" /> Aperçu
+              </p>
+              <div className="flex gap-3">
+                {formData.crepe_special_image_url && (
+                  <img 
+                    src={formData.crepe_special_image_url} 
+                    alt="Preview" 
+                    className="w-16 h-16 rounded object-cover"
+                  />
+                )}
+                <div className="flex-1">
+                  <p className="font-semibold text-sm">{formData.crepe_special}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{formData.crepe_special_description}</p>
+                  {formData.crepe_special_price && (
+                    <p className="text-sm font-mono text-caramel mt-1">{formData.crepe_special_price}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
