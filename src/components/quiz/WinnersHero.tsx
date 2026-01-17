@@ -130,14 +130,14 @@ const WinnersHero = () => {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-display font-semibold truncate">
-                    {winner.first_name}
+                    {winner.first_name} 🎉
                   </span>
                   <span className="text-xs font-mono bg-primary/10 text-primary px-2 py-0.5 rounded-full flex-shrink-0">
                     {winner.score}/{winner.total_questions}
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground truncate">
-                  {getPrizeLabel(winner.prize_won)}
+                  {getPrizeLabel(winner.prize_won)} • Vu au restaurant
                 </p>
               </div>
             </motion.div>
