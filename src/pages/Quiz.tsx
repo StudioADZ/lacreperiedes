@@ -342,18 +342,18 @@ const Quiz = () => {
             {/* Google Reviews Buttons */}
             <div className="flex gap-3 mt-4 pt-4 border-t border-border/50">
               <a
-                href="https://g.page/r/CVTqauGmET0TEAE/preview"
+                href="https://share.google/BGUgjAnOT3yQfJd12"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"
               >
                 <Button variant="outline" size="sm" className="w-full gap-2 h-10">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs">Voir les avis</span>
+                  <span className="text-xs">Voir la fiche</span>
                 </Button>
               </a>
               <a
-                href="https://g.page/r/CVTqauGmET0TEAE/preview"
+                href="https://g.page/r/CVTqauGmET0TEBM/review"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"

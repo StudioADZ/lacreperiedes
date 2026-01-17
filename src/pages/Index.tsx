@@ -57,25 +57,41 @@ const Index = () => {
           </div>
 
           {/* Typography - sharper and more premium */}
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
-            La Crêperie
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)]">des Saveurs</span>
+          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
+            Crêperie artisanale à Mamers
+            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-2xl md:text-3xl lg:text-4xl mt-2">Galettes et crêpes maison</span>
           </h1>
 
           <p className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide" style={{ animationDelay: "0.3s" }}>
-            Crêpes & Galettes artisanales à Mamers
+            Place Carnot • Galerie des Halles • 72600 Mamers
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: "0.5s" }}>
-            <Link to="/quiz">
-              <Button className="btn-hero group text-base px-8 py-4">
-                <span>Jouez au Quiz</span>
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+          <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap justify-center" style={{ animationDelay: "0.5s" }}>
+            <a
+              href="https://maps.app.goo.gl/6KdHfHSUs1MbzakLA"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="btn-hero group text-base px-6 py-4">
+                <MapPin className="mr-2 w-4 h-4" />
+                <span>Itinéraire</span>
+              </Button>
+            </a>
+            <a href="tel:0259660176">
+              <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
+                <Phone className="mr-2 w-4 h-4" />
+                <span>Appeler</span>
+              </Button>
+            </a>
+            <Link to="/carte">
+              <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
+                <span>Voir la carte</span>
+                <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
             </Link>
-            <Link to="/carte">
-              <button className="btn-secondary-hero text-base px-8 py-4">
-                Découvrir la carte
+            <Link to="/quiz">
+              <button className="btn-secondary-hero text-base px-6 py-4">
+                🎁 Quiz
               </button>
             </Link>
           </div>

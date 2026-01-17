@@ -23,6 +23,7 @@ interface AuthState {
   profile: Profile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 export const useAuth = () => {
@@ -32,7 +33,25 @@ export const useAuth = () => {
     profile: null,
     isLoading: true,
     isAuthenticated: false,
+    isAdmin: false,
   });
+
+  const checkAdminRole = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .eq('role', 'admin')
+        .maybeSingle();
+
+      if (error) throw error;
+      return !!data;
+    } catch (error) {
+      console.error('Error checking admin role:', error);
+      return false;
+    }
+  }, []);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
@@ -56,12 +75,14 @@ export const useAuth = () => {
       async (event, session) => {
         const user = session?.user ?? null;
         let profile: Profile | null = null;
+        let isAdmin = false;
 
         if (user) {
           // Defer profile fetch to avoid blocking
           setTimeout(async () => {
             profile = await fetchProfile(user.id);
-            setState(prev => ({ ...prev, profile }));
+            isAdmin = await checkAdminRole(user.id);
+            setState(prev => ({ ...prev, profile, isAdmin }));
           }, 0);
         }
 
@@ -71,23 +92,27 @@ export const useAuth = () => {
           profile,
           isLoading: false,
           isAuthenticated: !!user,
+          isAdmin,
         });
       }
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user ?? null;
       
       if (user) {
-        fetchProfile(user.id).then(profile => {
-          setState({
-            user,
-            session,
-            profile,
-            isLoading: false,
-            isAuthenticated: true,
-          });
+        const [profile, isAdmin] = await Promise.all([
+          fetchProfile(user.id),
+          checkAdminRole(user.id)
+        ]);
+        setState({
+          user,
+          session,
+          profile,
+          isLoading: false,
+          isAuthenticated: true,
+          isAdmin,
         });
       } else {
         setState(prev => ({ ...prev, isLoading: false }));
@@ -97,7 +122,7 @@ export const useAuth = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, [fetchProfile, checkAdminRole]);
 
   const signUp = async (email: string, password: string, firstName: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -147,6 +172,7 @@ export const useAuth = () => {
       profile: null,
       isLoading: false,
       isAuthenticated: false,
+      isAdmin: false,
     });
   };
 
