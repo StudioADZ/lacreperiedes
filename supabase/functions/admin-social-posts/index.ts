@@ -3,59 +3,94 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  // SAFE: align with actual behavior (action-based API)
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+function json(status: number, payload: Record<string, unknown>) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 // Validate URL format
 function isValidUrl(url: string): boolean {
-  if (typeof url !== 'string' || url.length > 2000) return false;
+  if (typeof url !== "string" || url.length > 2000) return false;
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
   } catch {
     return false;
   }
 }
 
-// Validate network
-function isValidNetwork(network: string): network is 'instagram' | 'facebook' {
-  return network === 'instagram' || network === 'facebook';
+// SAFE: align with your UI needs; add networks you actually use.
+type AllowedNetwork =
+  | "google"
+  | "facebook"
+  | "instagram"
+  | "tiktok"
+  | "youtube"
+  | "whatsapp";
+
+function isValidNetwork(network: string): network is AllowedNetwork {
+  return (
+    network === "google" ||
+    network === "facebook" ||
+    network === "instagram" ||
+    network === "tiktok" ||
+    network === "youtube" ||
+    network === "whatsapp"
+  );
 }
 
 // Validate UUID
 function isValidUUID(id: string): boolean {
-  if (typeof id !== 'string') return false;
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (typeof id !== "string") return false;
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(id);
 }
 
 Deno.serve(async (req) => {
-  // Handle CORS preflight
+  // CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // This endpoint is action-based; keep it POST-only to avoid JSON parse crashes.
+  if (req.method !== "POST") {
+    return json(405, { error: "Method not allowed" });
   }
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const adminPassword = Deno.env.get("ADMIN_PASSWORD");
 
-    if (!adminPassword) {
-      return new Response(
-        JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!adminPassword || !supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing server env config", {
+        hasAdminPassword: Boolean(adminPassword),
+        hasUrl: Boolean(supabaseUrl),
+        hasServiceKey: Boolean(supabaseServiceKey),
+      });
+      return json(500, { error: "Server configuration error" });
     }
 
-    const body = await req.json();
-    const { action, password, ...data } = body;
+    // Safe JSON parse
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return json(400, { error: "Invalid JSON body" });
+    }
+
+    const { action, password, ...data } = body ?? {};
 
     // Validate admin password
     if (!password || password !== adminPassword) {
-      return new Response(
-        JSON.stringify({ error: "Invalid admin password" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+      return json(401, { error: "Invalid admin password" });
     }
 
     // Create service role client to bypass RLS
@@ -66,137 +101,107 @@ Deno.serve(async (req) => {
         const { data: posts, error } = await supabase
           .from("social_posts")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("created_at", { ascending: false })
+          .limit(200); // SAFE limit
 
         if (error) {
           console.error("List error:", error.message);
-          return new Response(
-            JSON.stringify({ error: "Failed to fetch posts" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(500, { error: "Failed to fetch posts" });
         }
 
-        return new Response(
-          JSON.stringify({ posts }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json(200, { posts: posts ?? [] });
       }
 
       case "create": {
-        const { url, network } = data;
+        const urlRaw = data?.url;
+        const networkRaw = data?.network;
+
+        const url = typeof urlRaw === "string" ? urlRaw.trim() : "";
+        const network = typeof networkRaw === "string" ? networkRaw.trim().toLowerCase() : "";
 
         if (!url || !isValidUrl(url)) {
-          return new Response(
-            JSON.stringify({ error: "Invalid URL" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(400, { error: "Invalid URL" });
         }
 
         if (!network || !isValidNetwork(network)) {
-          return new Response(
-            JSON.stringify({ error: "Invalid network" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(400, { error: "Invalid network" });
         }
 
-        const { error } = await supabase
-          .from("social_posts")
-          .insert({
-            url: url.trim(),
-            network,
-            is_visible: true,
-          });
+        const { error } = await supabase.from("social_posts").insert({
+          url,
+          network,
+          is_visible: true,
+        });
 
         if (error) {
           console.error("Create error:", error.message);
-          return new Response(
-            JSON.stringify({ error: "Failed to create post" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(500, { error: "Failed to create post" });
         }
 
-        return new Response(
-          JSON.stringify({ success: true }),
-          { status: 201, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json(201, { success: true });
       }
 
       case "update": {
-        const { id, is_visible } = data;
+        const { id, is_visible } = data ?? {};
 
         if (!id || !isValidUUID(id)) {
-          return new Response(
-            JSON.stringify({ error: "Invalid post ID" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(400, { error: "Invalid post ID" });
         }
 
         if (typeof is_visible !== "boolean") {
-          return new Response(
-            JSON.stringify({ error: "Invalid visibility value" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(400, { error: "Invalid visibility value" });
         }
 
-        const { error } = await supabase
+        // SAFE: detect "no rows updated"
+        const { data: updated, error } = await supabase
           .from("social_posts")
           .update({ is_visible })
-          .eq("id", id);
+          .eq("id", id)
+          .select("id")
+          .maybeSingle();
 
         if (error) {
           console.error("Update error:", error.message);
-          return new Response(
-            JSON.stringify({ error: "Failed to update post" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(500, { error: "Failed to update post" });
         }
 
-        return new Response(
-          JSON.stringify({ success: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Keep success contract; optional warning if you want:
+        // if (!updated) return json(200, { success: true, warning: "not_found" });
+
+        return json(200, { success: true });
       }
 
       case "delete": {
-        const { id } = data;
+        const { id } = data ?? {};
 
         if (!id || !isValidUUID(id)) {
-          return new Response(
-            JSON.stringify({ error: "Invalid post ID" }),
-            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(400, { error: "Invalid post ID" });
         }
 
-        const { error } = await supabase
+        // SAFE: detect "no rows deleted"
+        const { data: deleted, error } = await supabase
           .from("social_posts")
           .delete()
-          .eq("id", id);
+          .eq("id", id)
+          .select("id")
+          .maybeSingle();
 
         if (error) {
           console.error("Delete error:", error.message);
-          return new Response(
-            JSON.stringify({ error: "Failed to delete post" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-          );
+          return json(500, { error: "Failed to delete post" });
         }
 
-        return new Response(
-          JSON.stringify({ success: true }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Optional warning:
+        // if (!deleted) return json(200, { success: true, warning: "not_found" });
+
+        return json(200, { success: true });
       }
 
       default:
-        return new Response(
-          JSON.stringify({ error: "Invalid action" }),
-          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        return json(400, { error: "Invalid action" });
     }
   } catch (error) {
     console.error("Server error:", error instanceof Error ? error.message : "Unknown error");
-    return new Response(
-      JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    return json(500, { error: "Internal server error" });
   }
 });
