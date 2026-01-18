@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from "@supabase/supabase-js";
 
 interface Profile {
   id: string;
@@ -36,93 +36,100 @@ export const useAuth = () => {
     isAdmin: false,
   });
 
+  // Prevent stale async updates from overwriting fresh auth state
+  const requestIdRef = useRef(0);
+  const mountedRef = useRef(true);
+
   const checkAdminRole = useCallback(async (userId: string) => {
     try {
       const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .eq('role', 'admin')
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin")
         .maybeSingle();
 
       if (error) throw error;
       return !!data;
     } catch (error) {
-      console.error('Error checking admin role:', error);
+      console.error("Error checking admin role:", error);
       return false;
     }
   }, []);
 
   const fetchProfile = useCallback(async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
+      const { data, error } = await supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle();
       if (error) throw error;
-      return data as Profile | null;
+      return (data as Profile) ?? null;
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error("Error fetching profile:", error);
       return null;
     }
   }, []);
 
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const user = session?.user ?? null;
-        let profile: Profile | null = null;
-        let isAdmin = false;
+  const applySession = useCallback(
+    async (session: Session | null) => {
+      const currentRequestId = ++requestIdRef.current;
 
-        if (user) {
-          // Defer profile fetch to avoid blocking
-          setTimeout(async () => {
-            profile = await fetchProfile(user.id);
-            isAdmin = await checkAdminRole(user.id);
-            setState(prev => ({ ...prev, profile, isAdmin }));
-          }, 0);
-        }
-
-        setState({
-          user,
-          session,
-          profile,
-          isLoading: false,
-          isAuthenticated: !!user,
-          isAdmin,
-        });
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
       const user = session?.user ?? null;
-      
-      if (user) {
-        const [profile, isAdmin] = await Promise.all([
-          fetchProfile(user.id),
-          checkAdminRole(user.id)
-        ]);
-        setState({
-          user,
-          session,
-          profile,
-          isLoading: false,
-          isAuthenticated: true,
-          isAdmin,
-        });
-      } else {
-        setState(prev => ({ ...prev, isLoading: false }));
-      }
+
+      // Base state first (fast, no async)
+      setState((prev) => ({
+        ...prev,
+        user,
+        session,
+        isLoading: false,
+        isAuthenticated: !!user,
+        // keep previous profile/isAdmin while loading enrichment to avoid flicker
+        ...(user ? {} : { profile: null, isAdmin: false }),
+      }));
+
+      if (!user) return;
+
+      // Enrich in parallel
+      const [profile, isAdmin] = await Promise.all([fetchProfile(user.id), checkAdminRole(user.id)]);
+
+      // Ignore if component unmounted or newer auth event already happened
+      if (!mountedRef.current) return;
+      if (currentRequestId !== requestIdRef.current) return;
+
+      setState((prev) => ({
+        ...prev,
+        profile,
+        isAdmin,
+      }));
+    },
+    [fetchProfile, checkAdminRole],
+  );
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    // Listen to auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      await applySession(session);
     });
 
+    // Hydrate existing session
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        await applySession(session);
+      })
+      .catch(() => {
+        // Even if getSession fails, we should stop loading
+        if (!mountedRef.current) return;
+        setState((prev) => ({ ...prev, isLoading: false }));
+      });
+
     return () => {
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, [fetchProfile, checkAdminRole]);
+  }, [applySession]);
 
   const signUp = async (email: string, password: string, firstName: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -130,34 +137,26 @@ export const useAuth = () => {
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: {
-          first_name: firstName,
-        },
+        data: { first_name: firstName },
       },
     });
-    
+
     if (error) throw error;
     return data;
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     return data;
   };
 
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
+      provider: "google",
+      options: { redirectTo: window.location.origin },
     });
-    
+
     if (error) throw error;
     return data;
   };
@@ -165,7 +164,9 @@ export const useAuth = () => {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    
+
+    // Reset immediately (listener will also receive the event; requestId guard prevents stale overwrites)
+    requestIdRef.current++;
     setState({
       user: null,
       session: null,
@@ -177,25 +178,31 @@ export const useAuth = () => {
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    if (!state.user) throw new Error('Not authenticated');
+    if (!state.user) throw new Error("Not authenticated");
 
     const { data, error } = await supabase
-      .from('profiles')
+      .from("profiles")
       .update(updates)
-      .eq('user_id', state.user.id)
+      .eq("user_id", state.user.id)
       .select()
       .single();
 
     if (error) throw error;
-    
-    setState(prev => ({ ...prev, profile: data as Profile }));
+
+    setState((prev) => ({ ...prev, profile: data as Profile }));
     return data;
   };
 
   const refreshProfile = useCallback(async () => {
     if (!state.user) return;
+
+    const currentRequestId = ++requestIdRef.current;
     const profile = await fetchProfile(state.user.id);
-    setState(prev => ({ ...prev, profile }));
+
+    if (!mountedRef.current) return;
+    if (currentRequestId !== requestIdRef.current) return;
+
+    setState((prev) => ({ ...prev, profile }));
   }, [state.user, fetchProfile]);
 
   return {
