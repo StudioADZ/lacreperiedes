@@ -6,48 +6,60 @@ const GOOGLE_REVIEW_LINK = "https://g.page/r/CVTqauGmET0TEBM/review";
 interface GoogleReviewCTAProps {
   variant?: "default" | "compact" | "card";
   className?: string;
+  /**
+   * Optional: override the default label without changing logic
+   */
+  label?: string;
 }
 
-const GoogleReviewCTA = ({ variant = "default", className = "" }: GoogleReviewCTAProps) => {
+const GoogleReviewCTA = ({
+  variant = "default",
+  className = "",
+  label = "Laisser un avis Google",
+}: GoogleReviewCTAProps) => {
+  const linkProps = {
+    href: GOOGLE_REVIEW_LINK,
+    target: "_blank",
+    rel: "noopener noreferrer",
+    title: "Ouvre Google Reviews dans un nouvel onglet",
+    "aria-label": "Laisser un avis Google (ouvre un nouvel onglet)",
+  };
+
   if (variant === "compact") {
     return (
-      <a
-        href={GOOGLE_REVIEW_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`inline-flex items-center gap-2 ${className}`}
-      >
-        <Button variant="outline" size="sm" className="gap-2">
-          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-          Laisser un avis Google
-          <ExternalLink className="w-3 h-3 opacity-50" />
+      <div className={className}>
+        <Button asChild variant="outline" size="sm" className="gap-2">
+          <a {...linkProps}>
+            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+            {label}
+            <ExternalLink className="w-3 h-3 opacity-50" />
+          </a>
         </Button>
-      </a>
+      </div>
     );
   }
 
   if (variant === "card") {
     return (
       <div className={`card-warm text-center ${className}`}>
-        <div className="flex items-center justify-center gap-1 mb-2">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <Star key={star} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+        <div className="flex items-center justify-center gap-1 mb-2" aria-hidden="true">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
           ))}
         </div>
+
         <p className="text-sm text-muted-foreground mb-4">
           Votre avis nous aide à nous améliorer !
         </p>
-        <a
-          href={GOOGLE_REVIEW_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Button className="w-full gap-2">
+
+        <Button asChild className="w-full gap-2">
+          <a {...linkProps}>
             <Star className="w-4 h-4" />
-            Laisser un avis Google
+            {label}
             <ExternalLink className="w-3 h-3 opacity-50" />
-          </Button>
-        </a>
+          </a>
+        </Button>
+
         <p className="text-xs text-muted-foreground mt-3">
           Merci, ça aide énormément une petite crêperie locale. 💛
         </p>
@@ -58,17 +70,14 @@ const GoogleReviewCTA = ({ variant = "default", className = "" }: GoogleReviewCT
   // Default variant
   return (
     <div className={`text-center ${className}`}>
-      <a
-        href={GOOGLE_REVIEW_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Button variant="outline" className="gap-2">
+      <Button asChild variant="outline" className="gap-2">
+        <a {...linkProps}>
           <Star className="w-5 h-5 text-yellow-500 fill-yellow-500" />
-          Laisser un avis Google
+          {label}
           <ExternalLink className="w-4 h-4 opacity-50" />
-        </Button>
-      </a>
+        </a>
+      </Button>
+
       <p className="text-xs text-muted-foreground mt-2">
         Merci, ça aide énormément une petite crêperie locale. 💛
       </p>
