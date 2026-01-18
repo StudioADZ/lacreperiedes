@@ -95,6 +95,9 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
         </div>
         <h2 className="font-display text-xl font-bold">Messagerie</h2>
         <p className="text-sm text-muted-foreground">
+          Messages envoyés par les utilisateurs pour améliorer l'application
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
           {unreadCount > 0 ? `${unreadCount} message(s) non lu(s)` : 'Tous les messages sont lus'}
         </p>
         <Button 
@@ -113,9 +116,9 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
         {messages.length === 0 ? (
           <div className="card-warm text-center py-8">
             <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-muted-foreground">Aucun message pour l'instant</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Les messages des clients apparaîtront ici
+            <p className="text-muted-foreground font-medium">Aucun message reçu</p>
+            <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+              Lorsque des clients enverront des messages via le formulaire de contact, ils apparaîtront ici.
             </p>
           </div>
         ) : (

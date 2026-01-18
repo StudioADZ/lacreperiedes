@@ -244,10 +244,13 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher prénom, email, tél, code..."
+              placeholder="Prénom, email, téléphone ou code..."
               className="pl-9"
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Utilisez les filtres ci-dessous pour afficher les gagnants ou voir les données complètes.
+          </p>
 
           <div className="flex flex-wrap gap-2">
             <Button

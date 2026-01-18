@@ -56,45 +56,36 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Typography - sharper and more premium */}
+          {/* Typography - Quiz focus */}
           <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
-            Crêperie artisanale à Mamers
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-2xl md:text-3xl lg:text-4xl mt-2">Galettes et crêpes maison</span>
+            Gagnez des crêpes chaque semaine
+            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-xl md:text-2xl lg:text-3xl mt-2 font-normal">Participez au quiz et tentez de remporter une crêpe, une galette ou une formule.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide" style={{ animationDelay: "0.3s" }}>
-            Place Carnot • Galerie des Halles • 72600 Mamers
+            La Crêperie des Saveurs • Mamers
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap justify-center" style={{ animationDelay: "0.5s" }}>
-            <a
-              href="https://maps.app.goo.gl/6KdHfHSUs1MbzakLA"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button className="btn-hero group text-base px-6 py-4">
-                <MapPin className="mr-2 w-4 h-4" />
-                <span>Itinéraire</span>
+            {/* CTA Principal - Quiz */}
+            <Link to="/quiz">
+              <Button className="btn-hero group text-base px-8 py-4">
+                🎁 Jouer au quiz
+                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
-            </a>
-            <a href="tel:0259660176">
-              <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
-                <Phone className="mr-2 w-4 h-4" />
-                <span>Appeler</span>
-              </Button>
-            </a>
+            </Link>
+            {/* Secondaires */}
             <Link to="/carte">
               <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
-                <span>Voir la carte</span>
-                <ArrowRight className="ml-2 w-4 h-4" />
+                <span>Voir le menu classique</span>
               </Button>
             </Link>
-            <Link to="/quiz">
-              <button className="btn-secondary-hero text-base px-6 py-4">
-                🎁 Quiz
-              </button>
-            </Link>
           </div>
+          
+          {/* Texte discret */}
+          <p className="text-sm text-white/70 mt-6 animate-fade-in" style={{ animationDelay: "0.7s" }}>
+            Le menu secret se débloque après participation au quiz.
+          </p>
         </div>
 
         {/* Scroll indicator */}
@@ -202,14 +193,17 @@ const Index = () => {
                 🎁 Chaque semaine
               </span>
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-espresso">
-                Gagnez des crêpes gratuites !
+                Quiz & Récompenses
               </h2>
-              <p className="text-espresso/80 text-sm mb-6 max-w-xs">
+              <p className="text-espresso/80 text-sm mb-4 max-w-xs">
                 Participez à notre quiz hebdomadaire et tentez de remporter une formule complète, une galette ou une crêpe.
+              </p>
+              <p className="text-espresso/60 text-xs mb-6 max-w-xs">
+                Un code obtenu via le quiz est nécessaire pour débloquer la carte secrète.
               </p>
               <Link to="/quiz">
                 <Button className="btn-hero group w-full sm:w-auto">
-                  <span>Jouer maintenant</span>
+                  <span>Jouer au quiz</span>
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

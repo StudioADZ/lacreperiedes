@@ -89,6 +89,9 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
         <p className="text-sm text-muted-foreground">
           Fonctionnalité en préparation
         </p>
+        <p className="text-xs text-muted-foreground mt-2">
+          Aucun paiement actif actuellement
+        </p>
       </div>
 
       {/* Status Card */}
