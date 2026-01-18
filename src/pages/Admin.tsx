@@ -15,6 +15,8 @@ import {
   Newspaper,
   Sparkles,
   ChefHat,
+  Mail,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +29,6 @@ import QuizParticipationsPanel from "@/components/admin/QuizParticipationsPanel"
 import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
 import MessagesPanel from "@/components/admin/MessagesPanel";
 import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
-import { Mail, CreditCard } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -70,9 +71,14 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "quiz" | "messages" | "payment">("scan");
+  const [activeTab, setActiveTab] = useState<
+    "scan" | "stats" | "actus" | "splash" | "menu" | "quiz" | "messages" | "payment"
+  >("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
+
+  // ✅ UX: dernière mise à jour (affichage seulement)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
   const storedPassword = useRef("");
 
@@ -109,6 +115,7 @@ const Admin = () => {
       sessionStorage.setItem("admin_auth", password);
       setIsAuthenticated(true);
       setStats(data);
+      setLastUpdated(new Date());
     } catch (error) {
       setAuthError("Erreur de connexion");
     } finally {
@@ -127,55 +134,59 @@ const Admin = () => {
       if (response.ok) {
         const data = await response.json();
         setStats(data);
+        setLastUpdated(new Date());
       }
     } catch (error) {
       console.error("Stats fetch error:", error);
     }
   };
 
-  const handleVerify = useCallback(async (code: string) => {
-    if (!code.trim()) return;
+  const handleVerify = useCallback(
+    async (code: string) => {
+      if (!code.trim()) return;
 
-    // Prevent duplicate scans
-    if (code.toUpperCase() === lastScannedCode) return;
-    setLastScannedCode(code.toUpperCase());
+      // Prevent duplicate scans
+      if (code.toUpperCase() === lastScannedCode) return;
+      setLastScannedCode(code.toUpperCase());
 
-    setIsLoading(true);
-    setResult(null);
-    setManualCode(code.toUpperCase());
+      setIsLoading(true);
+      setResult(null);
+      setManualCode(code.toUpperCase());
 
-    // Stop scanner while showing result
-    setScannerActive(false);
+      // Stop scanner while showing result
+      setScannerActive(false);
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "verify",
-          code: code.toUpperCase(),
-          adminPassword: storedPassword.current,
-        }),
-      });
-
-      const data = await response.json();
-      setResult(data);
-
-      // Celebration for valid unclaimed prize
-      if (data.valid && !data.claimed) {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ["#b8860b", "#daa520", "#ffd700", "#228b22"],
+      try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "verify",
+            code: code.toUpperCase(),
+            adminPassword: storedPassword.current,
+          }),
         });
+
+        const data = await response.json();
+        setResult(data);
+
+        // Celebration for valid unclaimed prize
+        if (data.valid && !data.claimed) {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ["#b8860b", "#daa520", "#ffd700", "#228b22"],
+          });
+        }
+      } catch (error) {
+        setResult({ valid: false, error: "connection_error", message: "Erreur de connexion" });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setResult({ valid: false, error: "connection_error", message: "Erreur de connexion" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [lastScannedCode]);
+    },
+    [lastScannedCode]
+  );
 
   const handleClaim = async () => {
     if (!result?.id) return;
@@ -220,15 +231,27 @@ const Admin = () => {
     setLastScannedCode(null);
   };
 
+  // ✅ UX SAFE: déconnexion (aucune logique métier modifiée)
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_auth");
+    storedPassword.current = "";
+    setIsAuthenticated(false);
+    setPassword("");
+    setAuthError("");
+    setManualCode("");
+    setResult(null);
+    setStats(null);
+    setActiveTab("scan");
+    setScannerActive(false);
+    setLastScannedCode(null);
+    setLastUpdated(null);
+  };
+
   // Login screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card-warm w-full max-w-sm"
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card-warm w-full max-w-sm">
           <div className="text-center mb-6">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-primary" />
@@ -265,9 +288,34 @@ const Admin = () => {
     <div className="min-h-screen pt-20 pb-24 px-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
-          <p className="text-sm text-muted-foreground">Validation des lots quiz</p>
+        <div className="mb-6">
+          <div className="text-center">
+            <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
+            <p className="text-sm text-muted-foreground">Validation des lots quiz</p>
+
+            {/* ✅ UX only */}
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Semaine du lundi 00h01 au dimanche 23h59 — les gains expirent dimanche à 23h59.
+            </p>
+
+            {lastUpdated && (
+              <p className="text-[10px] text-muted-foreground mt-1">
+                Dernière mise à jour :{" "}
+                {lastUpdated.toLocaleString("fr-FR", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </p>
+            )}
+          </div>
+
+          <div className="flex justify-end mt-3">
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Déconnexion
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
@@ -309,6 +357,7 @@ const Admin = () => {
             <span className="text-[10px]">Menu</span>
           </Button>
         </div>
+
         <div className="grid grid-cols-4 gap-1.5 mb-6">
           <Button
             variant={activeTab === "messages" ? "default" : "outline"}
@@ -348,20 +397,18 @@ const Admin = () => {
           </Button>
         </div>
 
-        {activeTab === "menu" && (
-          <SecretMenuAdminPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "menu" && <SecretMenuAdminPanel adminPassword={storedPassword.current} />}
 
-        {activeTab === "messages" && (
-          <MessagesPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "messages" && <MessagesPanel adminPassword={storedPassword.current} />}
 
-        {activeTab === "payment" && (
-          <PaymentQRPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "payment" && <PaymentQRPanel adminPassword={storedPassword.current} />}
 
         {activeTab === "scan" && (
           <div className="space-y-6">
+            <p className="text-xs text-muted-foreground -mt-2">
+              1) Scanner ou saisir un code • 2) Vérifier • 3) Marquer comme utilisé uniquement au moment du retrait.
+            </p>
+
             {/* QR Scanner */}
             {!result && (
               <div className="card-warm">
@@ -388,7 +435,7 @@ const Admin = () => {
                     )}
                   </Button>
                 </div>
-                
+
                 {scannerActive ? (
                   <QRScanner onScan={handleVerify} isActive={scannerActive} />
                 ) : (
@@ -421,9 +468,7 @@ const Admin = () => {
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Saisissez le code du QR si le scan ne fonctionne pas.
-                </p>
+                <p className="text-xs text-muted-foreground mt-2">Saisissez le code du QR si le scan ne fonctionne pas.</p>
               </div>
             )}
 
@@ -439,8 +484,8 @@ const Admin = () => {
                     result.valid && !result.claimed
                       ? "border-2 border-herb shadow-[0_0_30px_-8px_hsl(140_35%_40%_/_0.3)]"
                       : result.claimed
-                        ? "border-muted"
-                        : "border-destructive/30"
+                      ? "border-muted"
+                      : "border-destructive/30"
                   }`}
                 >
                   {/* Status Icon */}
@@ -452,8 +497,8 @@ const Admin = () => {
                       result.valid && !result.claimed
                         ? "bg-herb/10"
                         : result.claimed
-                          ? "bg-muted"
-                          : "bg-destructive/10"
+                        ? "bg-muted"
+                        : "bg-destructive/10"
                     }`}
                   >
                     {result.valid && !result.claimed ? (
@@ -473,7 +518,9 @@ const Admin = () => {
                           result.claimed ? "bg-muted text-muted-foreground" : "bg-herb/10 text-herb"
                         }`}
                       >
-                        {result.claimed ? "❌ DÉJÀ UTILISÉ — Ce lot a déjà été réclamé" : "✓ QR VALIDE — Lot disponible"}
+                        {result.claimed
+                          ? "❌ DÉJÀ UTILISÉ — Ce lot a déjà été réclamé"
+                          : "✓ QR VALIDE — Lot disponible"}
                       </div>
 
                       {/* Winner Info */}
@@ -522,7 +569,9 @@ const Admin = () => {
                   ) : (
                     <>
                       <h2 className="font-display text-xl font-bold text-destructive mb-2">QR invalide ou inexistant</h2>
-                      <p className="text-muted-foreground">{result.message || "Ce code n'existe pas ou a déjà été invalidé."}</p>
+                      <p className="text-muted-foreground">
+                        {result.message || "Ce code n'existe pas ou a déjà été invalidé."}
+                      </p>
                     </>
                   )}
 
@@ -548,6 +597,10 @@ const Admin = () => {
                 })}
               </p>
             </div>
+
+            <p className="text-xs text-muted-foreground text-center -mt-2">
+              Ces chiffres concernent uniquement la semaine affichée.
+            </p>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-3">
@@ -610,9 +663,7 @@ const Admin = () => {
           </motion.div>
         )}
 
-        {activeTab === "quiz" && (
-          <QuizParticipationsPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "quiz" && <QuizParticipationsPanel adminPassword={storedPassword.current} />}
 
         {activeTab === "actus" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
