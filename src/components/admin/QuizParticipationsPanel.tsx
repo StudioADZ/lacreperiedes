@@ -237,6 +237,16 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
           <Badge variant="outline">{participations.length} total</Badge>
         </div>
 
+        {/* Quiz Period Info */}
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 mb-4">
+          <p className="text-xs text-primary font-medium">
+            📅 Période active : lundi 00h01 → dimanche 23h59
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            ⚠️ Les gains expirent automatiquement après dimanche 23h59.
+          </p>
+        </div>
+
         {/* Filters */}
         <div className="space-y-3">
           <div className="relative">
