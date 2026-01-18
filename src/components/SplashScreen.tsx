@@ -32,38 +32,67 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // ✅ Guard: si env vars absentes, on ne fetch pas (fallback default)
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+
     const fetchSettings = async () => {
       try {
         const response = await fetch(
           `${SUPABASE_URL}/rest/v1/splash_settings?is_active=eq.true&limit=1`,
           {
+            signal: controller.signal,
             headers: {
               apikey: SUPABASE_KEY,
               Authorization: `Bearer ${SUPABASE_KEY}`,
             },
-          }
+          },
         );
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.length > 0) {
-            setConfig({
-              event_title: data[0].event_title || DEFAULT_CONFIG.event_title,
-              event_subtitle: data[0].event_subtitle || DEFAULT_CONFIG.event_subtitle,
-              game_line: data[0].game_line || DEFAULT_CONFIG.game_line,
-              cta_text: data[0].cta_text || DEFAULT_CONFIG.cta_text,
-              background_image_url: data[0].background_image_url,
-            });
+        if (!response.ok) {
+          // en prod: fallback silencieux
+          // en dev: utile de voir le statut
+          if (import.meta.env.DEV) {
+            console.warn("Splash settings fetch failed:", response.status, response.statusText);
           }
+          return;
+        }
+
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          const row = data[0] ?? {};
+          const bg = typeof row.background_image_url === "string" ? row.background_image_url.trim() : "";
+
+          setConfig({
+            event_title: row.event_title || DEFAULT_CONFIG.event_title,
+            event_subtitle: row.event_subtitle || DEFAULT_CONFIG.event_subtitle,
+            game_line: row.game_line || DEFAULT_CONFIG.game_line,
+            cta_text: row.cta_text || DEFAULT_CONFIG.cta_text,
+            background_image_url: bg ? bg : null,
+          });
         }
       } catch (err) {
-        console.log("Using default splash config");
+        // AbortError = normal si unmount
+        if (err instanceof DOMException && err.name === "AbortError") return;
+
+        if (import.meta.env.DEV) {
+          console.warn("Using default splash config (fetch error):", err);
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSettings();
+
+    return () => {
+      controller.abort();
+    };
   }, []);
 
   const handleEnter = () => {
@@ -71,7 +100,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     setTimeout(onComplete, 600);
   };
 
-  const backgroundStyle = config.background_image_url
+  const hasBackgroundImage = !!config.background_image_url;
+
+  const backgroundStyle = hasBackgroundImage
     ? {
         backgroundImage: `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.4)), url(${config.background_image_url})`,
         backgroundSize: "cover",
@@ -86,11 +117,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         )`,
       };
 
-  const hasBackgroundImage = !!config.background_image_url;
-
   return (
     <div
-      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden transition-opacity duration-600 ${
+      className={`fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden transition-opacity duration-[600ms] ${
         isExiting ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
       style={backgroundStyle}
@@ -111,7 +140,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       {/* Warm glow effect - only show when no image */}
       {!hasBackgroundImage && (
         <div className="absolute inset-0 pointer-events-none">
-          <div 
+          <div
             className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-20"
             style={{ background: "hsl(32 65% 45%)" }}
           />
@@ -119,40 +148,49 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       )}
 
       {/* Content container */}
-      <div className={`relative flex flex-col items-center text-center px-6 max-w-md transition-all duration-700 ${
-        isExiting ? "scale-90 opacity-0" : "scale-100 opacity-100"
-      }`}>
+      <div
+        className={`relative flex flex-col items-center text-center px-6 max-w-md transition-all duration-700 ${
+          isExiting ? "scale-90 opacity-0" : "scale-100 opacity-100"
+        }`}
+      >
         {/* Logo */}
         <div className="relative mb-8">
           <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden shadow-[0_8px_40px_-8px_hsl(32_65%_45%_/_0.4)] border-4 border-butter/50 splash-logo">
-            <img
-              src={logo}
-              alt="La Crêperie des Saveurs"
-              className="w-full h-full object-cover"
-            />
+            <img src={logo} alt="La Crêperie des Saveurs" className="w-full h-full object-cover" />
           </div>
           {/* Glow ring */}
-          <div className="absolute inset-0 rounded-full blur-2xl opacity-30 -z-10 scale-125" style={{ background: "hsl(32 65% 45%)" }} />
+          <div
+            className="absolute inset-0 rounded-full blur-2xl opacity-30 -z-10 scale-125"
+            style={{ background: "hsl(32 65% 45%)" }}
+          />
         </div>
 
         {/* Event Title */}
-        <h1 className={`font-display text-3xl md:text-4xl font-semibold mb-3 animate-fade-in ${
-          hasBackgroundImage ? 'text-white drop-shadow-lg' : 'text-espresso'
-        }`}>
+        <h1
+          className={`font-display text-3xl md:text-4xl font-semibold mb-3 animate-fade-in ${
+            hasBackgroundImage ? "text-white drop-shadow-lg" : "text-espresso"
+          }`}
+        >
           {isLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : config.event_title}
         </h1>
 
         {/* Subtitle */}
-        <p className={`text-base md:text-lg font-serif mb-2 animate-fade-in ${
-          hasBackgroundImage ? 'text-white/90' : 'text-muted-foreground'
-        }`} style={{ animationDelay: "0.1s" }}>
+        <p
+          className={`text-base md:text-lg font-serif mb-2 animate-fade-in ${
+            hasBackgroundImage ? "text-white/90" : "text-muted-foreground"
+          }`}
+          style={{ animationDelay: "0.1s" }}
+        >
           {config.event_subtitle}
         </p>
 
         {/* Game line */}
-        <p className={`text-sm font-medium uppercase tracking-wider mb-10 animate-fade-in ${
-          hasBackgroundImage ? 'text-caramel-light' : 'text-caramel'
-        }`} style={{ animationDelay: "0.2s" }}>
+        <p
+          className={`text-sm font-medium uppercase tracking-wider mb-10 animate-fade-in ${
+            hasBackgroundImage ? "text-caramel-light" : "text-caramel"
+          }`}
+          style={{ animationDelay: "0.2s" }}
+        >
           {config.game_line}
         </p>
 
@@ -170,7 +208,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       {/* Bottom decorative line */}
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div className={`w-16 h-1 rounded-full ${hasBackgroundImage ? 'bg-white/30' : 'bg-caramel/30'}`} />
+        <div className={`w-16 h-1 rounded-full ${hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"}`} />
       </div>
     </div>
   );
