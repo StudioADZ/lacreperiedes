@@ -25,11 +25,47 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // Length limits for validation
+  const MAX_NAME_LENGTH = 100;
+  const MAX_EMAIL_LENGTH = 254;
+  const MAX_PHONE_LENGTH = 20;
+  const MAX_SUBJECT_LENGTH = 200;
+  const MAX_MESSAGE_LENGTH = 5000;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name.trim() || !formData.message.trim()) {
+    const name = formData.name.trim();
+    const message = formData.message.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const subject = formData.subject.trim();
+    
+    // Validate required fields
+    if (!name || !message) {
       toast.error('Veuillez remplir votre nom et votre message');
+      return;
+    }
+
+    // Validate length limits
+    if (name.length > MAX_NAME_LENGTH) {
+      toast.error(`Le nom ne peut pas dépasser ${MAX_NAME_LENGTH} caractères`);
+      return;
+    }
+    if (email.length > MAX_EMAIL_LENGTH) {
+      toast.error(`L'email ne peut pas dépasser ${MAX_EMAIL_LENGTH} caractères`);
+      return;
+    }
+    if (phone.length > MAX_PHONE_LENGTH) {
+      toast.error(`Le téléphone ne peut pas dépasser ${MAX_PHONE_LENGTH} caractères`);
+      return;
+    }
+    if (subject.length > MAX_SUBJECT_LENGTH) {
+      toast.error(`Le sujet ne peut pas dépasser ${MAX_SUBJECT_LENGTH} caractères`);
+      return;
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+      toast.error(`Le message ne peut pas dépasser ${MAX_MESSAGE_LENGTH} caractères`);
       return;
     }
 
@@ -40,11 +76,11 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
         .from('messages')
         .insert({
           sender_type: 'client',
-          sender_name: formData.name,
-          sender_email: formData.email || null,
-          sender_phone: formData.phone || null,
-          subject: formData.subject || null,
-          message: formData.message,
+          sender_name: name.slice(0, MAX_NAME_LENGTH),
+          sender_email: email ? email.slice(0, MAX_EMAIL_LENGTH) : null,
+          sender_phone: phone ? phone.slice(0, MAX_PHONE_LENGTH) : null,
+          subject: subject ? subject.slice(0, MAX_SUBJECT_LENGTH) : null,
+          message: message.slice(0, MAX_MESSAGE_LENGTH),
         });
 
       if (error) throw error;
@@ -108,8 +144,9 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value.slice(0, MAX_NAME_LENGTH) }))}
             placeholder="Votre nom"
+            maxLength={MAX_NAME_LENGTH}
             required
           />
         </div>
@@ -122,8 +159,9 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
             id="email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value.slice(0, MAX_EMAIL_LENGTH) }))}
             placeholder="votre@email.com"
+            maxLength={MAX_EMAIL_LENGTH}
           />
         </div>
       </div>
@@ -136,8 +174,9 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
           id="phone"
           type="tel"
           value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.slice(0, MAX_PHONE_LENGTH) }))}
           placeholder="06 12 34 56 78"
+          maxLength={MAX_PHONE_LENGTH}
         />
       </div>
 
@@ -146,8 +185,9 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
         <Input
           id="subject"
           value={formData.subject}
-          onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value.slice(0, MAX_SUBJECT_LENGTH) }))}
           placeholder="Objet de votre message"
+          maxLength={MAX_SUBJECT_LENGTH}
         />
       </div>
 
@@ -156,11 +196,15 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
         <Textarea
           id="message"
           value={formData.message}
-          onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, MAX_MESSAGE_LENGTH) }))}
           placeholder="Votre message..."
           rows={4}
+          maxLength={MAX_MESSAGE_LENGTH}
           required
         />
+        <p className="text-xs text-muted-foreground text-right">
+          {formData.message.length}/{MAX_MESSAGE_LENGTH}
+        </p>
       </div>
 
       <Button
