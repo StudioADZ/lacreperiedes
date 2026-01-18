@@ -8,10 +8,16 @@ import SocialFooter from "@/components/SocialFooter";
 import GoogleMap from "@/components/home/GoogleMap";
 import BookingCTA from "@/components/home/BookingCTA";
 import SocialWall from "@/components/home/SocialWall";
+import { motion } from "framer-motion";
 
 const Index = () => {
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]">
+    <motion.div
+      className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2 }}
+    >
       {/* Hero Section - Premium quality */}
       <section className="relative h-[85vh] min-h-[600px] overflow-hidden">
         {/* Background Image with blur and darkening */}
@@ -26,10 +32,11 @@ const Index = () => {
           {/* Caramel/ivory warm overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-caramel/20 via-transparent to-ivory/10" />
           {/* Vignette effect */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)"
+              background:
+                "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)",
             }}
           />
           {/* Bottom fade to background */}
@@ -39,12 +46,18 @@ const Index = () => {
         {/* Content */}
         <div className="relative h-full flex flex-col items-center justify-center px-6 text-center">
           {/* Logo with glow */}
-          <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden mb-6 animate-scale-in">
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.25 }}
+            className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden mb-6"
+          >
             {/* Glow effect behind logo */}
-            <div 
+            <div
               className="absolute -inset-4 rounded-full opacity-60 blur-xl"
               style={{
-                background: "radial-gradient(circle, hsl(35 60% 60% / 0.6) 0%, transparent 70%)"
+                background:
+                  "radial-gradient(circle, hsl(35 60% 60% / 0.6) 0%, transparent 70%)",
               }}
             />
             <div className="relative w-full h-full rounded-full overflow-hidden shadow-elevated border-4 border-ivory/40">
@@ -54,46 +67,80 @@ const Index = () => {
                 className="w-full h-full object-cover"
               />
             </div>
-          </div>
+          </motion.div>
 
           {/* Typography - Quiz focus */}
-          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
+          <motion.h1
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.05 }}
+            className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg"
+          >
             Gagnez des crêpes chaque semaine
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-xl md:text-2xl lg:text-3xl mt-2 font-normal">Participez au quiz et tentez de remporter une crêpe, une galette ou une formule.</span>
-          </h1>
+            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-xl md:text-2xl lg:text-3xl mt-2 font-normal">
+              Participez au quiz et tentez de remporter une crêpe, une galette ou une
+              formule.
+            </span>
+          </motion.h1>
 
-          <p className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide" style={{ animationDelay: "0.3s" }}>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.12 }}
+            className="text-lg md:text-xl text-white/95 font-serif mb-8 drop-shadow-md tracking-wide"
+          >
             La Crêperie des Saveurs • Mamers
-          </p>
+          </motion.p>
 
-          <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap justify-center" style={{ animationDelay: "0.5s" }}>
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.18 }}
+            className="flex flex-col sm:flex-row gap-3 flex-wrap justify-center"
+          >
             {/* CTA Principal - Quiz */}
             <Link to="/quiz">
-              <Button className="btn-hero group text-base px-8 py-4">
-                🎁 Jouer au quiz
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Button className="btn-hero group text-base px-8 py-4">
+                  🎁 Jouer au quiz
+                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </motion.div>
             </Link>
-            {/* Secondaires */}
+
+            {/* Secondaire - Carte */}
             <Link to="/carte">
-              <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
-                <span>Voir le menu classique</span>
-              </Button>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <Button
+                  variant="secondary"
+                  className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30"
+                >
+                  Voir le menu classique
+                </Button>
+              </motion.div>
             </Link>
-          </div>
-          
+          </motion.div>
+
           {/* Texte discret */}
-          <p className="text-sm text-white/70 mt-6 animate-fade-in" style={{ animationDelay: "0.7s" }}>
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.25, delay: 0.26 }}
+            className="text-sm text-white/70 mt-6"
+          >
             Le menu secret se débloque après participation au quiz.
-          </p>
+          </motion.p>
         </div>
 
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-white/40 flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-white/70 rounded-full animate-pulse" />
-          </div>
-        </div>
+        {/* (OPTION) Scroll indicator supprimé : pas d’animation en boucle */}
       </section>
 
       {/* Info Cards - Clickable */}
@@ -107,13 +154,13 @@ const Index = () => {
             className="card-glow flex items-start gap-4 group cursor-pointer hover:border-primary/40 transition-all relative overflow-hidden"
           >
             {/* Blurred map background */}
-            <div 
+            <div
               className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
               style={{
                 backgroundImage: `url('https://maps.googleapis.com/maps/api/staticmap?center=48.3506,0.3656&zoom=15&size=400x200&maptype=roadmap&style=feature:all|saturation:-100')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
-                filter: "blur(2px)"
+                filter: "blur(2px)",
               }}
             />
             <div className="relative w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -156,15 +203,16 @@ const Index = () => {
           </a>
 
           {/* Contact Card - Phone call */}
-          <a href="tel:0259660176" className="card-glow flex items-start gap-4 group cursor-pointer hover:border-terracotta/40 transition-all">
+          <a
+            href="tel:0259660176"
+            className="card-glow flex items-start gap-4 group cursor-pointer hover:border-terracotta/40 transition-all"
+          >
             <div className="w-12 h-12 rounded-xl bg-terracotta/10 flex items-center justify-center flex-shrink-0 group-hover:bg-terracotta/20 transition-colors">
               <Phone className="w-6 h-6 text-terracotta" />
             </div>
             <div>
               <h3 className="font-display font-semibold text-lg">Appelez-nous</h3>
-              <p className="text-primary font-medium text-lg mt-1">
-                02 59 66 01 76
-              </p>
+              <p className="text-primary font-medium text-lg mt-1">02 59 66 01 76</p>
             </div>
           </a>
         </div>
@@ -179,14 +227,10 @@ const Index = () => {
           <div className="card-quiz-hero relative overflow-hidden rounded-3xl">
             {/* Background Image */}
             <div className="absolute inset-0">
-              <img
-                src={crepes}
-                alt="Crêpes artisanales"
-                className="w-full h-full object-cover"
-              />
+              <img src={crepes} alt="Crêpes artisanales" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-br from-butter/90 via-butter/80 to-caramel-light/70" />
             </div>
-            
+
             {/* Content */}
             <div className="relative p-6 md:p-8">
               <span className="inline-block px-3 py-1 bg-primary/20 backdrop-blur-sm rounded-full text-xs font-medium mb-4 text-espresso border border-caramel/30">
@@ -196,16 +240,25 @@ const Index = () => {
                 Quiz & Récompenses
               </h2>
               <p className="text-espresso/80 text-sm mb-4 max-w-xs">
-                Participez à notre quiz hebdomadaire et tentez de remporter une formule complète, une galette ou une crêpe.
+                Participez à notre quiz hebdomadaire et tentez de remporter une formule
+                complète, une galette ou une crêpe.
               </p>
               <p className="text-espresso/60 text-xs mb-6 max-w-xs">
                 Un code obtenu via le quiz est nécessaire pour débloquer la carte secrète.
               </p>
+
               <Link to="/quiz">
-                <Button className="btn-hero group w-full sm:w-auto">
-                  <span>Jouer au quiz</span>
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                  className="inline-block w-full sm:w-auto"
+                >
+                  <Button className="btn-hero group w-full sm:w-auto">
+                    <span>Jouer au quiz</span>
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
               </Link>
             </div>
           </div>
@@ -226,16 +279,17 @@ const Index = () => {
             <img src={logo} alt="Amatekoe" className="w-full h-full object-cover" />
           </div>
           <p className="text-muted-foreground font-serif leading-relaxed">
-            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans d'expérience 
-            dans la restauration. Chaque crêpe est préparée avec passion et savoir-faire artisanal, 
-            pour vous offrir une expérience authentique au cœur de Mamers.
+            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans
+            d'expérience dans la restauration. Chaque crêpe est préparée avec passion et
+            savoir-faire artisanal, pour vous offrir une expérience authentique au cœur de
+            Mamers.
           </p>
         </div>
       </section>
 
       {/* Social Footer */}
       <SocialFooter />
-    </div>
+    </motion.div>
   );
 };
 
