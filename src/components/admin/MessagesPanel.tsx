@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Mail, 
-  Loader2, 
-  Inbox, 
-  Check, 
-  Clock, 
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Mail,
+  Loader2,
+  Inbox,
+  Check,
+  Clock,
   User,
   Phone,
   MessageSquare,
-  RefreshCw
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+  RefreshCw,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 
 interface Message {
   id: string;
@@ -31,62 +31,119 @@ interface MessagesPanelProps {
   adminPassword: string;
 }
 
+type AdminMessagesResponse =
+  | { messages: Message[] }
+  | { error: string; details?: string };
+
+const safeJson = async <T,>(response: Response): Promise<T | null> => {
+  try {
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
+};
+
 const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    fetchMessages();
-  }, [adminPassword]);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchMessages = async () => {
+    if (!SUPABASE_URL) {
+      setError("Configuration manquante: VITE_SUPABASE_URL");
+      setIsLoading(false);
+      return;
+    }
+
+    // Abort any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setIsLoading(true);
+    setError("");
+
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'list',
-          adminPassword 
-        })
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
+        body: JSON.stringify({
+          action: "list",
+          adminPassword,
+        }),
       });
-      
-      const result = await response.json();
-      
-      if (response.ok) {
-        setMessages(result.messages || []);
-      } else {
-        console.error('Error fetching messages:', result.error);
+
+      const result = await safeJson<AdminMessagesResponse>(response);
+
+      if (!response.ok) {
+        const msg =
+          (result && "error" in result && result.error) ||
+          `Erreur serveur (${response.status})`;
+        setError(msg);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
+
+      if (result && "messages" in result) {
+        setMessages(result.messages || []);
+        return;
+      }
+
+      setError("Réponse inattendue du serveur.");
+    } catch (e: any) {
+      if (e?.name === "AbortError") return;
+      setError("Erreur de connexion (Edge Function inaccessible).");
     } finally {
       setIsLoading(false);
     }
   };
 
   const markAsRead = async (messageId: string) => {
+    if (!SUPABASE_URL) return;
+
+    // Optimistic update (safe)
+    setMessages((prev) =>
+      prev.map((m) => (m.id === messageId ? { ...m, is_read: true } : m))
+    );
+
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'mark_read',
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "mark_read",
           adminPassword,
-          messageId 
-        })
+          messageId,
+        }),
       });
-      
-      setMessages(prev => 
-        prev.map(m => m.id === messageId ? { ...m, is_read: true } : m)
+
+      if (!response.ok) {
+        // rollback if needed
+        setMessages((prev) =>
+          prev.map((m) => (m.id === messageId ? { ...m, is_read: false } : m))
+        );
+      }
+    } catch {
+      // rollback if needed
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, is_read: false } : m))
       );
-    } catch (error) {
-      console.error('Error marking as read:', error);
     }
   };
 
-  const unreadCount = messages.filter(m => !m.is_read).length;
+  useEffect(() => {
+    fetchMessages();
+
+    return () => {
+      abortRef.current?.abort();
+    };
+    // Important: on garde la même logique = refetch quand adminPassword change
+  }, [adminPassword]);
+
+  const unreadCount = messages.filter((m) => !m.is_read).length;
 
   if (isLoading) {
     return (
@@ -97,9 +154,9 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
       {/* Header */}
@@ -111,14 +168,25 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
         <p className="text-sm text-muted-foreground">
           Messages envoyés par les utilisateurs pour améliorer l'application
         </p>
+
         <p className="text-xs text-muted-foreground mt-2">
-          {unreadCount > 0 ? `${unreadCount} message(s) non lu(s)` : 'Tous les messages sont lus'}
+          {unreadCount > 0
+            ? `${unreadCount} message(s) non lu(s)`
+            : "Tous les messages sont lus"}
         </p>
-        <Button 
-          variant="outline" 
-          size="sm" 
+
+        {error && (
+          <p className="text-xs text-destructive mt-2">
+            {error}
+          </p>
+        )}
+
+        <Button
+          variant="outline"
+          size="sm"
           className="mt-3 gap-2"
           onClick={fetchMessages}
+          disabled={isLoading}
         >
           <RefreshCw className="w-4 h-4" />
           Actualiser
@@ -132,7 +200,8 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
             <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
             <p className="text-muted-foreground font-medium">Aucun message reçu</p>
             <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
-              Lorsque des clients enverront des messages via le formulaire de contact, ils apparaîtront ici.
+              Lorsque des clients enverront des messages via le formulaire de contact,
+              ils apparaîtront ici.
             </p>
           </div>
         ) : (
@@ -142,8 +211,8 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className={`card-warm cursor-pointer transition-all ${
-                !msg.is_read ? 'border-l-4 border-l-primary' : ''
-              } ${selectedMessage?.id === msg.id ? 'ring-2 ring-primary' : ''}`}
+                !msg.is_read ? "border-l-4 border-l-primary" : ""
+              } ${selectedMessage?.id === msg.id ? "ring-2 ring-primary" : ""}`}
               onClick={() => {
                 setSelectedMessage(msg);
                 if (!msg.is_read) markAsRead(msg.id);
@@ -153,26 +222,32 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    <span className="font-semibold text-sm truncate">{msg.sender_name}</span>
+                    <span className="font-semibold text-sm truncate">
+                      {msg.sender_name}
+                    </span>
                     {!msg.is_read && (
                       <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs">
                         Nouveau
                       </span>
                     )}
                   </div>
+
                   {msg.subject && (
                     <p className="text-sm font-medium truncate">{msg.subject}</p>
                   )}
-                  <p className="text-xs text-muted-foreground truncate">{msg.message}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {msg.message}
+                  </p>
                 </div>
+
                 <div className="text-right shrink-0">
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Clock className="w-3 h-3" />
-                    {new Date(msg.created_at).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'short',
-                      hour: '2-digit',
-                      minute: '2-digit',
+                    {new Date(msg.created_at).toLocaleDateString("fr-FR", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
                     })}
                   </div>
                 </div>
@@ -196,8 +271,8 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
                 <MessageSquare className="w-5 h-5 text-primary" />
                 Message complet
               </h3>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="sm"
                 onClick={() => setSelectedMessage(null)}
               >
@@ -210,20 +285,26 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
                 <User className="w-4 h-4 text-muted-foreground" />
                 <span className="font-medium">{selectedMessage.sender_name}</span>
               </div>
-              
+
               {selectedMessage.sender_email && (
                 <div className="flex items-center gap-2 text-sm">
                   <Mail className="w-4 h-4 text-muted-foreground" />
-                  <a href={`mailto:${selectedMessage.sender_email}`} className="text-primary hover:underline">
+                  <a
+                    href={`mailto:${selectedMessage.sender_email}`}
+                    className="text-primary hover:underline"
+                  >
                     {selectedMessage.sender_email}
                   </a>
                 </div>
               )}
-              
+
               {selectedMessage.sender_phone && (
                 <div className="flex items-center gap-2 text-sm">
                   <Phone className="w-4 h-4 text-muted-foreground" />
-                  <a href={`tel:${selectedMessage.sender_phone}`} className="text-primary hover:underline">
+                  <a
+                    href={`tel:${selectedMessage.sender_phone}`}
+                    className="text-primary hover:underline"
+                  >
                     {selectedMessage.sender_phone}
                   </a>
                 </div>
