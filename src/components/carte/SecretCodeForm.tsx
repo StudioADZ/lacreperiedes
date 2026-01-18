@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Lock, Loader2, Sparkles, Gift, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,14 +15,21 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
   const [showAdminForm, setShowAdminForm] = useState(false);
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
   const [adminSubmitting, setAdminSubmitting] = useState(false);
 
+  const disableMain = submitting || !!isLoading;
+  const disableAdmin = adminSubmitting;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!code.trim()) {
+    if (disableMain) return;
+
+    const trimmed = code.trim();
+    if (!trimmed) {
       setError('Entrez un code');
       return;
     }
@@ -30,29 +37,46 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
     setSubmitting(true);
     setError('');
 
-    const success = await onSubmit(code.toUpperCase());
-    
-    if (!success) {
-      setError('Code incorrect ou expiré');
+    try {
+      const success = await onSubmit(trimmed.toUpperCase());
+      if (!success) setError('Code incorrect ou expiré');
+    } finally {
+      setSubmitting(false);
     }
-    
-    setSubmitting(false);
   };
 
   const handleAdminSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!adminPassword.trim() || !onAdminSubmit) return;
+    if (!onAdminSubmit) return;
+    if (disableAdmin) return;
+
+    const trimmed = adminPassword.trim();
+    if (!trimmed) return;
 
     setAdminSubmitting(true);
     setAdminError('');
 
-    const success = await onAdminSubmit(adminPassword);
-    
-    if (!success) {
-      setAdminError('Mot de passe admin incorrect');
+    try {
+      const success = await onAdminSubmit(trimmed);
+      if (!success) setAdminError('Mot de passe admin incorrect');
+    } finally {
+      setAdminSubmitting(false);
     }
-    
-    setAdminSubmitting(false);
+  };
+
+  const toggleAdmin = () => {
+    if (!onAdminSubmit) return;
+
+    setShowAdminForm((prev) => {
+      const next = !prev;
+      // ✅ safe reset when closing
+      if (!next) {
+        setAdminPassword('');
+        setAdminError('');
+        setAdminSubmitting(false);
+      }
+      return next;
+    });
   };
 
   return (
@@ -74,29 +98,33 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
+            <Label htmlFor="secretCode" className="sr-only">
+              Code secret
+            </Label>
             <Input
+              id="secretCode"
               value={code}
               onChange={(e) => {
                 setCode(e.target.value.toUpperCase());
-                setError('');
+                if (error) setError('');
               }}
               placeholder="CODE SECRET"
-              className={`text-center font-mono text-xl tracking-widest py-6 ${
-                error ? 'border-destructive' : ''
-              }`}
+              className={`text-center font-mono text-xl tracking-widest py-6 ${error ? 'border-destructive' : ''}`}
               maxLength={20}
-              disabled={submitting || isLoading}
+              disabled={disableMain}
+              aria-invalid={!!error}
+              aria-describedby={error ? 'secretCodeError' : undefined}
+              autoComplete="one-time-code"
+              inputMode="text"
             />
             {error && (
-              <p className="text-destructive text-sm mt-2">{error}</p>
+              <p id="secretCodeError" className="text-destructive text-sm mt-2">
+                {error}
+              </p>
             )}
           </div>
 
-          <Button
-            type="submit"
-            className="w-full btn-hero py-6"
-            disabled={submitting || isLoading || !code.trim()}
-          >
+          <Button type="submit" className="w-full btn-hero py-6" disabled={disableMain || !code.trim()}>
             {submitting ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
@@ -116,10 +144,7 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
           <p className="text-xs text-muted-foreground">
             Participez au quiz de la crêperie pour débloquer l'accès au menu secret de la semaine !
           </p>
-          <a
-            href="/quiz"
-            className="inline-block mt-3 text-sm text-primary hover:underline font-medium"
-          >
+          <a href="/quiz" className="inline-block mt-3 text-sm text-primary hover:underline font-medium">
             🎮 Jouer au Quiz
           </a>
         </div>
@@ -130,8 +155,9 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
         <div className="text-center">
           <button
             type="button"
-            onClick={() => setShowAdminForm(!showAdminForm)}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto"
+            onClick={toggleAdmin}
+            disabled={disableMain || disableAdmin}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 mx-auto disabled:opacity-50"
           >
             <Shield className="w-3 h-3" />
             {showAdminForm ? 'Masquer accès admin' : 'Accès admin'}
@@ -140,59 +166,56 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
       )}
 
       {/* Admin Password Form */}
-      {showAdminForm && onAdminSubmit && (
-        <motion.form
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: 'auto' }}
-          exit={{ opacity: 0, height: 0 }}
-          onSubmit={handleAdminSubmit}
-          className="card-warm max-w-md mx-auto border-2 border-primary/20 space-y-4"
-        >
-          <div className="text-center mb-2">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-              <Shield className="w-6 h-6 text-primary" />
-            </div>
-            <h4 className="font-display font-bold">Accès Admin</h4>
-            <p className="text-xs text-muted-foreground">
-              Accès permanent sans expiration
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="adminPassword" className="text-sm">
-              Mot de passe admin
-            </Label>
-            <Input
-              id="adminPassword"
-              type="password"
-              value={adminPassword}
-              onChange={(e) => {
-                setAdminPassword(e.target.value);
-                setAdminError('');
-              }}
-              placeholder="••••••••"
-              className={adminError ? 'border-destructive' : ''}
-              disabled={adminSubmitting}
-            />
-            {adminError && (
-              <p className="text-xs text-destructive text-center">{adminError}</p>
-            )}
-          </div>
-
-          <Button 
-            type="submit" 
-            variant="outline"
-            className="w-full"
-            disabled={adminSubmitting || !adminPassword.trim()}
+      <AnimatePresence>
+        {showAdminForm && onAdminSubmit && (
+          <motion.form
+            key="admin-form"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            onSubmit={handleAdminSubmit}
+            className="card-warm max-w-md mx-auto border-2 border-primary/20 space-y-4 overflow-hidden"
           >
-            {adminSubmitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              'Connexion Admin'
-            )}
-          </Button>
-        </motion.form>
-      )}
+            <div className="text-center mb-2">
+              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                <Shield className="w-6 h-6 text-primary" />
+              </div>
+              <h4 className="font-display font-bold">Accès Admin</h4>
+              <p className="text-xs text-muted-foreground">Accès permanent sans expiration</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="adminPassword" className="text-sm">
+                Mot de passe admin
+              </Label>
+              <Input
+                id="adminPassword"
+                type="password"
+                value={adminPassword}
+                onChange={(e) => {
+                  setAdminPassword(e.target.value);
+                  if (adminError) setAdminError('');
+                }}
+                placeholder="••••••••"
+                className={adminError ? 'border-destructive' : ''}
+                disabled={disableAdmin}
+                aria-invalid={!!adminError}
+                aria-describedby={adminError ? 'adminError' : undefined}
+                autoComplete="current-password"
+              />
+              {adminError && (
+                <p id="adminError" className="text-xs text-destructive text-center">
+                  {adminError}
+                </p>
+              )}
+            </div>
+
+            <Button type="submit" variant="outline" className="w-full" disabled={disableAdmin || !adminPassword.trim()}>
+              {adminSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connexion Admin'}
+            </Button>
+          </motion.form>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
