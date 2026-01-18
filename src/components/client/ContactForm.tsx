@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Loader2, Check, User, Mail, Phone, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,8 +22,18 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
     subject: '',
     message: '',
   });
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  // Track "touched" to avoid overwriting user input when props arrive later
+  const touchedRef = useRef({
+    name: false,
+    email: false,
+    phone: false,
+  });
+
+  const messageRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Length limits for validation
   const MAX_NAME_LENGTH = 100;
@@ -32,15 +42,41 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
   const MAX_SUBJECT_LENGTH = 200;
   const MAX_MESSAGE_LENGTH = 5000;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Safe sync: only prefill if the field is still empty AND user hasn't typed in it
+  useEffect(() => {
+    setFormData((prev) => {
+      const next = { ...prev };
+
+      if (!touchedRef.current.name && !prev.name.trim() && userName) {
+        next.name = userName.slice(0, MAX_NAME_LENGTH);
+      }
+      if (!touchedRef.current.email && !prev.email.trim() && userEmail) {
+        next.email = userEmail.slice(0, MAX_EMAIL_LENGTH);
+      }
+      if (!touchedRef.current.phone && !prev.phone.trim() && userPhone) {
+        next.phone = userPhone.slice(0, MAX_PHONE_LENGTH);
+      }
+
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userName, userEmail, userPhone]);
+
+  const trimmed = useMemo(() => {
     const name = formData.name.trim();
     const message = formData.message.trim();
     const email = formData.email.trim();
     const phone = formData.phone.trim();
     const subject = formData.subject.trim();
-    
+    return { name, message, email, phone, subject };
+  }, [formData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isSubmitting) return;
+
+    const { name, message, email, phone, subject } = trimmed;
+
     // Validate required fields
     if (!name || !message) {
       toast.error('Veuillez remplir votre nom et votre message');
@@ -72,30 +108,30 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          sender_type: 'client',
-          sender_name: name.slice(0, MAX_NAME_LENGTH),
-          sender_email: email ? email.slice(0, MAX_EMAIL_LENGTH) : null,
-          sender_phone: phone ? phone.slice(0, MAX_PHONE_LENGTH) : null,
-          subject: subject ? subject.slice(0, MAX_SUBJECT_LENGTH) : null,
-          message: message.slice(0, MAX_MESSAGE_LENGTH),
-        });
+      const { error } = await supabase.from('messages').insert({
+        sender_type: 'client',
+        sender_name: name.slice(0, MAX_NAME_LENGTH),
+        sender_email: email ? email.slice(0, MAX_EMAIL_LENGTH) : null,
+        sender_phone: phone ? phone.slice(0, MAX_PHONE_LENGTH) : null,
+        subject: subject ? subject.slice(0, MAX_SUBJECT_LENGTH) : null,
+        message: message.slice(0, MAX_MESSAGE_LENGTH),
+      });
 
       if (error) throw error;
 
       setIsSuccess(true);
       toast.success('Message envoyé ! Nous vous répondrons bientôt.');
-      
-      // Reset form after delay
+
+      // Reset form after delay (keep identity fields)
       setTimeout(() => {
-        setFormData(prev => ({ ...prev, subject: '', message: '' }));
+        setFormData((prev) => ({ ...prev, subject: '', message: '' }));
         setIsSuccess(false);
+        // optional: focus message when back
+        messageRef.current?.focus();
       }, 3000);
     } catch (error) {
       console.error('Error sending message:', error);
-      toast.error('Erreur lors de l\'envoi. Veuillez réessayer.');
+      toast.error("Erreur lors de l'envoi. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +143,7 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="card-warm text-center py-8"
+        aria-live="polite"
       >
         <div className="w-16 h-16 rounded-full bg-herb/10 flex items-center justify-center mx-auto mb-4">
           <Check className="w-8 h-8 text-herb" />
@@ -125,15 +162,14 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
       animate={{ opacity: 1, y: 0 }}
       onSubmit={handleSubmit}
       className="card-warm space-y-4"
+      aria-busy={isSubmitting}
     >
       <div className="text-center mb-4">
         <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
           <MessageSquare className="w-6 h-6 text-primary" />
         </div>
         <h3 className="font-display font-bold">Nous contacter</h3>
-        <p className="text-sm text-muted-foreground">
-          Une question ? Un message ? Écrivez-nous !
-        </p>
+        <p className="text-sm text-muted-foreground">Une question ? Un message ? Écrivez-nous !</p>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -144,10 +180,14 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value.slice(0, MAX_NAME_LENGTH) }))}
+            onChange={(e) => {
+              touchedRef.current.name = true;
+              setFormData((prev) => ({ ...prev, name: e.target.value.slice(0, MAX_NAME_LENGTH) }));
+            }}
             placeholder="Votre nom"
             maxLength={MAX_NAME_LENGTH}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -159,9 +199,13 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
             id="email"
             type="email"
             value={formData.email}
-            onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value.slice(0, MAX_EMAIL_LENGTH) }))}
+            onChange={(e) => {
+              touchedRef.current.email = true;
+              setFormData((prev) => ({ ...prev, email: e.target.value.slice(0, MAX_EMAIL_LENGTH) }));
+            }}
             placeholder="votre@email.com"
             maxLength={MAX_EMAIL_LENGTH}
+            disabled={isSubmitting}
           />
         </div>
       </div>
@@ -174,43 +218,67 @@ const ContactForm = ({ userEmail, userName, userPhone }: ContactFormProps) => {
           id="phone"
           type="tel"
           value={formData.phone}
-          onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value.slice(0, MAX_PHONE_LENGTH) }))}
+          onChange={(e) => {
+            touchedRef.current.phone = true;
+            setFormData((prev) => ({ ...prev, phone: e.target.value.slice(0, MAX_PHONE_LENGTH) }));
+          }}
           placeholder="06 12 34 56 78"
           maxLength={MAX_PHONE_LENGTH}
+          disabled={isSubmitting}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="subject" className="text-xs">Sujet</Label>
+        <div className="flex items-baseline justify-between">
+          <Label htmlFor="subject" className="text-xs">
+            Sujet
+          </Label>
+          <span className="text-[11px] text-muted-foreground">
+            {formData.subject.length}/{MAX_SUBJECT_LENGTH}
+          </span>
+        </div>
         <Input
           id="subject"
           value={formData.subject}
-          onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value.slice(0, MAX_SUBJECT_LENGTH) }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, subject: e.target.value.slice(0, MAX_SUBJECT_LENGTH) }))
+          }
           placeholder="Objet de votre message"
           maxLength={MAX_SUBJECT_LENGTH}
+          disabled={isSubmitting}
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="message" className="text-xs">Message *</Label>
+        <div className="flex items-baseline justify-between">
+          <Label htmlFor="message" className="text-xs">
+            Message *
+          </Label>
+          <span className="text-[11px] text-muted-foreground">
+            {formData.message.length}/{MAX_MESSAGE_LENGTH}
+          </span>
+        </div>
         <Textarea
           id="message"
+          ref={(el) => {
+            messageRef.current = el;
+          }}
           value={formData.message}
-          onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value.slice(0, MAX_MESSAGE_LENGTH) }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, message: e.target.value.slice(0, MAX_MESSAGE_LENGTH) }))
+          }
           placeholder="Votre message..."
           rows={4}
           maxLength={MAX_MESSAGE_LENGTH}
           required
+          disabled={isSubmitting}
         />
-        <p className="text-xs text-muted-foreground text-right">
-          {formData.message.length}/{MAX_MESSAGE_LENGTH}
-        </p>
       </div>
 
       <Button
         type="submit"
         className="w-full"
-        disabled={isSubmitting || !formData.name.trim() || !formData.message.trim()}
+        disabled={isSubmitting || !trimmed.name || !trimmed.message}
       >
         {isSubmitting ? (
           <Loader2 className="w-5 h-5 animate-spin" />
