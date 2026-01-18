@@ -12,7 +12,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface Message {
   id: string;
@@ -37,19 +38,27 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [adminPassword]);
 
   const fetchMessages = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setMessages(data || []);
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'list',
+          adminPassword 
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setMessages(result.messages || []);
+      } else {
+        console.error('Error fetching messages:', result.error);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -59,11 +68,16 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
 
   const markAsRead = async (messageId: string) => {
     try {
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('id', messageId);
-
+      await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'mark_read',
+          adminPassword,
+          messageId 
+        })
+      });
+      
       setMessages(prev => 
         prev.map(m => m.id === messageId ? { ...m, is_read: true } : m)
       );

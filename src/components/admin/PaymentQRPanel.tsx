@@ -11,7 +11,8 @@ import {
   Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface PaymentQRPanelProps {
   adminPassword: string;
@@ -24,19 +25,25 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [adminPassword]);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .eq('setting_key', 'payment_qr')
-        .maybeSingle();
-
-      if (data) {
-        setIsEnabled(data.is_active);
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'get',
+          adminPassword,
+          settingKey: 'payment_qr'
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok && result.setting) {
+        setIsEnabled(result.setting.is_active);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -48,15 +55,18 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
   const toggleEnabled = async () => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('admin_settings')
-        .update({ 
-          is_active: !isEnabled,
-          updated_at: new Date().toISOString()
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update',
+          adminPassword,
+          settingKey: 'payment_qr',
+          isActive: !isEnabled
         })
-        .eq('setting_key', 'payment_qr');
+      });
 
-      if (!error) {
+      if (response.ok) {
         setIsEnabled(!isEnabled);
       }
     } catch (error) {
