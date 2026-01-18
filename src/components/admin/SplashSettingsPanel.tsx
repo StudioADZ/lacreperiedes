@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Save, Sparkles, Image as ImageIcon, Type, MessageSquare, MousePointer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { motion } from "framer-motion";
 
 interface SplashSettings {
@@ -36,32 +35,44 @@ interface SplashSettingsPanelProps {
 
 const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
   const [settings, setSettings] = useState<SplashSettings | null>(null);
+  const [initialSettings, setInitialSettings] = useState<SplashSettings | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [imageLoadError, setImageLoadError] = useState(false);
 
   const fetchSettings = async () => {
+    setLoading(true);
+    setError("");
+    setSuccess(false);
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/splash_settings?is_active=eq.true&limit=1`,
-        {
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/splash_settings?is_active=eq.true&limit=1`, {
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+        },
+      });
 
       if (response.ok) {
         const data = await response.json();
-        if (data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
           setSettings(data[0]);
+          setInitialSettings(data[0]);
+          setImageLoadError(false);
+        } else {
+          setSettings(null);
+          setInitialSettings(null);
         }
+      } else {
+        setError("Impossible de charger les paramètres.");
       }
     } catch (err) {
-      console.error("Could not fetch splash settings");
+      console.error("Could not fetch splash settings", err);
+      setError("Erreur réseau lors du chargement.");
     } finally {
       setLoading(false);
     }
@@ -69,7 +80,26 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
 
   useEffect(() => {
     fetchSettings();
+    // adminPassword pas utilisé ici (REST). On le garde car prop standard sur tes panels.
   }, []);
+
+  const isDirty = useMemo(() => {
+    if (!settings || !initialSettings) return false;
+    return (
+      settings.event_title !== initialSettings.event_title ||
+      settings.event_subtitle !== initialSettings.event_subtitle ||
+      settings.game_line !== initialSettings.game_line ||
+      settings.cta_text !== initialSettings.cta_text ||
+      (settings.background_image_url || "") !== (initialSettings.background_image_url || "")
+    );
+  }, [settings, initialSettings]);
+
+  const canSave = useMemo(() => {
+    if (!settings) return false;
+    const titleOk = !!settings.event_title?.trim();
+    const ctaOk = !!settings.cta_text?.trim();
+    return titleOk && ctaOk && isDirty && !saving;
+  }, [settings, isDirty, saving]);
 
   const handleSave = async () => {
     if (!settings) return;
@@ -79,50 +109,59 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
     setSuccess(false);
 
     try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/splash_settings?id=eq.${settings.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            event_title: settings.event_title,
-            event_subtitle: settings.event_subtitle,
-            game_line: settings.game_line,
-            cta_text: settings.cta_text,
-            background_image_url: settings.background_image_url,
-            updated_at: new Date().toISOString(),
-          }),
-        }
-      );
+      // ✅ Non destructif : PATCH seulement les champs gérés par ce panel.
+      // ❌ Safe: on n’envoie PAS updated_at (peut ne pas exister / trigger DB)
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/splash_settings?id=eq.${settings.id}`, {
+        method: "PATCH",
+        headers: {
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${SUPABASE_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          event_title: settings.event_title,
+          event_subtitle: settings.event_subtitle,
+          game_line: settings.game_line,
+          cta_text: settings.cta_text,
+          background_image_url: settings.background_image_url,
+        }),
+      });
 
       if (!response.ok) throw new Error("Save failed");
 
       setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
+      // On réaligne l'état initial pour que "dirty" redevienne false
+      setInitialSettings(settings);
+      setTimeout(() => setSuccess(false), 2500);
     } catch (err) {
+      console.error(err);
       setError("Erreur lors de la sauvegarde");
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePresetClick = (preset: typeof EVENT_PRESETS[0]) => {
+  const patchSettings = (patch: Partial<SplashSettings>) => {
+    setSettings((prev) => {
+      if (!prev) return prev;
+      return { ...prev, ...patch };
+    });
+    setError("");
+    setSuccess(false);
+  };
+
+  const handlePresetClick = (preset: (typeof EVENT_PRESETS)[number]) => {
     if (!settings) return;
-    setSettings({
-      ...settings,
+    patchSettings({
       event_title: preset.title,
       game_line: preset.gameLine,
     });
   };
 
   const handleImageUrlChange = (url: string) => {
-    if (!settings) return;
-    setSettings({ ...settings, background_image_url: url || null });
+    setImageLoadError(false);
+    patchSettings({ background_image_url: url.trim() ? url.trim() : null });
   };
 
   if (loading) {
@@ -134,11 +173,7 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
   }
 
   if (!settings) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        Aucun paramètre trouvé
-      </div>
-    );
+    return <div className="text-center py-8 text-muted-foreground">Aucun paramètre trouvé</div>;
   }
 
   return (
@@ -149,9 +184,7 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
           <Sparkles className="w-5 h-5 text-primary" />
           SPLASH SCREEN
         </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personnalisez l'écran d'accueil
-        </p>
+        <p className="text-sm text-muted-foreground mt-1">Personnalisez l'écran d'accueil</p>
       </div>
 
       {/* Event Presets */}
@@ -163,9 +196,7 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
               key={idx}
               onClick={() => handlePresetClick(preset)}
               className={`text-left p-3 rounded-xl border-2 transition-all text-sm ${
-                settings.event_title === preset.title
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/30"
+                settings.event_title === preset.title ? "border-primary bg-primary/5" : "border-border hover:border-primary/30"
               }`}
             >
               <span className="font-medium">{preset.title}</span>
@@ -182,10 +213,11 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
         </Label>
         <Input
           value={settings.event_title}
-          onChange={(e) => setSettings({ ...settings, event_title: e.target.value })}
+          onChange={(e) => patchSettings({ event_title: e.target.value })}
           placeholder="🎉 Quiz & Récompenses"
           className="text-lg"
         />
+        {!settings.event_title.trim() && <p className="text-xs text-destructive mt-2">Le titre est obligatoire.</p>}
       </div>
 
       {/* Subtitle */}
@@ -196,7 +228,7 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
         </Label>
         <Input
           value={settings.event_subtitle}
-          onChange={(e) => setSettings({ ...settings, event_subtitle: e.target.value })}
+          onChange={(e) => patchSettings({ event_subtitle: e.target.value })}
           placeholder="Crêpes & Galettes artisanales – Mamers"
         />
       </div>
@@ -204,11 +236,7 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
       {/* Game Line */}
       <div className="card-warm">
         <Label className="mb-2 block font-semibold">Ligne d'accroche</Label>
-        <Input
-          value={settings.game_line}
-          onChange={(e) => setSettings({ ...settings, game_line: e.target.value })}
-          placeholder="Jeu & récompenses en cours"
-        />
+        <Input value={settings.game_line} onChange={(e) => patchSettings({ game_line: e.target.value })} placeholder="Jeu & récompenses en cours" />
       </div>
 
       {/* CTA Text */}
@@ -217,11 +245,8 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
           <MousePointer className="w-4 h-4 text-primary" />
           Texte du bouton
         </Label>
-        <Input
-          value={settings.cta_text}
-          onChange={(e) => setSettings({ ...settings, cta_text: e.target.value })}
-          placeholder="Entrer dans la Crêperie"
-        />
+        <Input value={settings.cta_text} onChange={(e) => patchSettings({ cta_text: e.target.value })} placeholder="Entrer dans la Crêperie" />
+        {!settings.cta_text.trim() && <p className="text-xs text-destructive mt-2">Le texte du bouton est obligatoire.</p>}
       </div>
 
       {/* Background Image URL */}
@@ -230,41 +255,42 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
           <ImageIcon className="w-4 h-4 text-primary" />
           Image de fond (URL)
         </Label>
-        <Input
-          value={settings.background_image_url || ""}
-          onChange={(e) => handleImageUrlChange(e.target.value)}
-          placeholder="https://example.com/image.jpg"
-        />
-        <p className="text-xs text-muted-foreground mt-2">
-          Laissez vide pour utiliser le dégradé par défaut
-        </p>
+        <Input value={settings.background_image_url || ""} onChange={(e) => handleImageUrlChange(e.target.value)} placeholder="https://example.com/image.jpg" />
+        <p className="text-xs text-muted-foreground mt-2">Laissez vide pour utiliser le dégradé par défaut</p>
 
         {/* Preview */}
         {settings.background_image_url && (
-          <div className="mt-4 rounded-xl overflow-hidden border border-border aspect-video relative">
-            <img
-              src={settings.background_image_url}
-              alt="Background preview"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 to-transparent" />
-          </div>
+          <>
+            <div className="mt-4 rounded-xl overflow-hidden border border-border aspect-video relative">
+              <img
+                src={settings.background_image_url}
+                alt="Background preview"
+                className="w-full h-full object-cover"
+                onError={() => setImageLoadError(true)}
+                onLoad={() => setImageLoadError(false)}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 to-transparent" />
+            </div>
+
+            {imageLoadError && (
+              <p className="text-xs text-destructive mt-2">
+                L’image ne charge pas (URL invalide / accès refusé). Conseil : utilise une URL publique directe (jpg/png) ou un lien Supabase Storage public.
+              </p>
+            )}
+          </>
         )}
       </div>
 
       {/* Live Preview */}
       <div className="card-glow">
         <Label className="mb-3 block font-semibold">Aperçu en direct</Label>
-        <div 
+        <div
           className="aspect-[9/16] max-h-[300px] rounded-xl overflow-hidden relative flex flex-col items-center justify-center p-4 text-center"
           style={{
-            background: settings.background_image_url 
+            background: settings.background_image_url
               ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${settings.background_image_url}) center/cover`
-              : `linear-gradient(180deg, 
-                  hsl(40 33% 96%) 0%, 
+              : `linear-gradient(180deg,
+                  hsl(40 33% 96%) 0%,
                   hsl(35 45% 92%) 30%,
                   hsl(32 50% 88%) 70%,
                   hsl(35 45% 90%) 100%
@@ -272,31 +298,16 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
           }}
         >
           <div className="w-16 h-16 rounded-full bg-secondary/80 border-2 border-caramel/50 mb-3" />
-          <h3 className={`font-display text-lg font-semibold mb-1 ${settings.background_image_url ? 'text-white' : 'text-espresso'}`}>
-            {settings.event_title}
-          </h3>
-          <p className={`text-sm mb-1 ${settings.background_image_url ? 'text-white/80' : 'text-muted-foreground'}`}>
-            {settings.event_subtitle}
-          </p>
-          <p className={`text-xs uppercase tracking-wider mb-4 ${settings.background_image_url ? 'text-caramel-light' : 'text-caramel'}`}>
-            {settings.game_line}
-          </p>
-          <div className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-full">
-            {settings.cta_text}
-          </div>
+          <h3 className={`font-display text-lg font-semibold mb-1 ${settings.background_image_url ? "text-white" : "text-espresso"}`}>{settings.event_title}</h3>
+          <p className={`text-sm mb-1 ${settings.background_image_url ? "text-white/80" : "text-muted-foreground"}`}>{settings.event_subtitle}</p>
+          <p className={`text-xs uppercase tracking-wider mb-4 ${settings.background_image_url ? "text-caramel-light" : "text-caramel"}`}>{settings.game_line}</p>
+          <div className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-full">{settings.cta_text}</div>
         </div>
       </div>
 
       {/* Save Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className={`w-full btn-hero ${success ? 'bg-herb hover:bg-herb' : ''}`}
-        >
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <Button onClick={handleSave} disabled={!canSave} className={`w-full btn-hero ${success ? "bg-herb hover:bg-herb" : ""}`}>
           {saving ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : success ? (
@@ -312,9 +323,8 @@ const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
           )}
         </Button>
 
-        {error && (
-          <p className="text-center text-sm text-destructive mt-3">{error}</p>
-        )}
+        {!isDirty && <p className="text-center text-xs text-muted-foreground mt-3">Aucune modification à enregistrer.</p>}
+        {error && <p className="text-center text-sm text-destructive mt-3">{error}</p>}
       </motion.div>
     </div>
   );
