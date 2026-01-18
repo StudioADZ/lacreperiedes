@@ -336,7 +336,9 @@ const Quiz = () => {
               </div>
             ) : null}
             <p className="text-xs text-muted-foreground text-center mt-4">
-              Nouvelle semaine chaque dimanche à minuit
+              📅 Quiz ouvert du lundi 00h01 au dimanche 23h59
+              <br />
+              ⚠️ Les gains expirent dimanche à 23h59 et ne sont plus valides en caisse après.
             </p>
 
             {/* Google Reviews Buttons */}
