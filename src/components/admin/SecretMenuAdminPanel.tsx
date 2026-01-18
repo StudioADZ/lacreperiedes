@@ -1,27 +1,25 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Loader2, 
-  Save, 
-  ChefHat, 
-  Sparkles, 
-  Plus, 
-  Trash2, 
+import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Loader2,
+  Save,
+  ChefHat,
+  Sparkles,
+  Trash2,
   Upload,
   Flame,
   Snowflake,
   Calendar,
   Video,
   Image,
-  ExternalLink,
   Eye,
-  Euro
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { supabase } from '@/integrations/supabase/client';
+  Euro,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -58,299 +56,327 @@ interface SecretMenuAdminPanelProps {
   adminPassword: string;
 }
 
-const emptyMenuItem: MenuItem = { name: '', description: '', price: '' };
+const emptyMenuItem: MenuItem = { name: "", description: "", price: "" };
+
+const ensureThreeItems = (items: MenuItem[]): MenuItem[] => {
+  const safe = Array.isArray(items) ? items.map((i) => ({ ...emptyMenuItem, ...i })) : [];
+  while (safe.length < 3) safe.push({ ...emptyMenuItem });
+  return safe.slice(0, 3);
+};
+
+const toDateInputValue = (isoOrDate: string | null | undefined) => {
+  if (!isoOrDate) return "";
+  // Handles ISO string like 2025-01-01T00:00:00Z or already "YYYY-MM-DD"
+  return isoOrDate.includes("T") ? isoOrDate.split("T")[0] : isoOrDate;
+};
+
+const isImageFile = (file: File) => file.type.startsWith("image/");
+const isVideoFile = (file: File) => file.type.startsWith("video/");
+
+const getYoutubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+
+  // youtube.com/watch?v=ID
+  const watchMatch = url.match(/[?&]v=([^&]+)/);
+  if (watchMatch?.[1]) return `https://www.youtube.com/embed/${watchMatch[1]}`;
+
+  // youtu.be/ID
+  const shortMatch = url.match(/youtu\.be\/([^?&/]+)/);
+  if (shortMatch?.[1]) return `https://www.youtube.com/embed/${shortMatch[1]}`;
+
+  // youtube.com/shorts/ID
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&/]+)/);
+  if (shortsMatch?.[1]) return `https://www.youtube.com/embed/${shortsMatch[1]}`;
+
+  return null;
+};
 
 const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [menu, setMenu] = useState<SecretMenu | null>(null);
+
   const [formData, setFormData] = useState({
-    menu_name: '',
-    secret_code: '',
-    galette_special: '',
-    galette_special_description: '',
-    galette_special_price: '',
-    galette_special_image_url: '',
-    galette_special_video_url: '',
-    crepe_special: '',
-    crepe_special_description: '',
-    crepe_special_price: '',
-    crepe_special_image_url: '',
-    crepe_special_video_url: '',
+    menu_name: "",
+    secret_code: "",
+    galette_special: "",
+    galette_special_description: "",
+    galette_special_price: "",
+    galette_special_image_url: "",
+    galette_special_video_url: "",
+    crepe_special: "",
+    crepe_special_description: "",
+    crepe_special_price: "",
+    crepe_special_image_url: "",
+    crepe_special_video_url: "",
     galette_items: [{ ...emptyMenuItem }, { ...emptyMenuItem }, { ...emptyMenuItem }] as MenuItem[],
     crepe_items: [{ ...emptyMenuItem }, { ...emptyMenuItem }, { ...emptyMenuItem }] as MenuItem[],
-    valid_from: '',
-    valid_to: '',
+    valid_from: "",
+    valid_to: "",
   });
-  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
+  const [saveMessage, setSaveMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [uploadingImage, setUploadingImage] = useState<string | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
 
+  const datesAreValid = useMemo(() => {
+    if (!formData.valid_from || !formData.valid_to) return true; // don't block if empty; let save validate
+    return new Date(formData.valid_from) <= new Date(formData.valid_to);
+  }, [formData.valid_from, formData.valid_to]);
+
   useEffect(() => {
     fetchMenu();
-  }, []);
+    // Non destructif: refetch si adminPassword change (si ton app le fait)
+  }, [adminPassword]);
 
   const fetchMenu = async () => {
     setIsLoading(true);
+    setSaveMessage(null);
+
     try {
-      await supabase.rpc('ensure_secret_menu');
+      await supabase.rpc("ensure_secret_menu");
 
       const { data, error } = await supabase
-        .from('secret_menu')
-        .select('*')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
+        .from("secret_menu")
+        .select("*")
+        .eq("is_active", true)
+        .order("week_start", { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) throw error;
-
-      if (data) {
-        // Parse the data with proper typing
-        const rawGaletteItems = data.galette_items;
-        const rawCrepeItems = data.crepe_items;
-        
-        const galetteItems: MenuItem[] = Array.isArray(rawGaletteItems) 
-          ? (rawGaletteItems as unknown as MenuItem[]) 
-          : [];
-        const crepeItems: MenuItem[] = Array.isArray(rawCrepeItems) 
-          ? (rawCrepeItems as unknown as MenuItem[]) 
-          : [];
-
-        const menuData: SecretMenu = {
-          ...data,
-          galette_items: galetteItems,
-          crepe_items: crepeItems,
-        };
-        setMenu(menuData);
-
-        // Ensure we always have 3 items
-        while (galetteItems.length < 3) galetteItems.push({ ...emptyMenuItem });
-        while (crepeItems.length < 3) crepeItems.push({ ...emptyMenuItem });
-
-        setFormData({
-          menu_name: menuData.menu_name || '',
-          secret_code: menuData.secret_code || '',
-          galette_special: menuData.galette_special || '',
-          galette_special_description: menuData.galette_special_description || '',
-          galette_special_price: menuData.galette_special_price || '',
-          galette_special_image_url: menuData.galette_special_image_url || '',
-          galette_special_video_url: menuData.galette_special_video_url || '',
-          crepe_special: menuData.crepe_special || '',
-          crepe_special_description: menuData.crepe_special_description || '',
-          crepe_special_price: menuData.crepe_special_price || '',
-          crepe_special_image_url: menuData.crepe_special_image_url || '',
-          crepe_special_video_url: menuData.crepe_special_video_url || '',
-          galette_items: galetteItems.slice(0, 3),
-          crepe_items: crepeItems.slice(0, 3),
-          valid_from: menuData.valid_from?.split('T')[0] || '',
-          valid_to: menuData.valid_to?.split('T')[0] || '',
-        });
+      if (!data) {
+        setMenu(null);
+        return;
       }
-    } catch (error) {
-      console.error('Error fetching menu:', error);
+
+      const rawGaletteItems = data.galette_items;
+      const rawCrepeItems = data.crepe_items;
+
+      const galetteItems = ensureThreeItems(Array.isArray(rawGaletteItems) ? (rawGaletteItems as unknown as MenuItem[]) : []);
+      const crepeItems = ensureThreeItems(Array.isArray(rawCrepeItems) ? (rawCrepeItems as unknown as MenuItem[]) : []);
+
+      const menuData: SecretMenu = {
+        ...(data as unknown as SecretMenu),
+        galette_items: galetteItems,
+        crepe_items: crepeItems,
+      };
+
+      setMenu(menuData);
+
+      setFormData({
+        menu_name: menuData.menu_name || "",
+        secret_code: menuData.secret_code || "",
+        galette_special: menuData.galette_special || "",
+        galette_special_description: menuData.galette_special_description || "",
+        galette_special_price: menuData.galette_special_price || "",
+        galette_special_image_url: menuData.galette_special_image_url || "",
+        galette_special_video_url: menuData.galette_special_video_url || "",
+        crepe_special: menuData.crepe_special || "",
+        crepe_special_description: menuData.crepe_special_description || "",
+        crepe_special_price: menuData.crepe_special_price || "",
+        crepe_special_image_url: menuData.crepe_special_image_url || "",
+        crepe_special_video_url: menuData.crepe_special_video_url || "",
+        galette_items: galetteItems,
+        crepe_items: crepeItems,
+        valid_from: toDateInputValue(menuData.valid_from),
+        valid_to: toDateInputValue(menuData.valid_to),
+      });
+    } catch (err) {
+      console.error("Error fetching menu:", err);
+      setSaveMessage({ type: "error", text: "Impossible de charger le menu secret." });
     } finally {
       setIsLoading(false);
     }
   };
 
+  const validateBeforeSave = (): string | null => {
+    if (!menu) return "Aucun menu actif trouvé.";
+    if (!formData.secret_code.trim()) return "Le code secret est obligatoire.";
+    if (formData.valid_from && formData.valid_to && !datesAreValid) return "La date de début doit être avant la date de fin.";
+    return null;
+  };
+
   const handleSave = async () => {
+    const validationError = validateBeforeSave();
+    if (validationError) {
+      setSaveMessage({ type: "error", text: validationError });
+      return;
+    }
     if (!menu) return;
 
     setIsSaving(true);
     setSaveMessage(null);
 
     try {
-      // Filter out empty items
-      const cleanGaletteItems = formData.galette_items.filter(item => item.name.trim());
-      const cleanCrepeItems = formData.crepe_items.filter(item => item.name.trim());
+      // Filter out empty items (non destructif)
+      const cleanGaletteItems = formData.galette_items
+        .map((i) => ({ ...i, name: i.name?.trim() || "", description: i.description?.trim() || "", price: i.price?.trim() || "" }))
+        .filter((item) => item.name.trim());
+
+      const cleanCrepeItems = formData.crepe_items
+        .map((i) => ({ ...i, name: i.name?.trim() || "", description: i.description?.trim() || "", price: i.price?.trim() || "" }))
+        .filter((item) => item.name.trim());
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          action: 'update_secret_menu',
+          action: "update_secret_menu",
           adminPassword,
           menuId: menu.id,
           menuData: {
             ...formData,
+            secret_code: formData.secret_code.trim().toUpperCase(),
             galette_items: cleanGaletteItems,
             crepe_items: cleanCrepeItems,
           },
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (response.ok) {
-        setSaveMessage({ type: 'success', text: 'Menu secret mis à jour !' });
-        fetchMenu();
+        setSaveMessage({ type: "success", text: "Menu secret mis à jour !" });
+        await fetchMenu();
       } else {
-        setSaveMessage({ type: 'error', text: result.message || 'Erreur lors de la sauvegarde' });
+        setSaveMessage({ type: "error", text: result?.message || "Erreur lors de la sauvegarde" });
       }
-    } catch (error) {
-      setSaveMessage({ type: 'error', text: 'Erreur de connexion' });
+    } catch (err) {
+      console.error(err);
+      setSaveMessage({ type: "error", text: "Erreur de connexion" });
     } finally {
       setIsSaving(false);
     }
   };
 
   const generateCode = () => {
-    const codes = ['CREPE', 'GALETTE', 'SARTHE', 'MAMERS', 'BRETAGNE', 'CIDRE', 'CARAMEL', 'SECRET'];
+    const codes = ["CREPE", "GALETTE", "SARTHE", "MAMERS", "BRETAGNE", "CIDRE", "CARAMEL", "SECRET"];
     const randomCode = codes[Math.floor(Math.random() * codes.length)];
     const randomNum = Math.floor(Math.random() * 100);
-    setFormData(prev => ({ ...prev, secret_code: `${randomCode}${randomNum}` }));
+    setFormData((prev) => ({ ...prev, secret_code: `${randomCode}${randomNum}` }));
   };
 
-  const handleImageUpload = async (type: 'galette' | 'crepe', index: number, file: File) => {
+  const uploadToStorage = async (filePath: string, file: File) => {
+    // NOTE: non destructif => on garde le bucket "images" comme dans ton code
+    const { error: uploadError } = await supabase.storage.from("images").upload(filePath, file, { upsert: true });
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from("images").getPublicUrl(filePath);
+    return data.publicUrl;
+  };
+
+  const handleImageUpload = async (type: "galette" | "crepe", index: number, file: File) => {
     const key = `${type}-${index}`;
     setUploadingImage(key);
+    setSaveMessage(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      if (!isImageFile(file)) {
+        setSaveMessage({ type: "error", text: "Fichier invalide: merci d'uploader une image." });
+        return;
+      }
+
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `menu-${type}-${index}-${Date.now()}.${fileExt}`;
       const filePath = `secret-menu/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, { upsert: true });
+      const publicUrl = await uploadToStorage(filePath, file);
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      // Update form data
-      const items = type === 'galette' ? [...formData.galette_items] : [...formData.crepe_items];
+      const items = type === "galette" ? [...formData.galette_items] : [...formData.crepe_items];
       items[index] = { ...items[index], image_url: publicUrl };
 
-      if (type === 'galette') {
-        setFormData(prev => ({ ...prev, galette_items: items }));
-      } else {
-        setFormData(prev => ({ ...prev, crepe_items: items }));
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setSaveMessage({ type: 'error', text: 'Erreur lors du téléchargement de l\'image' });
+      if (type === "galette") setFormData((prev) => ({ ...prev, galette_items: items }));
+      else setFormData((prev) => ({ ...prev, crepe_items: items }));
+    } catch (err) {
+      console.error("Error uploading image:", err);
+      setSaveMessage({ type: "error", text: "Erreur lors du téléchargement de l'image" });
     } finally {
       setUploadingImage(null);
     }
   };
 
-  // Upload special image
-  const handleSpecialImageUpload = async (type: 'galette' | 'crepe', file: File) => {
+  const handleSpecialImageUpload = async (type: "galette" | "crepe", file: File) => {
     const key = `special-${type}-image`;
     setUploadingImage(key);
+    setSaveMessage(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      if (!isImageFile(file)) {
+        setSaveMessage({ type: "error", text: "Fichier invalide: merci d'uploader une image." });
+        return;
+      }
+
+      const fileExt = file.name.split(".").pop() || "jpg";
       const fileName = `special-${type}-image-${Date.now()}.${fileExt}`;
       const filePath = `secret-menu/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, { upsert: true });
+      const publicUrl = await uploadToStorage(filePath, file);
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      if (type === 'galette') {
-        setFormData(prev => ({ ...prev, galette_special_image_url: publicUrl }));
-      } else {
-        setFormData(prev => ({ ...prev, crepe_special_image_url: publicUrl }));
-      }
-    } catch (error) {
-      console.error('Error uploading special image:', error);
-      setSaveMessage({ type: 'error', text: 'Erreur lors du téléchargement de l\'image' });
+      if (type === "galette") setFormData((prev) => ({ ...prev, galette_special_image_url: publicUrl }));
+      else setFormData((prev) => ({ ...prev, crepe_special_image_url: publicUrl }));
+    } catch (err) {
+      console.error("Error uploading special image:", err);
+      setSaveMessage({ type: "error", text: "Erreur lors du téléchargement de l'image" });
     } finally {
       setUploadingImage(null);
     }
   };
 
-  // Upload special video
-  const handleSpecialVideoUpload = async (type: 'galette' | 'crepe', file: File) => {
+  const handleSpecialVideoUpload = async (type: "galette" | "crepe", file: File) => {
     const key = `special-${type}-video`;
     setUploadingVideo(key);
-
-    // Check file size (max 50MB)
-    if (file.size > 50 * 1024 * 1024) {
-      setSaveMessage({ type: 'error', text: 'Vidéo trop volumineuse (max 50MB). Utilisez un lien YouTube/externe.' });
-      setUploadingVideo(null);
-      return;
-    }
+    setSaveMessage(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      if (!isVideoFile(file)) {
+        setSaveMessage({ type: "error", text: "Fichier invalide: merci d'uploader une vidéo." });
+        return;
+      }
+
+      // max 50MB
+      if (file.size > 50 * 1024 * 1024) {
+        setSaveMessage({ type: "error", text: "Vidéo trop volumineuse (max 50MB). Utilisez un lien YouTube/externe." });
+        return;
+      }
+
+      const fileExt = file.name.split(".").pop() || "mp4";
       const fileName = `special-${type}-video-${Date.now()}.${fileExt}`;
       const filePath = `secret-menu/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, { upsert: true });
+      const publicUrl = await uploadToStorage(filePath, file);
 
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath);
-
-      if (type === 'galette') {
-        setFormData(prev => ({ ...prev, galette_special_video_url: publicUrl }));
-      } else {
-        setFormData(prev => ({ ...prev, crepe_special_video_url: publicUrl }));
-      }
-    } catch (error) {
-      console.error('Error uploading special video:', error);
-      setSaveMessage({ type: 'error', text: 'Erreur lors du téléchargement de la vidéo' });
+      if (type === "galette") setFormData((prev) => ({ ...prev, galette_special_video_url: publicUrl }));
+      else setFormData((prev) => ({ ...prev, crepe_special_video_url: publicUrl }));
+    } catch (err) {
+      console.error("Error uploading special video:", err);
+      setSaveMessage({ type: "error", text: "Erreur lors du téléchargement de la vidéo" });
     } finally {
       setUploadingVideo(null);
     }
   };
 
-  // Check if URL is a video
-  const isVideoUrl = (url: string): boolean => {
-    if (!url) return false;
-    return url.includes('.mp4') || url.includes('.webm') || url.includes('.mov') || 
-           url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com');
-  };
-
-  // Get YouTube embed URL
-  const getYoutubeEmbedUrl = (url: string): string | null => {
-    if (!url) return null;
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&]+)/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : null;
-  };
-
-  const updateMenuItem = (type: 'galette' | 'crepe', index: number, field: keyof MenuItem, value: string) => {
-    const items = type === 'galette' ? [...formData.galette_items] : [...formData.crepe_items];
+  const updateMenuItem = (type: "galette" | "crepe", index: number, field: keyof MenuItem, value: string) => {
+    const items = type === "galette" ? [...formData.galette_items] : [...formData.crepe_items];
     items[index] = { ...items[index], [field]: value };
 
-    if (type === 'galette') {
-      setFormData(prev => ({ ...prev, galette_items: items }));
-    } else {
-      setFormData(prev => ({ ...prev, crepe_items: items }));
-    }
+    if (type === "galette") setFormData((prev) => ({ ...prev, galette_items: items }));
+    else setFormData((prev) => ({ ...prev, crepe_items: items }));
   };
 
-  const removeImage = (type: 'galette' | 'crepe', index: number) => {
-    const items = type === 'galette' ? [...formData.galette_items] : [...formData.crepe_items];
+  const removeImage = (type: "galette" | "crepe", index: number) => {
+    const items = type === "galette" ? [...formData.galette_items] : [...formData.crepe_items];
     items[index] = { ...items[index], image_url: undefined };
 
-    if (type === 'galette') {
-      setFormData(prev => ({ ...prev, galette_items: items }));
-    } else {
-      setFormData(prev => ({ ...prev, crepe_items: items }));
-    }
+    if (type === "galette") setFormData((prev) => ({ ...prev, galette_items: items }));
+    else setFormData((prev) => ({ ...prev, crepe_items: items }));
   };
 
-  const renderItemEditor = (type: 'galette' | 'crepe', index: number, item: MenuItem) => {
+  const renderItemEditor = (type: "galette" | "crepe", index: number, item: MenuItem) => {
     const key = `${type}-${index}`;
-    const icon = type === 'galette' ? <Flame className="w-4 h-4 text-terracotta" /> : <Snowflake className="w-4 h-4 text-caramel" />;
-    const label = type === 'galette' ? `Galette ${index + 1}` : `Crêpe ${index + 1}`;
+    const icon =
+      type === "galette" ? <Flame className="w-4 h-4 text-terracotta" /> : <Snowflake className="w-4 h-4 text-caramel" />;
+    const label = type === "galette" ? `Galette ${index + 1}` : `Crêpe ${index + 1}`;
 
     return (
       <div key={key} className="p-4 rounded-xl bg-background/50 border border-border space-y-3">
@@ -398,28 +424,13 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
         </div>
 
         {/* Name */}
-        <Input
-          value={item.name}
-          onChange={(e) => updateMenuItem(type, index, 'name', e.target.value)}
-          placeholder="Nom de la création"
-          className="font-medium"
-        />
+        <Input value={item.name} onChange={(e) => updateMenuItem(type, index, "name", e.target.value)} placeholder="Nom de la création" className="font-medium" />
 
         {/* Description */}
-        <Textarea
-          value={item.description}
-          onChange={(e) => updateMenuItem(type, index, 'description', e.target.value)}
-          placeholder="Ingrédients / description"
-          rows={2}
-        />
+        <Textarea value={item.description} onChange={(e) => updateMenuItem(type, index, "description", e.target.value)} placeholder="Ingrédients / description" rows={2} />
 
         {/* Price */}
-        <Input
-          value={item.price}
-          onChange={(e) => updateMenuItem(type, index, 'price', e.target.value)}
-          placeholder="Prix (ex: 9,50 €)"
-          className="font-mono"
-        />
+        <Input value={item.price} onChange={(e) => updateMenuItem(type, index, "price", e.target.value)} placeholder="Prix (ex: 9,50 €)" className="font-mono" />
       </div>
     );
   };
@@ -433,29 +444,18 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="card-warm text-center">
         <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
           <ChefHat className="w-8 h-8 text-caramel" />
         </div>
         <h2 className="font-display text-xl font-bold">Menu Secret du Week-end</h2>
-        <p className="text-sm text-muted-foreground">
-          Semaine du {menu ? new Date(menu.week_start).toLocaleDateString('fr-FR') : '...'}
-        </p>
-        
-        {/* Admin visibility info */}
+        <p className="text-sm text-muted-foreground">Semaine du {menu ? new Date(menu.week_start).toLocaleDateString("fr-FR") : "..."}</p>
+
         <div className="mt-4 p-3 rounded-xl bg-herb/10 border border-herb/30">
-          <p className="text-xs text-herb font-medium">
-            👁️ Vue Admin : 3 galettes + 3 crêpes visibles ici
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Côté public : invisible sans code secret valide
-          </p>
+          <p className="text-xs text-herb font-medium">👁️ Vue Admin : 3 galettes + 3 crêpes visibles ici</p>
+          <p className="text-xs text-muted-foreground mt-1">Côté public : invisible sans code secret valide</p>
         </div>
       </div>
 
@@ -466,25 +466,23 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
           Informations générales
         </h3>
 
-        {/* Menu Name */}
         <div className="space-y-2">
           <Label htmlFor="menu_name">Nom du menu</Label>
           <Input
             id="menu_name"
             value={formData.menu_name}
-            onChange={(e) => setFormData(prev => ({ ...prev, menu_name: e.target.value }))}
+            onChange={(e) => setFormData((prev) => ({ ...prev, menu_name: e.target.value }))}
             placeholder="Menu Secret du Week-end"
           />
         </div>
 
-        {/* Secret Code */}
         <div className="space-y-2">
           <Label htmlFor="secret_code">Code secret</Label>
           <div className="flex gap-2">
             <Input
               id="secret_code"
               value={formData.secret_code}
-              onChange={(e) => setFormData(prev => ({ ...prev, secret_code: e.target.value.toUpperCase() }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, secret_code: e.target.value.toUpperCase() }))}
               placeholder="CREPE2025"
               className="font-mono"
             />
@@ -494,7 +492,6 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
           </div>
         </div>
 
-        {/* Validity Period */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="valid_from" className="flex items-center gap-2">
@@ -505,7 +502,7 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
               id="valid_from"
               type="date"
               value={formData.valid_from}
-              onChange={(e) => setFormData(prev => ({ ...prev, valid_from: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, valid_from: e.target.value }))}
             />
           </div>
           <div className="space-y-2">
@@ -517,22 +514,23 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
               id="valid_to"
               type="date"
               value={formData.valid_to}
-              onChange={(e) => setFormData(prev => ({ ...prev, valid_to: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, valid_to: e.target.value }))}
             />
           </div>
         </div>
+
+        {!datesAreValid && (
+          <div className="p-3 rounded-xl bg-destructive/10 text-destructive text-xs">
+            ⚠️ La date de début doit être avant la date de fin.
+          </div>
+        )}
       </div>
 
-      {/* Signature Specials */}
+      {/* Specials */}
       <div className="card-warm space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-display font-bold">✨ Spécialités du Week-end</h3>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.open('/carte', '_blank')}
-            className="gap-2"
-          >
+          <Button variant="outline" size="sm" onClick={() => window.open("/carte", "_blank")} className="gap-2">
             <Eye className="w-4 h-4" />
             Voir rendu public
           </Button>
@@ -544,15 +542,11 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             <Flame className="w-5 h-5 text-terracotta" />
             <Label className="font-semibold">Spécial #1 - Galette Signature</Label>
           </div>
-          
-          <Input
-            value={formData.galette_special}
-            onChange={(e) => setFormData(prev => ({ ...prev, galette_special: e.target.value }))}
-            placeholder="Nom de la galette"
-          />
+
+          <Input value={formData.galette_special} onChange={(e) => setFormData((p) => ({ ...p, galette_special: e.target.value }))} placeholder="Nom de la galette" />
           <Textarea
             value={formData.galette_special_description}
-            onChange={(e) => setFormData(prev => ({ ...prev, galette_special_description: e.target.value }))}
+            onChange={(e) => setFormData((p) => ({ ...p, galette_special_description: e.target.value }))}
             placeholder="Ingrédients et description..."
             rows={2}
           />
@@ -560,26 +554,22 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             <Euro className="w-4 h-4 text-muted-foreground" />
             <Input
               value={formData.galette_special_price}
-              onChange={(e) => setFormData(prev => ({ ...prev, galette_special_price: e.target.value }))}
+              onChange={(e) => setFormData((p) => ({ ...p, galette_special_price: e.target.value }))}
               placeholder="Prix (ex: 12,50 €)"
               className="font-mono"
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Photo */}
           <div className="space-y-2">
             <Label className="text-xs flex items-center gap-1">
               <Image className="w-3 h-3" /> Photo
             </Label>
             {formData.galette_special_image_url ? (
               <div className="relative aspect-video rounded-lg overflow-hidden max-w-xs">
-                <img 
-                  src={formData.galette_special_image_url} 
-                  alt="Galette special" 
-                  className="w-full h-full object-cover"
-                />
+                <img src={formData.galette_special_image_url} alt="Galette special" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, galette_special_image_url: '' }))}
+                  onClick={() => setFormData((p) => ({ ...p, galette_special_image_url: "" }))}
                   className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-white hover:bg-destructive/90"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -587,7 +577,7 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
               </div>
             ) : (
               <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 cursor-pointer hover:border-terracotta/50 transition-colors">
-                {uploadingImage === 'special-galette-image' ? (
+                {uploadingImage === "special-galette-image" ? (
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 ) : (
                   <>
@@ -601,96 +591,59 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleSpecialImageUpload('galette', file);
+                    if (file) handleSpecialImageUpload("galette", file);
                   }}
-                  disabled={uploadingImage === 'special-galette-image'}
+                  disabled={uploadingImage === "special-galette-image"}
                 />
               </label>
             )}
           </div>
 
-          {/* Video Upload/URL */}
+          {/* Video */}
           <div className="space-y-2">
             <Label className="text-xs flex items-center gap-1">
-              <Video className="w-3 h-3" /> Vidéo (upload MP4 ou lien YouTube)
+              <Video className="w-3 h-3" /> Vidéo (upload MP4/WebM ou lien YouTube)
             </Label>
             <div className="flex gap-2">
               <Input
                 value={formData.galette_special_video_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, galette_special_video_url: e.target.value }))}
+                onChange={(e) => setFormData((p) => ({ ...p, galette_special_video_url: e.target.value }))}
                 placeholder="https://youtube.com/... ou upload"
                 className="flex-1"
               />
               <label className="flex items-center justify-center px-3 rounded-lg border border-input cursor-pointer hover:bg-accent transition-colors">
-                {uploadingVideo === 'special-galette-video' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
+                {uploadingVideo === "special-galette-video" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <input
                   type="file"
                   accept="video/mp4,video/webm"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleSpecialVideoUpload('galette', file);
+                    if (file) handleSpecialVideoUpload("galette", file);
                   }}
-                  disabled={uploadingVideo === 'special-galette-video'}
+                  disabled={uploadingVideo === "special-galette-video"}
                 />
               </label>
               {formData.galette_special_video_url && (
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, galette_special_video_url: '' }))}
+                  onClick={() => setFormData((p) => ({ ...p, galette_special_video_url: "" }))}
                   className="p-2 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
-            {/* Video Preview */}
+
             {formData.galette_special_video_url && (
               <div className="aspect-video rounded-lg overflow-hidden max-w-xs bg-black">
                 {getYoutubeEmbedUrl(formData.galette_special_video_url) ? (
-                  <iframe
-                    src={getYoutubeEmbedUrl(formData.galette_special_video_url) || ''}
-                    className="w-full h-full"
-                    allowFullScreen
-                  />
+                  <iframe src={getYoutubeEmbedUrl(formData.galette_special_video_url) || ""} className="w-full h-full" allowFullScreen />
                 ) : (
-                  <video
-                    src={formData.galette_special_video_url}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
+                  <video src={formData.galette_special_video_url} controls className="w-full h-full object-contain" />
                 )}
               </div>
             )}
           </div>
-
-          {/* Preview Card */}
-          {formData.galette_special && (
-            <div className="mt-4 p-3 rounded-lg bg-background/80 border border-terracotta/30">
-              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                <Eye className="w-3 h-3" /> Aperçu
-              </p>
-              <div className="flex gap-3">
-                {formData.galette_special_image_url && (
-                  <img 
-                    src={formData.galette_special_image_url} 
-                    alt="Preview" 
-                    className="w-16 h-16 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold text-sm">{formData.galette_special}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{formData.galette_special_description}</p>
-                  {formData.galette_special_price && (
-                    <p className="text-sm font-mono text-terracotta mt-1">{formData.galette_special_price}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Crepe Special */}
@@ -699,15 +652,11 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             <Snowflake className="w-5 h-5 text-caramel" />
             <Label className="font-semibold">Spécial #2 - Crêpe Signature</Label>
           </div>
-          
-          <Input
-            value={formData.crepe_special}
-            onChange={(e) => setFormData(prev => ({ ...prev, crepe_special: e.target.value }))}
-            placeholder="Nom de la crêpe"
-          />
+
+          <Input value={formData.crepe_special} onChange={(e) => setFormData((p) => ({ ...p, crepe_special: e.target.value }))} placeholder="Nom de la crêpe" />
           <Textarea
             value={formData.crepe_special_description}
-            onChange={(e) => setFormData(prev => ({ ...prev, crepe_special_description: e.target.value }))}
+            onChange={(e) => setFormData((p) => ({ ...p, crepe_special_description: e.target.value }))}
             placeholder="Ingrédients et description..."
             rows={2}
           />
@@ -715,26 +664,22 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
             <Euro className="w-4 h-4 text-muted-foreground" />
             <Input
               value={formData.crepe_special_price}
-              onChange={(e) => setFormData(prev => ({ ...prev, crepe_special_price: e.target.value }))}
+              onChange={(e) => setFormData((p) => ({ ...p, crepe_special_price: e.target.value }))}
               placeholder="Prix (ex: 8,50 €)"
               className="font-mono"
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Photo */}
           <div className="space-y-2">
             <Label className="text-xs flex items-center gap-1">
               <Image className="w-3 h-3" /> Photo
             </Label>
             {formData.crepe_special_image_url ? (
               <div className="relative aspect-video rounded-lg overflow-hidden max-w-xs">
-                <img 
-                  src={formData.crepe_special_image_url} 
-                  alt="Crepe special" 
-                  className="w-full h-full object-cover"
-                />
+                <img src={formData.crepe_special_image_url} alt="Crêpe special" className="w-full h-full object-cover" />
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, crepe_special_image_url: '' }))}
+                  onClick={() => setFormData((p) => ({ ...p, crepe_special_image_url: "" }))}
                   className="absolute top-2 right-2 p-1.5 rounded-full bg-destructive text-white hover:bg-destructive/90"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -742,7 +687,7 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
               </div>
             ) : (
               <label className="flex flex-col items-center justify-center h-24 rounded-lg border-2 border-dashed border-muted-foreground/30 cursor-pointer hover:border-caramel/50 transition-colors">
-                {uploadingImage === 'special-crepe-image' ? (
+                {uploadingImage === "special-crepe-image" ? (
                   <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                 ) : (
                   <>
@@ -756,96 +701,59 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleSpecialImageUpload('crepe', file);
+                    if (file) handleSpecialImageUpload("crepe", file);
                   }}
-                  disabled={uploadingImage === 'special-crepe-image'}
+                  disabled={uploadingImage === "special-crepe-image"}
                 />
               </label>
             )}
           </div>
 
-          {/* Video Upload/URL */}
+          {/* Video */}
           <div className="space-y-2">
             <Label className="text-xs flex items-center gap-1">
-              <Video className="w-3 h-3" /> Vidéo (upload MP4 ou lien YouTube)
+              <Video className="w-3 h-3" /> Vidéo (upload MP4/WebM ou lien YouTube)
             </Label>
             <div className="flex gap-2">
               <Input
                 value={formData.crepe_special_video_url}
-                onChange={(e) => setFormData(prev => ({ ...prev, crepe_special_video_url: e.target.value }))}
+                onChange={(e) => setFormData((p) => ({ ...p, crepe_special_video_url: e.target.value }))}
                 placeholder="https://youtube.com/... ou upload"
                 className="flex-1"
               />
               <label className="flex items-center justify-center px-3 rounded-lg border border-input cursor-pointer hover:bg-accent transition-colors">
-                {uploadingVideo === 'special-crepe-video' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Upload className="w-4 h-4" />
-                )}
+                {uploadingVideo === "special-crepe-video" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <input
                   type="file"
                   accept="video/mp4,video/webm"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) handleSpecialVideoUpload('crepe', file);
+                    if (file) handleSpecialVideoUpload("crepe", file);
                   }}
-                  disabled={uploadingVideo === 'special-crepe-video'}
+                  disabled={uploadingVideo === "special-crepe-video"}
                 />
               </label>
               {formData.crepe_special_video_url && (
                 <button
-                  onClick={() => setFormData(prev => ({ ...prev, crepe_special_video_url: '' }))}
+                  onClick={() => setFormData((p) => ({ ...p, crepe_special_video_url: "" }))}
                   className="p-2 rounded-lg border border-destructive/20 text-destructive hover:bg-destructive/10"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               )}
             </div>
-            {/* Video Preview */}
+
             {formData.crepe_special_video_url && (
               <div className="aspect-video rounded-lg overflow-hidden max-w-xs bg-black">
                 {getYoutubeEmbedUrl(formData.crepe_special_video_url) ? (
-                  <iframe
-                    src={getYoutubeEmbedUrl(formData.crepe_special_video_url) || ''}
-                    className="w-full h-full"
-                    allowFullScreen
-                  />
+                  <iframe src={getYoutubeEmbedUrl(formData.crepe_special_video_url) || ""} className="w-full h-full" allowFullScreen />
                 ) : (
-                  <video
-                    src={formData.crepe_special_video_url}
-                    controls
-                    className="w-full h-full object-contain"
-                  />
+                  <video src={formData.crepe_special_video_url} controls className="w-full h-full object-contain" />
                 )}
               </div>
             )}
           </div>
-
-          {/* Preview Card */}
-          {formData.crepe_special && (
-            <div className="mt-4 p-3 rounded-lg bg-background/80 border border-caramel/30">
-              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1">
-                <Eye className="w-3 h-3" /> Aperçu
-              </p>
-              <div className="flex gap-3">
-                {formData.crepe_special_image_url && (
-                  <img 
-                    src={formData.crepe_special_image_url} 
-                    alt="Preview" 
-                    className="w-16 h-16 rounded object-cover"
-                  />
-                )}
-                <div className="flex-1">
-                  <p className="font-semibold text-sm">{formData.crepe_special}</p>
-                  <p className="text-xs text-muted-foreground line-clamp-2">{formData.crepe_special_description}</p>
-                  {formData.crepe_special_price && (
-                    <p className="text-sm font-mono text-caramel mt-1">{formData.crepe_special_price}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -855,7 +763,7 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
           <Flame className="w-5 h-5 text-terracotta" />
           Galettes Secrètes (3 max)
         </h3>
-        {formData.galette_items.map((item, index) => renderItemEditor('galette', index, item))}
+        {formData.galette_items.map((item, index) => renderItemEditor("galette", index, item))}
       </div>
 
       {/* Crêpes Items */}
@@ -864,25 +772,25 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
           <Snowflake className="w-5 h-5 text-caramel" />
           Crêpes Secrètes (3 max)
         </h3>
-        {formData.crepe_items.map((item, index) => renderItemEditor('crepe', index, item))}
+        {formData.crepe_items.map((item, index) => renderItemEditor("crepe", index, item))}
       </div>
 
       {/* Save Message */}
       {saveMessage && (
-        <div className={`p-3 rounded-xl text-sm text-center ${
-          saveMessage.type === 'success' 
-            ? 'bg-herb/10 text-herb' 
-            : 'bg-destructive/10 text-destructive'
-        }`}>
+        <div
+          className={`p-3 rounded-xl text-sm text-center ${
+            saveMessage.type === "success" ? "bg-herb/10 text-herb" : "bg-destructive/10 text-destructive"
+          }`}
+        >
           {saveMessage.text}
         </div>
       )}
 
       {/* Save Button */}
-      <Button 
-        onClick={handleSave} 
+      <Button
+        onClick={handleSave}
         className="w-full btn-hero py-6"
-        disabled={isSaving}
+        disabled={isSaving || !formData.secret_code.trim() || !datesAreValid}
       >
         {isSaving ? (
           <Loader2 className="w-5 h-5 animate-spin" />
