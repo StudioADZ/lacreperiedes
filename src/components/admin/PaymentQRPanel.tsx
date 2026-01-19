@@ -11,8 +11,7 @@ import {
   Settings
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentQRPanelProps {
   adminPassword: string;
@@ -25,25 +24,19 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
 
   useEffect(() => {
     fetchSettings();
-  }, [adminPassword]);
+  }, []);
 
   const fetchSettings = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          action: 'get',
-          adminPassword,
-          settingKey: 'payment_qr'
-        })
-      });
-      
-      const result = await response.json();
-      
-      if (response.ok && result.setting) {
-        setIsEnabled(result.setting.is_active);
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .eq('setting_key', 'payment_qr')
+        .maybeSingle();
+
+      if (data) {
+        setIsEnabled(data.is_active);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -55,18 +48,15 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
   const toggleEnabled = async () => {
     setIsSaving(true);
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update',
-          adminPassword,
-          settingKey: 'payment_qr',
-          isActive: !isEnabled
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ 
+          is_active: !isEnabled,
+          updated_at: new Date().toISOString()
         })
-      });
+        .eq('setting_key', 'payment_qr');
 
-      if (response.ok) {
+      if (!error) {
         setIsEnabled(!isEnabled);
       }
     } catch (error) {
@@ -98,9 +88,6 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
         <h2 className="font-display text-xl font-bold">Paiement / QR</h2>
         <p className="text-sm text-muted-foreground">
           Fonctionnalité en préparation
-        </p>
-        <p className="text-xs text-muted-foreground mt-2">
-          Aucun paiement actif actuellement
         </p>
       </div>
 

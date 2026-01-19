@@ -56,36 +56,29 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Typography - Quiz focus */}
-          <h1 className="font-display text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
-            Gagnez des crêpes chaque semaine
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)] text-xl md:text-2xl lg:text-3xl mt-2 font-normal">Participez au quiz et tentez de remporter une crêpe, une galette ou une formule.</span>
+          {/* Typography - sharper and more premium */}
+          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
+            La Crêperie
+            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)]">des Saveurs</span>
           </h1>
 
           <p className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide" style={{ animationDelay: "0.3s" }}>
-            La Crêperie des Saveurs • Mamers
+            Crêpes & Galettes artisanales à Mamers
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 animate-fade-in flex-wrap justify-center" style={{ animationDelay: "0.5s" }}>
-            {/* CTA Principal - Quiz */}
+          <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: "0.5s" }}>
             <Link to="/quiz">
               <Button className="btn-hero group text-base px-8 py-4">
-                🎁 Jouer au quiz
+                <span>Jouez au Quiz</span>
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            {/* Secondaires */}
             <Link to="/carte">
-              <Button variant="secondary" className="text-base px-6 py-4 bg-white/20 backdrop-blur hover:bg-white/30 text-white border-white/30">
-                <span>Voir le menu classique</span>
-              </Button>
+              <button className="btn-secondary-hero text-base px-8 py-4">
+                Découvrir la carte
+              </button>
             </Link>
           </div>
-          
-          {/* Texte discret */}
-          <p className="text-sm text-white/70 mt-6 animate-fade-in" style={{ animationDelay: "0.7s" }}>
-            Le menu secret se débloque après participation au quiz.
-          </p>
         </div>
 
         {/* Scroll indicator */}
@@ -193,17 +186,14 @@ const Index = () => {
                 🎁 Chaque semaine
               </span>
               <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-espresso">
-                Quiz & Récompenses
+                Gagnez des crêpes gratuites !
               </h2>
-              <p className="text-espresso/80 text-sm mb-4 max-w-xs">
+              <p className="text-espresso/80 text-sm mb-6 max-w-xs">
                 Participez à notre quiz hebdomadaire et tentez de remporter une formule complète, une galette ou une crêpe.
-              </p>
-              <p className="text-espresso/60 text-xs mb-6 max-w-xs">
-                Un code obtenu via le quiz est nécessaire pour débloquer la carte secrète.
               </p>
               <Link to="/quiz">
                 <Button className="btn-hero group w-full sm:w-auto">
-                  <span>Jouer au quiz</span>
+                  <span>Jouer maintenant</span>
                   <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>

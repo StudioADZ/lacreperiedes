@@ -1,28 +1,17 @@
-import { useState } from "react";
-import { UtensilsCrossed, Lock, Loader2 } from "lucide-react";
+import { useState } from 'react';
+import { UtensilsCrossed, Flame, Snowflake, Leaf, Lock, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
 import SocialFooter from "@/components/SocialFooter";
 import SecretCodeForm from "@/components/carte/SecretCodeForm";
 import SecretMenuDisplay from "@/components/carte/SecretMenuDisplay";
 import { useSecretAccess } from "@/hooks/useSecretAccess";
 import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
-// ✅ A REMPLACER par TON composant existant de carte publique
-// ex: import MenuPublic from "@/components/carte/MenuPublic";
-import PublicMenuDisplay from "@/components/carte/PublicMenuDisplay";
-
 const Carte = () => {
-  const { hasAccess, isLoading: accessLoading, verifyCode } = useSecretAccess();
-  const [submitting, setSubmitting] = useState(false);
+  const { hasAccess, isLoading: accessLoading, verifyCode, verifyAdminAccess, isAdminAccess } = useSecretAccess();
+  const [showBlurredPreview, setShowBlurredPreview] = useState(true);
 
-  const handleVerifyCode = async (code: string) => {
-    try {
-      setSubmitting(true);
-      await verifyCode(code);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+  // Loading state
   if (accessLoading) {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
@@ -34,51 +23,100 @@ const Carte = () => {
   return (
     <div className="min-h-screen pt-20 pb-24 px-4">
       <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="font-display text-3xl font-bold mb-2">La Carte</h1>
+        {/* Header - always visible */}
+        <div className="text-center mb-10">
+          <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
+            <UtensilsCrossed className="w-4 h-4 inline mr-1" />
+            Menu Secret
+          </span>
+          <h1 className="font-display text-3xl font-bold mb-3">
+            La Carte Secrète
+          </h1>
           <p className="text-muted-foreground">
-            Découvrez notre carte… et débloquez le Menu Secret si vous avez le code.
+            Créations exclusives réservées aux initiés
           </p>
         </div>
 
-        {/* ✅ 1) CARTE PUBLIQUE — TOUJOURS VISIBLE */}
-        <div className="mb-10">
-          <PublicMenuDisplay />
-          {/* ou ton composant existant: <MenuPublic /> */}
-        </div>
+        {hasAccess ? (
+          /* Unlocked: Show full menu */
+          <>
+            <SecretMenuDisplay />
+            
+            {/* Google Review CTA after menu */}
+            <GoogleReviewCTA variant="card" className="mt-8" />
+          </>
+        ) : (
+          /* Locked: Show blurred preview + code form */
+          <>
+            {/* Blurred Preview */}
+            {showBlurredPreview && (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="relative mb-8"
+              >
+                {/* Blurred fake content */}
+                <div className="filter blur-sm opacity-50 pointer-events-none">
+                  <div className="card-warm mb-4 p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Flame className="w-5 h-5 text-terracotta" />
+                      <span className="font-semibold">Galette Mystère</span>
+                    </div>
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2" />
+                    <div className="h-3 bg-muted rounded w-1/2" />
+                  </div>
+                  
+                  <div className="card-warm mb-4 p-6">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Snowflake className="w-5 h-5 text-caramel" />
+                      <span className="font-semibold">Crêpe Secrète</span>
+                    </div>
+                    <div className="h-4 bg-muted rounded w-2/3 mb-2" />
+                    <div className="h-3 bg-muted rounded w-1/3" />
+                  </div>
 
-        {/* ✅ 2) MENU SECRET — SEULEMENT ICI */}
-        <div className="mb-6">
-          <div className="text-center mb-6">
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
-              <UtensilsCrossed className="w-4 h-4" />
-              Menu Secret
-            </span>
-          </div>
-
-          {hasAccess ? (
-            <>
-              <SecretMenuDisplay />
-              <GoogleReviewCTA variant="card" className="mt-8" />
-            </>
-          ) : (
-            <>
-              <div className="card-warm mb-6 p-6 text-center">
-                <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
-                  <Lock className="w-8 h-8 text-caramel" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="card-warm p-4">
+                      <div className="h-16 bg-muted rounded mb-2" />
+                      <div className="h-3 bg-muted rounded w-2/3" />
+                    </div>
+                    <div className="card-warm p-4">
+                      <div className="h-16 bg-muted rounded mb-2" />
+                      <div className="h-3 bg-muted rounded w-2/3" />
+                    </div>
+                  </div>
                 </div>
-                <p className="font-display font-bold text-lg">Menu Secret verrouillé</p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Entrez le code obtenu après le quiz pour accéder aux créations exclusives de la semaine.
-                </p>
-              </div>
 
-              {/* ✅ Pas d'admin sur cette page */}
-              <SecretCodeForm onSubmit={handleVerifyCode} isLoading={submitting} />
-            </>
-          )}
-        </div>
+                {/* Lock overlay */}
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl">
+                  <div className="text-center p-6">
+                    <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
+                      <Lock className="w-8 h-8 text-caramel" />
+                    </div>
+                    <p className="font-display font-bold text-lg">Contenu verrouillé</p>
+                    <p className="text-sm text-muted-foreground">Entrez le code secret ci-dessous</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Code Entry Form */}
+            <SecretCodeForm 
+              onSubmit={verifyCode}
+              onAdminSubmit={verifyAdminAccess}
+              isLoading={false}
+            />
+          </>
+        )}
+
+        {/* Admin indicator */}
+        {isAdminAccess && (
+          <div className="mt-4 p-2 rounded-lg bg-primary/10 text-center">
+            <p className="text-xs text-primary font-medium">
+              🔓 Accès Admin actif (permanent)
+            </p>
+          </div>
+        )}
 
         <SocialFooter />
       </div>

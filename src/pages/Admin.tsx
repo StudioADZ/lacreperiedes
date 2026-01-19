@@ -413,7 +413,7 @@ const Admin = () => {
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value.toUpperCase())}
                     onKeyDown={(e) => e.key === "Enter" && handleVerify(manualCode)}
-                    placeholder="Code à 8 caractères..."
+                    placeholder="XXXXXXXX"
                     className="font-mono text-lg tracking-wider"
                     maxLength={8}
                   />
@@ -421,9 +421,6 @@ const Admin = () => {
                     {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Saisissez le code du QR si le scan ne fonctionne pas.
-                </p>
               </div>
             )}
 
@@ -473,7 +470,7 @@ const Admin = () => {
                           result.claimed ? "bg-muted text-muted-foreground" : "bg-herb/10 text-herb"
                         }`}
                       >
-                        {result.claimed ? "❌ DÉJÀ UTILISÉ — Ce lot a déjà été réclamé" : "✓ QR VALIDE — Lot disponible"}
+                        {result.claimed ? "❌ DÉJÀ UTILISÉ" : "✓ VALIDE"}
                       </div>
 
                       {/* Winner Info */}
@@ -521,8 +518,8 @@ const Admin = () => {
                     </>
                   ) : (
                     <>
-                      <h2 className="font-display text-xl font-bold text-destructive mb-2">QR invalide ou inexistant</h2>
-                      <p className="text-muted-foreground">{result.message || "Ce code n'existe pas ou a déjà été invalidé."}</p>
+                      <h2 className="font-display text-xl font-bold text-destructive mb-2">Code invalide</h2>
+                      <p className="text-muted-foreground">{result.message || "Ce code n'existe pas"}</p>
                     </>
                   )}
 
@@ -539,7 +536,7 @@ const Admin = () => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Week Info */}
             <div className="card-warm text-center">
-              <p className="text-sm text-muted-foreground mb-1">Semaine affichée</p>
+              <p className="text-sm text-muted-foreground mb-1">Semaine du</p>
               <p className="font-display text-lg font-semibold">
                 {new Date(stats.weekStart).toLocaleDateString("fr-FR", {
                   weekday: "long",
@@ -554,17 +551,14 @@ const Admin = () => {
               <div className="card-warm text-center py-4">
                 <p className="text-2xl font-bold text-primary">{stats.totalParticipations}</p>
                 <p className="text-xs text-muted-foreground">Participations</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Total cette semaine</p>
               </div>
               <div className="card-warm text-center py-4">
                 <p className="text-2xl font-bold text-herb">{stats.totalWinners}</p>
                 <p className="text-xs text-muted-foreground">Gagnants</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Avec un lot attribué</p>
               </div>
               <div className="card-warm text-center py-4">
                 <p className="text-2xl font-bold text-caramel">{stats.totalClaimed}</p>
                 <p className="text-xs text-muted-foreground">Réclamés</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Lots récupérés</p>
               </div>
             </div>
 

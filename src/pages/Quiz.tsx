@@ -336,26 +336,24 @@ const Quiz = () => {
               </div>
             ) : null}
             <p className="text-xs text-muted-foreground text-center mt-4">
-              📅 Quiz ouvert du lundi 00h01 au dimanche 23h59
-              <br />
-              ⚠️ Les gains expirent dimanche à 23h59 et ne sont plus valides en caisse après.
+              Nouvelle semaine chaque dimanche à minuit
             </p>
 
             {/* Google Reviews Buttons */}
             <div className="flex gap-3 mt-4 pt-4 border-t border-border/50">
               <a
-                href="https://share.google/BGUgjAnOT3yQfJd12"
+                href="https://g.page/r/CVTqauGmET0TEAE/preview"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"
               >
                 <Button variant="outline" size="sm" className="w-full gap-2 h-10">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                  <span className="text-xs">Voir la fiche</span>
+                  <span className="text-xs">Voir les avis</span>
                 </Button>
               </a>
               <a
-                href="https://g.page/r/CVTqauGmET0TEBM/review"
+                href="https://g.page/r/CVTqauGmET0TEAE/preview"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1"

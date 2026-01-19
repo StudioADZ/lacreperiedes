@@ -9,49 +9,51 @@ interface TimeLeft {
   seconds: number;
 }
 
-// Get the end of the current week (Sunday 23:59:59)
+// Get the end of the current week (Saturday 23:59:59)
 const getWeekEnd = (): Date => {
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
   
-  // Calculate days until Sunday 23:59
-  // If Sunday (0), it's today
-  // If Monday (1), we need 6 days
-  // etc.
-  const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+  // Calculate days until Saturday
+  // If Sunday (0), we need 6 days
+  // If Monday (1), we need 5 days
+  // ...
+  // If Saturday (6), we need 0 days
+  const daysUntilSaturday = dayOfWeek === 0 ? 6 : 6 - dayOfWeek;
   
-  const sunday = new Date(now);
-  sunday.setDate(now.getDate() + daysUntilSunday);
-  sunday.setHours(23, 59, 59, 999);
+  const saturday = new Date(now);
+  saturday.setDate(now.getDate() + daysUntilSaturday);
+  saturday.setHours(23, 59, 59, 999);
   
-  return sunday;
+  return saturday;
 };
 
-// Check if we're in the active period (Monday 00:01 to Sunday 23:59)
+// Check if we're in the active period (Sunday 01:00 to Saturday 23:59)
 const isActiveperiod = (): boolean => {
-  // Quiz is always active during the week (Mon 00:01 to Sun 23:59)
-  // Only inactive during the brief moment between Sun 23:59 and Mon 00:01
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const hours = now.getHours();
+  
+  // Sunday before 01:00 = not active yet
+  if (dayOfWeek === 0 && hours < 1) {
+    return false;
+  }
+  
   return true;
 };
 
-// Get time until Monday 00:01 (for pre-period display)
+// Get time until Sunday 01:00 (for pre-period display)
 const getTimeUntilStart = (): Date => {
   const now = new Date();
-  const dayOfWeek = now.getDay();
+  const sunday = new Date(now);
+  sunday.setHours(1, 0, 0, 0);
   
-  // Calculate next Monday 00:01
-  const daysUntilMonday = dayOfWeek === 0 ? 1 : dayOfWeek === 1 ? 0 : 8 - dayOfWeek;
-  
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + daysUntilMonday);
-  monday.setHours(0, 1, 0, 0);
-  
-  // If it's Monday and past 00:01, get next Monday
-  if (dayOfWeek === 1 && now.getHours() >= 0) {
-    monday.setDate(monday.getDate() + 7);
+  // If it's already past Sunday 01:00, get next Sunday
+  if (now >= sunday) {
+    sunday.setDate(sunday.getDate() + 7);
   }
   
-  return monday;
+  return sunday;
 };
 
 const calculateTimeLeft = (targetDate: Date): TimeLeft => {
@@ -161,9 +163,9 @@ const WeeklyCountdown = () => {
       {/* Info text */}
       <p className="text-xs text-center text-muted-foreground mt-3">
         {isActive ? (
-          <>Semaine : lundi 00h01 → dimanche 23h59<br/>Gains valables jusqu'à dimanche 23h59</>
+          <>Semaine en cours • Reset dimanche à 01h00</>
         ) : (
-          <>Nouvelle semaine lundi à 00h01 !</>
+          <>Préparez-vous pour la nouvelle semaine !</>
         )}
       </p>
     </motion.div>

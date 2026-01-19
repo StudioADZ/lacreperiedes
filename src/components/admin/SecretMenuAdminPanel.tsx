@@ -447,16 +447,6 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
         <p className="text-sm text-muted-foreground">
           Semaine du {menu ? new Date(menu.week_start).toLocaleDateString('fr-FR') : '...'}
         </p>
-        
-        {/* Admin visibility info */}
-        <div className="mt-4 p-3 rounded-xl bg-herb/10 border border-herb/30">
-          <p className="text-xs text-herb font-medium">
-            👁️ Vue Admin : 3 galettes + 3 crêpes visibles ici
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Côté public : invisible sans code secret valide
-          </p>
-        </div>
       </div>
 
       {/* Basic Info */}

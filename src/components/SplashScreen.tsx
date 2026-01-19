@@ -16,9 +16,9 @@ interface SplashSettings {
 }
 
 const DEFAULT_CONFIG: SplashSettings = {
-  event_title: "Quiz & Récompenses",
-  event_subtitle: "Crêpes & galettes artisanales — Mamers",
-  game_line: "Jouez, découvrez, gagnez chaque semaine. Des surprises à déguster à la Crêperie des Saveurs.",
+  event_title: "🎉 Quiz & Récompenses",
+  event_subtitle: "Crêpes & Galettes artisanales – Mamers",
+  game_line: "Jeu & récompenses en cours",
   cta_text: "Entrer dans la Crêperie",
   background_image_url: null,
 };
