@@ -12,7 +12,8 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface Message {
   id: string;
@@ -37,19 +38,27 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
 
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [adminPassword]);
 
   const fetchMessages = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-
-      if (error) throw error;
-      setMessages(data || []);
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'list',
+          adminPassword 
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        setMessages(result.messages || []);
+      } else {
+        console.error('Error fetching messages:', result.error);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
     } finally {
@@ -59,11 +68,16 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
 
   const markAsRead = async (messageId: string) => {
     try {
-      await supabase
-        .from('messages')
-        .update({ is_read: true })
-        .eq('id', messageId);
-
+      await fetch(`${SUPABASE_URL}/functions/v1/admin-messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          action: 'mark_read',
+          adminPassword,
+          messageId 
+        })
+      });
+      
       setMessages(prev => 
         prev.map(m => m.id === messageId ? { ...m, is_read: true } : m)
       );
@@ -95,6 +109,9 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
         </div>
         <h2 className="font-display text-xl font-bold">Messagerie</h2>
         <p className="text-sm text-muted-foreground">
+          Messages envoyés par les utilisateurs pour améliorer l'application
+        </p>
+        <p className="text-xs text-muted-foreground mt-2">
           {unreadCount > 0 ? `${unreadCount} message(s) non lu(s)` : 'Tous les messages sont lus'}
         </p>
         <Button 
@@ -113,9 +130,9 @@ const MessagesPanel = ({ adminPassword }: MessagesPanelProps) => {
         {messages.length === 0 ? (
           <div className="card-warm text-center py-8">
             <Inbox className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
-            <p className="text-muted-foreground">Aucun message pour l'instant</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Les messages des clients apparaîtront ici
+            <p className="text-muted-foreground font-medium">Aucun message reçu</p>
+            <p className="text-xs text-muted-foreground mt-2 max-w-xs mx-auto">
+              Lorsque des clients enverront des messages via le formulaire de contact, ils apparaîtront ici.
             </p>
           </div>
         ) : (

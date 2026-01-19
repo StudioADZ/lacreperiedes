@@ -237,6 +237,16 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
           <Badge variant="outline">{participations.length} total</Badge>
         </div>
 
+        {/* Quiz Period Info */}
+        <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 mb-4">
+          <p className="text-xs text-primary font-medium">
+            📅 Période active : lundi 00h01 → dimanche 23h59
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            ⚠️ Les gains expirent automatiquement après dimanche 23h59.
+          </p>
+        </div>
+
         {/* Filters */}
         <div className="space-y-3">
           <div className="relative">
@@ -244,10 +254,13 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher prénom, email, tél, code..."
+              placeholder="Prénom, email, téléphone ou code..."
               className="pl-9"
             />
           </div>
+          <p className="text-xs text-muted-foreground">
+            Utilisez les filtres ci-dessous pour afficher les gagnants ou voir les données complètes.
+          </p>
 
           <div className="flex flex-wrap gap-2">
             <Button
