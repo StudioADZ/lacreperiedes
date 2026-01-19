@@ -1,70 +1,44 @@
--- Create messages table for admin/client messaging
-CREATE TABLE public.messages (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  sender_type TEXT NOT NULL CHECK (sender_type IN ('client', 'admin')),
-  sender_name TEXT NOT NULL,
-  sender_email TEXT,
-  sender_phone TEXT,
-  subject TEXT,
-  message TEXT NOT NULL,
-  is_read BOOLEAN DEFAULT false,
-  replied_at TIMESTAMP WITH TIME ZONE,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-);
+-- =====================================================
+-- SAFE HARDENING: messages
+-- =====================================================
 
--- Enable RLS
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+-- Add some guardrails (optional but recommended)
+ALTER TABLE public.messages
+  ALTER COLUMN sender_type SET NOT NULL,
+  ALTER COLUMN sender_name SET NOT NULL,
+  ALTER COLUMN message SET NOT NULL;
 
--- Policy: Allow anyone to insert messages (for clients sending messages)
-CREATE POLICY "Anyone can send messages"
+-- Helpful indexes
+CREATE INDEX IF NOT EXISTS idx_messages_created_at ON public.messages(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_messages_is_read ON public.messages(is_read);
+CREATE INDEX IF NOT EXISTS idx_messages_sender_type ON public.messages(sender_type);
+
+-- Tighten RLS: drop overly broad policies (if they already exist)
+DROP POLICY IF EXISTS "Service role can read messages" ON public.messages;
+DROP POLICY IF EXISTS "Service role can update messages" ON public.messages;
+
+-- Keep public INSERT but with minimal checks (anti-trash)
+DROP POLICY IF EXISTS "Anyone can send messages" ON public.messages;
+CREATE POLICY "Public can send messages (validated)"
 ON public.messages
 FOR INSERT
-WITH CHECK (true);
-
--- Policy: Only admins can read messages (we'll verify admin status in the edge function)
--- For now, allow select for authenticated users or service role
-CREATE POLICY "Service role can read messages"
-ON public.messages
-FOR SELECT
-USING (true);
-
--- Policy: Service role can update messages (mark as read, etc.)
-CREATE POLICY "Service role can update messages"
-ON public.messages
-FOR UPDATE
-USING (true);
-
--- Create admin_settings table for payment/QR settings
-CREATE TABLE public.admin_settings (
-  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  setting_key TEXT NOT NULL UNIQUE,
-  setting_value JSONB DEFAULT '{}',
-  is_active BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
+TO anon, authenticated
+WITH CHECK (
+  sender_type IN ('client', 'admin')
+  AND length(sender_name) BETWEEN 1 AND 80
+  AND length(message) BETWEEN 1 AND 5000
 );
 
--- Enable RLS
-ALTER TABLE public.admin_settings ENABLE ROW LEVEL SECURITY;
-
--- Policy: Anyone can read settings (for checking if features are enabled)
-CREATE POLICY "Anyone can read settings"
-ON public.admin_settings
+-- Block all direct client reads/updates (service role via Edge Functions bypasses anyway)
+CREATE POLICY "No direct read messages"
+ON public.messages
 FOR SELECT
-USING (true);
+TO anon, authenticated
+USING (false);
 
--- Policy: Only via edge function (service role) can update
-CREATE POLICY "Service role can update settings"
-ON public.admin_settings
+CREATE POLICY "No direct update messages"
+ON public.messages
 FOR UPDATE
-USING (true);
-
-CREATE POLICY "Service role can insert settings"
-ON public.admin_settings
-FOR INSERT
-WITH CHECK (true);
-
--- Insert default payment/QR setting (disabled by default)
-INSERT INTO public.admin_settings (setting_key, setting_value, is_active)
-VALUES ('payment_qr', '{"enabled": false, "provider": null}', false)
-ON CONFLICT (setting_key) DO NOTHING;
+TO anon, authenticated
+USING (false)
+WITH CHECK (false);
