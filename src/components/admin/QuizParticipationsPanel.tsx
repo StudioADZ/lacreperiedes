@@ -47,10 +47,18 @@ interface QuizParticipationsPanelProps {
 type WeekStats = {
   week_start: string;
   total: number;
-  winners: number; // gagnants non réclamés
-  claimed: number; // gagnants réclamés
+
+  // ✅ IMPORTANT: on aligne “Gagnants” avec ce que tu attends visuellement (chips par gain)
+  // => Gagnants = toutes les participations avec prize_won, SAUF invalidées (inclut réclamés)
+  winners_total: number;
+
+  // Réclamés (subset de winners_total)
+  claimed: number;
+
   invalidated: number;
   lost: number;
+
+  // Répartition des gains (même logique que winners_total => exclut invalidés)
   byPrize: Record<string, number>;
 };
 
@@ -135,7 +143,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // filtres globaux (appliqués dans CHAQUE semaine)
+  // filtres globaux (appliqués dans CHAQUE semaine ouverte)
   const [searchQuery, setSearchQuery] = useState("");
   const [showSensitiveData, setShowSensitiveData] = useState(false);
 
@@ -144,7 +152,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // ✅ filtre "liste déroulante" PAR SEMAINE (ce que tu demandes)
+  // filtre PAR SEMAINE
   const [weekFilterByWeek, setWeekFilterByWeek] = useState<Record<string, WeekFilter>>({});
 
   const fetchParticipations = useCallback(async () => {
@@ -183,6 +191,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
     }));
   }, [participations]);
 
+  // ✅ Stats cohérentes avec “chips de gains” + correction gagnants
   const weekStats = useMemo<WeekStats[]>(() => {
     const map = new Map<string, WeekStats>();
 
@@ -192,13 +201,14 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
         map.set(wk, {
           week_start: wk,
           total: 0,
-          winners: 0,
+          winners_total: 0,
           claimed: 0,
           invalidated: 0,
           lost: 0,
           byPrize: {},
         });
       }
+
       const s = map.get(wk)!;
       s.total += 1;
 
@@ -206,20 +216,26 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       const isWinner = Boolean(p.prize_won);
       const isClaimed = Boolean(p.prize_claimed);
 
-      if (isInvalid) s.invalidated += 1;
-      else if (isClaimed) s.claimed += 1;
-      else if (isWinner) s.winners += 1;
-      else s.lost += 1;
+      if (isInvalid) {
+        s.invalidated += 1;
+      } else if (isWinner) {
+        // ✅ gagnant (inclut réclamé)
+        s.winners_total += 1;
 
-      if (p.prize_won) {
-        s.byPrize[p.prize_won] = (s.byPrize[p.prize_won] || 0) + 1;
+        if (isClaimed) s.claimed += 1;
+
+        if (p.prize_won) {
+          s.byPrize[p.prize_won] = (s.byPrize[p.prize_won] || 0) + 1;
+        }
+      } else {
+        s.lost += 1;
       }
     }
 
     return Array.from(map.values()).sort((a, b) => (a.week_start < b.week_start ? 1 : -1));
   }, [normalizedParticipations]);
 
-  // ✅ si rien n’est ouvert, on ouvre automatiquement la semaine courante si elle existe, sinon la plus récente
+  // ouvrir automatiquement la semaine courante si possible sinon la plus récente
   useEffect(() => {
     if (expandedWeek) return;
     const hasCurrent = weekStats.some((w) => w.week_start === currentWeekKey);
@@ -229,8 +245,9 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
 
   const applyWeekFilter = useCallback((items: Participation[], filter: WeekFilter) => {
     switch (filter) {
+      // ✅ Gagnants = prize_won (même si réclamé), SAUF invalidés
       case "winners":
-        return items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_won) && !p.prize_claimed);
+        return items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_won));
       case "claimed":
         return items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_claimed));
       case "invalidated":
@@ -325,9 +342,10 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
         : "Perdu",
     ]);
 
-    const csvContent = [headers.join(","), ...dataRows.map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))].join(
-      "\n"
-    );
+    const csvContent = [
+      headers.join(","),
+      ...dataRows.map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(",")),
+    ].join("\n");
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
@@ -346,16 +364,6 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
     },
     [normalizedParticipations, weekFilterByWeek, applyWeekFilter, applySearch, searchQuery]
   );
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const currentWeekStats = weekStats.find((w) => w.week_start === currentWeekKey);
 
   const filterLabel = (f: WeekFilter) => {
     switch (f) {
@@ -376,12 +384,22 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
 
   const setWeekFilter = (weekStart: string, value: WeekFilter) => {
     setWeekFilterByWeek((prev) => ({ ...prev, [weekStart]: value }));
-    setExpandedId(null); // évite les détails ouverts sur une liste qui change
+    setExpandedId(null);
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const currentWeekStats = weekStats.find((w) => w.week_start === currentWeekKey);
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      {/* Header global */}
+      {/* Header global (simple, ne casse pas ta mise en page) */}
       <div className="card-warm">
         <div className="flex items-center justify-between mb-2">
           <h2 className="font-display text-lg font-bold flex items-center gap-2">
@@ -404,25 +422,24 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
             <Calendar className="w-4 h-4" />
             {formatWeekLabelFR(currentWeekKey)}
           </div>
+
           <Badge variant="outline" className="gap-2">
             <span>Cette semaine:</span>
             <span className="font-semibold">{currentWeekStats ? currentWeekStats.total : 0}</span>
             <span className="text-muted-foreground">•</span>
             <span>Gagnants:</span>
-            <span className="font-semibold">
-              {currentWeekStats ? currentWeekStats.winners + currentWeekStats.claimed : 0}
-            </span>
+            <span className="font-semibold">{currentWeekStats ? currentWeekStats.winners_total : 0}</span>
           </Badge>
         </div>
 
-        {/* filtres globaux (mais ils s’appliquent dans chaque semaine) */}
+        {/* recherche + données */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Recherche (prénom, email, tél, code) — s’applique à la semaine ouverte"
+              placeholder="Rechercher (prénom, email, tél, code) — sur la semaine ouverte"
               className="pl-9"
             />
           </div>
@@ -437,19 +454,14 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
               Données complètes
             </Button>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            ✅ L’historique n’est plus une section séparée : chaque <b>semaine</b> contient sa propre liste déroulante
-            (Participants / Gagnants / Réclamés / Invalidés / Perdus).
-          </p>
         </div>
       </div>
 
-      {/* Historique par semaine (accordéon) */}
+      {/* ✅ Semaines (mise en page proche de ton “ancienne” carte, + accordéon) */}
       <div className="card-warm">
         <h3 className="font-display font-bold mb-3">Historique par semaine</h3>
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {weekStats.length === 0 ? (
             <div className="text-center py-6 text-muted-foreground">Aucune participation</div>
           ) : (
@@ -460,10 +472,10 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
 
               return (
                 <div key={w.week_start} className="rounded-xl border border-border bg-muted/10 overflow-hidden">
-                  {/* Header semaine */}
+                  {/* Header semaine (style carte) */}
                   <button
                     type="button"
-                    className="w-full text-left p-3 flex items-start justify-between gap-3"
+                    className="w-full text-left p-4 flex items-start justify-between gap-3"
                     onClick={() => {
                       setExpandedId(null);
                       setExpandedWeek(isOpen ? null : w.week_start);
@@ -477,13 +489,15 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                         )}
                       </div>
 
+                      {/* ✅ LIGNE STATS: gagnants cohérents */}
                       <div className="mt-2 text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                        <span>🎁 Gagnants: {w.winners}</span>
+                        <span>🎁 Gagnants: {w.winners_total}</span>
                         <span>✅ Réclamés: {w.claimed}</span>
                         <span>⛔ Invalidés: {w.invalidated}</span>
                         <span>🕒 Perdus: {w.lost}</span>
                       </div>
 
+                      {/* ✅ chips gains cohérents (exclut invalidés) */}
                       {Object.keys(w.byPrize).length > 0 && (
                         <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-2">
                           {Object.entries(w.byPrize).map(([k, v]) => (
@@ -501,7 +515,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                     </div>
                   </button>
 
-                  {/* Contenu semaine (liste déroulante + liste participations) */}
+                  {/* Contenu semaine */}
                   <AnimatePresence initial={false}>
                     {isOpen && (
                       <motion.div
@@ -510,43 +524,43 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-3 pb-3">
-                          {/* “liste déroulante” (filtres) */}
+                        <div className="px-4 pb-4">
+                          {/* Boutons filtre (ta “liste déroulante” par choix) */}
                           <div className="flex flex-wrap gap-2 mb-3">
                             <Button
                               size="sm"
                               variant={weekFilter === "all" ? "default" : "outline"}
                               onClick={() => setWeekFilter(w.week_start, "all")}
                             >
-                              {filterLabel("all")}
+                              Participants
                             </Button>
                             <Button
                               size="sm"
                               variant={weekFilter === "winners" ? "default" : "outline"}
                               onClick={() => setWeekFilter(w.week_start, "winners")}
                             >
-                              {filterLabel("winners")}
+                              Gagnants
                             </Button>
                             <Button
                               size="sm"
                               variant={weekFilter === "claimed" ? "default" : "outline"}
                               onClick={() => setWeekFilter(w.week_start, "claimed")}
                             >
-                              {filterLabel("claimed")}
+                              Réclamés
                             </Button>
                             <Button
                               size="sm"
                               variant={weekFilter === "invalidated" ? "default" : "outline"}
                               onClick={() => setWeekFilter(w.week_start, "invalidated")}
                             >
-                              {filterLabel("invalidated")}
+                              Invalidés
                             </Button>
                             <Button
                               size="sm"
                               variant={weekFilter === "lost" ? "default" : "outline"}
                               onClick={() => setWeekFilter(w.week_start, "lost")}
                             >
-                              {filterLabel("lost")}
+                              Perdus
                             </Button>
 
                             <Button
@@ -560,20 +574,17 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                             </Button>
                           </div>
 
-                          {/* Résumé du filtre */}
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <p className="text-xs text-muted-foreground">
-                              Affiché: <b>{weekItems.length}</b> • Filtre: <b>{filterLabel(weekFilter)}</b>
-                              {searchQuery.trim() ? (
-                                <>
-                                  {" "}
-                                  • Recherche: <b>{searchQuery.trim()}</b>
-                                </>
-                              ) : null}
-                            </p>
-                          </div>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Affiché: <b>{weekItems.length}</b> • Filtre: <b>{filterLabel(weekFilter)}</b>
+                            {searchQuery.trim() ? (
+                              <>
+                                {" "}
+                                • Recherche: <b>{searchQuery.trim()}</b>
+                              </>
+                            ) : null}
+                          </p>
 
-                          {/* Liste des participations pour cette semaine + filtre */}
+                          {/* Liste participations */}
                           <div className="space-y-2">
                             <AnimatePresence mode="popLayout">
                               {weekItems.length === 0 ? (
@@ -735,3 +746,4 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
 };
 
 export default QuizParticipationsPanel;
+```0
