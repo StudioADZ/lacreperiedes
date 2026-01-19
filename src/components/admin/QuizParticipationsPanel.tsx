@@ -45,6 +45,10 @@ interface QuizParticipationsPanelProps {
   adminPassword: string;
 }
 
+type ViewFilter = "all" | "winners" | "claimed" | "invalidated" | "lost";
+type PrizeFilter = "all" | "formule_complete" | "galette" | "crepe";
+type Mode = "current" | "history";
+
 const getStatusBadge = (p: Participation) => {
   if (p.status === "invalidated") {
     return (
@@ -55,10 +59,7 @@ const getStatusBadge = (p: Participation) => {
   }
   if (p.prize_claimed) {
     return (
-      <Badge
-        variant="secondary"
-        className="gap-1 bg-herb/10 text-herb border-herb/20"
-      >
+      <Badge variant="secondary" className="gap-1 bg-herb/10 text-herb border-herb/20">
         <CheckCircle className="w-3 h-3" /> Réclamé
       </Badge>
     );
@@ -104,14 +105,13 @@ const maskPhone = (phone: string) => {
 };
 
 // ✅ Start-of-week (lundi) – simple et stable
-// (si ton DB utilise dimanche, dis-moi et je te l’adapte)
 const getWeekStartKey = (isoDate: string) => {
   const d = new Date(isoDate);
   if (Number.isNaN(d.getTime())) return "unknown";
 
   // JS: Sunday=0 ... Saturday=6
   const day = d.getDay();
-  // We choose Monday as start: convert so Monday=0
+  // Monday start: convert so Monday=0
   const diffToMonday = (day + 6) % 7;
 
   const monday = new Date(d);
@@ -141,14 +141,18 @@ type WeekStats = {
 const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps) => {
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // UI/Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [showOnlyWinners, setShowOnlyWinners] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showSensitiveData, setShowSensitiveData] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // ✅ NEW: mode semaine courante par défaut
-  const [showHistory, setShowHistory] = useState(false);
+  // ✅ New: mode + semaine + vue
+  const [mode, setMode] = useState<Mode>("current");
+  const [selectedWeek, setSelectedWeek] = useState<string | null>(null);
+  const [viewFilter, setViewFilter] = useState<ViewFilter>("all");
+  const [prizeFilter, setPrizeFilter] = useState<PrizeFilter>("all");
 
   const fetchParticipations = useCallback(async () => {
     setIsLoading(true);
@@ -177,13 +181,9 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
     fetchParticipations();
   }, [fetchParticipations]);
 
-  // ✅ Semaine courante (clé) — utilisée pour “reset => liste vide”
-  const currentWeekKey = useMemo(() => {
-    return getWeekStartKey(new Date().toISOString());
-  }, []);
+  const currentWeekKey = useMemo(() => getWeekStartKey(new Date().toISOString()), []);
 
   const normalizedParticipations = useMemo(() => {
-    // ✅ Ajoute week_key même si week_start n’est pas dans les données
     return participations.map((p) => ({
       ...p,
       week_start: p.week_start || getWeekStartKey(p.created_at),
@@ -223,22 +223,63 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       }
     }
 
-    // tri: semaine la plus récente en haut
     return Array.from(map.values()).sort((a, b) => (a.week_start < b.week_start ? 1 : -1));
   }, [normalizedParticipations]);
 
-  // ✅ Filtrage principal (par défaut: semaine courante)
+  const availableWeeks = useMemo(() => weekStats.map((w) => w.week_start), [weekStats]);
+
+  // ✅ Semaine active = UNE seule semaine (courante OU choisie)
+  const activeWeekKey = useMemo(() => {
+    if (mode === "current") return currentWeekKey;
+    return selectedWeek || currentWeekKey;
+  }, [mode, selectedWeek, currentWeekKey]);
+
+  useEffect(() => {
+    if (mode === "history") {
+      // par défaut : semaine courante si rien choisi
+      if (!selectedWeek) setSelectedWeek(currentWeekKey);
+    } else {
+      // en mode "current", on fige sur semaine courante
+      setSelectedWeek(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
+  const currentWeekStats = useMemo(() => weekStats.find((w) => w.week_start === currentWeekKey), [weekStats, currentWeekKey]);
+  const activeWeekStats = useMemo(() => weekStats.find((w) => w.week_start === activeWeekKey), [weekStats, activeWeekKey]);
+
   const filteredParticipations = useMemo(() => {
     let filtered = normalizedParticipations;
 
-    if (!showHistory) {
-      filtered = filtered.filter((p) => (p.week_start || "unknown") === currentWeekKey);
+    // ✅ Toujours filtrer par UNE semaine (sinon mélange)
+    filtered = filtered.filter((p) => (p.week_start || "unknown") === activeWeekKey);
+
+    // ✅ Filtre "vue"
+    filtered = filtered.filter((p) => {
+      const isInvalid = p.status === "invalidated";
+      const isWinner = Boolean(p.prize_won);
+      const isClaimed = Boolean(p.prize_claimed);
+
+      switch (viewFilter) {
+        case "invalidated":
+          return isInvalid;
+        case "claimed":
+          return !isInvalid && isClaimed;
+        case "winners":
+          return !isInvalid && isWinner; // inclut réclamés aussi (logique admin)
+        case "lost":
+          return !isInvalid && !isWinner && !isClaimed;
+        default:
+          return true;
+      }
+    });
+
+    // ✅ Filtre gain (optionnel)
+    if (prizeFilter !== "all") {
+      filtered = filtered.filter((p) => p.prize_won === prizeFilter);
     }
 
-    if (showOnlyWinners) {
-      filtered = filtered.filter((p) => p.prize_won);
-    }
-
+    // ✅ Search (admin)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
@@ -251,7 +292,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
     }
 
     return filtered;
-  }, [normalizedParticipations, searchQuery, showOnlyWinners, showHistory, currentWeekKey]);
+  }, [normalizedParticipations, activeWeekKey, viewFilter, prizeFilter, searchQuery]);
 
   const handleMarkClaimed = async (participationId: string, prizeCode: string) => {
     setActionLoading(participationId);
@@ -269,9 +310,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       if (response.ok) {
         setParticipations((prev) =>
           prev.map((p) =>
-            p.id === participationId
-              ? { ...p, prize_claimed: true, claimed_at: new Date().toISOString() }
-              : p
+            p.id === participationId ? { ...p, prize_claimed: true, claimed_at: new Date().toISOString() } : p
           )
         );
       }
@@ -296,9 +335,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       });
 
       if (response.ok) {
-        setParticipations((prev) =>
-          prev.map((p) => (p.id === participationId ? { ...p, status: "invalidated" } : p))
-        );
+        setParticipations((prev) => prev.map((p) => (p.id === participationId ? { ...p, status: "invalidated" } : p)));
       }
     } catch (error) {
       console.error("Error invalidating:", error);
@@ -338,8 +375,6 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
     );
   }
 
-  const currentWeekStats = weekStats.find((w) => w.week_start === currentWeekKey);
-
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       {/* Header */}
@@ -359,61 +394,104 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
           </div>
         </div>
 
-        {/* ✅ Indicateur “semaine courante” */}
-        <div className="flex items-center justify-between gap-2 mb-4">
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            {formatWeekLabelFR(currentWeekKey)}
+        {/* Mode + semaine */}
+        <div className="space-y-3 mb-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="text-xs text-muted-foreground flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              {formatWeekLabelFR(activeWeekKey)}
+            </div>
+
+            <div className="flex gap-2">
+              <Button
+                variant={mode === "current" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setMode("current")}
+              >
+                Cette semaine
+              </Button>
+              <Button
+                variant={mode === "history" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setMode("history")}
+              >
+                Historique
+              </Button>
+            </div>
           </div>
 
-          <Button
-            variant={showHistory ? "default" : "outline"}
-            size="sm"
-            onClick={() => setShowHistory((v) => !v)}
-          >
-            <BarChart3 className="w-4 h-4 mr-1" />
-            {showHistory ? "Historique ON" : "Historique OFF"}
-          </Button>
+          {mode === "history" && (
+            <select
+              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm"
+              value={selectedWeek || currentWeekKey}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+            >
+              {availableWeeks.length === 0 ? (
+                <option value={currentWeekKey}>{formatWeekLabelFR(currentWeekKey)}</option>
+              ) : (
+                availableWeeks.map((wk) => (
+                  <option key={wk} value={wk}>
+                    {formatWeekLabelFR(wk)}
+                  </option>
+                ))
+              )}
+            </select>
+          )}
+
+          {/* Mini stats (semaine active) */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="p-3 rounded-xl bg-muted/30 border border-border">
+              <p className="text-xs text-muted-foreground">{mode === "current" ? "Cette semaine" : "Semaine sélectionnée"}</p>
+              <p className="font-semibold">{activeWeekStats ? `${activeWeekStats.total} participations` : "0 participation"}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-caramel/10 border border-caramel/20">
+              <p className="text-xs text-muted-foreground">Gagnants</p>
+              <p className="font-semibold">
+                {activeWeekStats ? `${activeWeekStats.winners + activeWeekStats.claimed}` : "0"}
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* ✅ Mini stats semaine courante */}
-        <div className="grid grid-cols-2 gap-2 mb-4">
-          <div className="p-3 rounded-xl bg-muted/30 border border-border">
-            <p className="text-xs text-muted-foreground">Cette semaine</p>
-            <p className="font-semibold">
-              {currentWeekStats ? `${currentWeekStats.total} participations` : "0 participation"}
-            </p>
-          </div>
-          <div className="p-3 rounded-xl bg-caramel/10 border border-caramel/20">
-            <p className="text-xs text-muted-foreground">Gagnants</p>
-            <p className="font-semibold">
-              {currentWeekStats ? `${currentWeekStats.winners + currentWeekStats.claimed}` : "0"}
-            </p>
-          </div>
-        </div>
-
-        {/* Filters */}
+        {/* Search */}
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher prénom, email, tél, code..."
+              placeholder="Recherche admin : prénom, email, tél, code..."
               className="pl-9"
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={showOnlyWinners ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowOnlyWinners(!showOnlyWinners)}
+          {/* Vue + Gain */}
+          <div className="grid grid-cols-1 gap-2">
+            <select
+              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm"
+              value={viewFilter}
+              onChange={(e) => setViewFilter(e.target.value as ViewFilter)}
             >
-              <Gift className="w-4 h-4 mr-1" />
-              Gagnants seuls
-            </Button>
+              <option value="all">Tous (Participants)</option>
+              <option value="winners">Gagnants</option>
+              <option value="claimed">Réclamés</option>
+              <option value="invalidated">Invalidés</option>
+              <option value="lost">Perdus</option>
+            </select>
 
+            <select
+              className="w-full h-10 rounded-xl border border-border bg-background px-3 text-sm"
+              value={prizeFilter}
+              onChange={(e) => setPrizeFilter(e.target.value as PrizeFilter)}
+            >
+              <option value="all">Tous les gains</option>
+              <option value="formule_complete">🏆 Formule complète</option>
+              <option value="galette">🥈 Galette</option>
+              <option value="crepe">🥉 Crêpe</option>
+            </select>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
             <Button
               variant={showSensitiveData ? "default" : "outline"}
               size="sm"
@@ -431,8 +509,8 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
         </div>
       </div>
 
-      {/* ✅ Historique stats (si toggle ON) */}
-      {showHistory && (
+      {/* Historique stats (toujours séparé du flux, pas de mélange) */}
+      {mode === "history" && (
         <div className="card-warm">
           <h3 className="font-display font-bold mb-3 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-primary" />
@@ -444,8 +522,25 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
               <div key={w.week_start} className="p-3 rounded-xl border border-border bg-muted/10">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold">{formatWeekLabelFR(w.week_start)}</p>
-                  <Badge variant="outline">{w.total}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{w.total}</Badge>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setMode("history");
+                        setSelectedWeek(w.week_start);
+                        // petit confort: on reset la vue
+                        setViewFilter("all");
+                        setPrizeFilter("all");
+                        setExpandedId(null);
+                      }}
+                    >
+                      Voir
+                    </Button>
+                  </div>
                 </div>
+
                 <div className="mt-2 text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
                   <span>🎁 Gagnants: {w.winners}</span>
                   <span>✅ Réclamés: {w.claimed}</span>
@@ -453,7 +548,6 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                   <span>🕒 Perdus: {w.lost}</span>
                 </div>
 
-                {/* Répartition gains */}
                 {Object.keys(w.byPrize).length > 0 && (
                   <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-2">
                     {Object.entries(w.byPrize).map(([k, v]) => (
@@ -465,6 +559,10 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                 )}
               </div>
             ))}
+
+            {weekStats.length === 0 && (
+              <div className="text-sm text-muted-foreground">Aucune donnée d’historique pour le moment.</div>
+            )}
           </div>
         </div>
       )}
@@ -475,9 +573,9 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
           {filteredParticipations.length === 0 ? (
             <div className="card-warm text-center py-8">
               <p className="text-muted-foreground">
-                {showHistory
-                  ? "Aucune participation trouvée"
-                  : "Aucune participation cette semaine (après reset, c’est normal)."}
+                {mode === "current"
+                  ? "Aucune participation cette semaine (après reset, c’est normal)."
+                  : "Aucune participation sur la semaine sélectionnée."}
               </p>
             </div>
           ) : (
@@ -508,6 +606,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                       </p>
                     </div>
                   </div>
+
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-bold">
                       {p.score}/{p.total_questions}
@@ -549,6 +648,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                                 <p className="text-xs text-muted-foreground">Gain</p>
                                 <p className="font-semibold">{getPrizeLabel(p.prize_won)}</p>
                               </div>
+
                               {p.prize_code && (
                                 <div className="text-right">
                                   <p className="text-xs text-muted-foreground">Code</p>
@@ -556,6 +656,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                                 </div>
                               )}
                             </div>
+
                             {p.claimed_at && (
                               <p className="text-xs text-muted-foreground mt-2">
                                 Réclamé le{" "}
@@ -576,7 +677,10 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                               <Button
                                 size="sm"
                                 className="flex-1"
-                                onClick={() => handleMarkClaimed(p.id, p.prize_code!)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkClaimed(p.id, p.prize_code!);
+                                }}
                                 disabled={actionLoading === p.id}
                               >
                                 {actionLoading === p.id ? (
@@ -589,10 +693,14 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
                                 )}
                               </Button>
                             )}
+
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleInvalidate(p.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleInvalidate(p.id);
+                              }}
                               disabled={actionLoading === p.id}
                             >
                               {actionLoading === p.id ? (
@@ -615,8 +723,19 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
           )}
         </AnimatePresence>
       </div>
+
+      {/* Petit rappel semaine courante (utile quand tu es en historique) */}
+      {mode === "history" && currentWeekStats && (
+        <div className="card-warm">
+          <p className="text-xs text-muted-foreground">
+            Semaine courante : <span className="font-semibold">{formatWeekLabelFR(currentWeekKey)}</span> —{" "}
+            {currentWeekStats.total} participations
+          </p>
+        </div>
+      )}
     </motion.div>
   );
 };
 
 export default QuizParticipationsPanel;
+```0
