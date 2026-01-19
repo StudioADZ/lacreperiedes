@@ -1,88 +1,153 @@
 -- =============================================
--- CRITICAL SECURITY PATCH - GDPR COMPLIANCE
+-- SAFE SECURITY PATCH - GDPR COMPLIANCE (NON DESTRUCTIVE)
 -- =============================================
 
--- 1) LOCK DOWN secret_access (currently exposes emails, phones, tokens)
--- Drop overly permissive policies
-DROP POLICY IF EXISTS "Anyone can verify access by token" ON public.secret_access;
-DROP POLICY IF EXISTS "Anyone can request secret access" ON public.secret_access;
-
--- New restrictive policies for secret_access
--- SELECT: Only allow reading own row by access_token (used by verify_secret_access function)
-CREATE POLICY "Read own access by token"
-ON public.secret_access
-FOR SELECT
-USING (false); -- Block all direct client reads; use verify_secret_access RPC instead
-
--- INSERT: Block direct inserts; must go through grant_secret_access RPC
-CREATE POLICY "No direct insert"
-ON public.secret_access
-FOR INSERT
-WITH CHECK (false); -- Block all direct client inserts; use grant_secret_access RPC
-
--- 2) PROTECT quiz_sessions (currently no restrictions)
--- Drop any existing policies
-DROP POLICY IF EXISTS "Anyone can read sessions" ON public.quiz_sessions;
-DROP POLICY IF EXISTS "Anyone can access sessions" ON public.quiz_sessions;
-DROP POLICY IF EXISTS "Public can access sessions" ON public.quiz_sessions;
-
--- Enable RLS (already enabled, but ensure)
+-- -------------------------------------------------
+-- A) quiz_sessions: safe lockdown (edge functions only)
+-- -------------------------------------------------
 ALTER TABLE public.quiz_sessions ENABLE ROW LEVEL SECURITY;
 
--- New restrictive policies
--- SELECT/UPDATE/INSERT all handled by edge functions with service role
--- Block all direct client access
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname='public' AND tablename='quiz_sessions'
+      AND policyname='No direct session access'
+  ) THEN
+    DROP POLICY "No direct session access" ON public.quiz_sessions;
+  END IF;
+END $$;
+
 CREATE POLICY "No direct session access"
 ON public.quiz_sessions
 FOR ALL
 USING (false)
 WITH CHECK (false);
 
--- 3) SECURE quiz_participations (already has some protection but needs INSERT policy)
--- Drop any existing INSERT policies
-DROP POLICY IF EXISTS "Anyone can insert participation" ON public.quiz_participations;
-DROP POLICY IF EXISTS "Public can insert participation" ON public.quiz_participations;
+-- -------------------------------------------------
+-- B) quiz_participations: block direct INSERT (edge function quiz-submit only)
+-- -------------------------------------------------
+ALTER TABLE public.quiz_participations ENABLE ROW LEVEL SECURITY;
 
--- Block direct inserts; must go through quiz-submit edge function
+DO $$
+DECLARE p TEXT;
+BEGIN
+  FOREACH p IN ARRAY ARRAY[
+    'Anyone can insert participation',
+    'Public can insert participation',
+    'Public can submit quiz participation'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname='public' AND tablename='quiz_participations'
+        AND policyname=p
+    ) THEN
+      EXECUTE format('DROP POLICY %I ON public.quiz_participations', p);
+    END IF;
+  END LOOP;
+END $$;
+
+-- Only INSERT is blocked here (SELECT policy not touched by this script)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname='public' AND tablename='quiz_participations'
+      AND policyname='No direct participation insert'
+  ) THEN
+    DROP POLICY "No direct participation insert" ON public.quiz_participations;
+  END IF;
+END $$;
+
 CREATE POLICY "No direct participation insert"
 ON public.quiz_participations
 FOR INSERT
 WITH CHECK (false);
 
--- 4) Secure the SECURITY DEFINER functions by adding proper checks
--- Update ensure_secret_menu to be SECURITY INVOKER (safer)
-CREATE OR REPLACE FUNCTION public.ensure_secret_menu()
-RETURNS uuid
+-- -------------------------------------------------
+-- C) secret_access: add secure RPC path first (SAFE migration)
+-- -------------------------------------------------
+ALTER TABLE public.secret_access ENABLE ROW LEVEL SECURITY;
+
+-- 1) Create/upgrade a SECURITY DEFINER verification function that returns NO PII
+--    It only says if token is valid + returns minimal safe metadata.
+CREATE OR REPLACE FUNCTION public.verify_secret_access_safe(p_token text)
+RETURNS jsonb
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
 SET search_path = public
 AS $$
 DECLARE
-    current_week DATE;
-    menu_id UUID;
+  v_row record;
 BEGIN
-    current_week := (SELECT get_current_week_start());
-    
-    -- Check if menu exists for current week
-    SELECT id INTO menu_id FROM secret_menu 
-    WHERE week_start = current_week 
-    AND is_active = true
-    LIMIT 1;
-    
-    IF menu_id IS NULL THEN
-        -- This will now fail due to RLS if not called with service role
-        -- which is the intended behavior
-        INSERT INTO secret_menu (week_start, is_active)
-        VALUES (current_week, true)
-        RETURNING id INTO menu_id;
-    END IF;
-    
-    RETURN menu_id;
+  IF p_token IS NULL OR length(p_token) < 10 OR length(p_token) > 80 THEN
+    RETURN jsonb_build_object('valid', false);
+  END IF;
+
+  SELECT access_token, secret_code, expires_at
+  INTO v_row
+  FROM public.secret_access
+  WHERE access_token = p_token
+    AND expires_at > now()
+  LIMIT 1;
+
+  IF v_row.access_token IS NULL THEN
+    RETURN jsonb_build_object('valid', false);
+  END IF;
+
+  -- No email/phone/first_name returned (GDPR)
+  RETURN jsonb_build_object(
+    'valid', true,
+    'secret_code', v_row.secret_code,
+    'expires_at', v_row.expires_at
+  );
 END;
 $$;
 
--- 5) Add RLS to secret_menu for INSERT/UPDATE/DELETE (admin only via service role)
-DROP POLICY IF EXISTS "Admin can manage secret menus" ON public.secret_menu;
+-- Lock down who can EXECUTE this function (recommended)
+-- Supabase roles typically: anon, authenticated
+REVOKE ALL ON FUNCTION public.verify_secret_access_safe(text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.verify_secret_access_safe(text) TO anon, authenticated;
+
+-- 2) OPTIONAL: create a secure grant function for anonymous flow (no PII stored)
+--    If you keep storing email/phone for anonymous, that’s GDPR sensitive.
+--    This creates an "anonymous" access entry WITHOUT email/phone, but requires a table change.
+--    => Not applied automatically here to avoid schema break.
+
+-- 3) Prepare policies for lockdown (DO NOT enable by default here)
+--    Because your current front does direct SELECT/INSERT on secret_access.
+--    We'll add them as commented steps to apply AFTER frontend migration.
+
+-- -- AFTER FRONTEND MIGRATION:
+-- -- DROP POLICY IF EXISTS "Anyone can verify access by token" ON public.secret_access;
+-- -- DROP POLICY IF EXISTS "Anyone can request secret access" ON public.secret_access;
+-- -- CREATE POLICY "No direct reads (use RPC)" ON public.secret_access FOR SELECT USING (false);
+-- -- CREATE POLICY "No direct inserts (use RPC/edge)" ON public.secret_access FOR INSERT WITH CHECK (false);
+
+-- -------------------------------------------------
+-- D) secret_menu: keep read public, block modifications (safe)
+-- -------------------------------------------------
+ALTER TABLE public.secret_menu ENABLE ROW LEVEL SECURITY;
+
+DO $$
+DECLARE p TEXT;
+BEGIN
+  FOREACH p IN ARRAY ARRAY[
+    'No direct menu modifications',
+    'No direct menu updates',
+    'No direct menu deletes'
+  ]
+  LOOP
+    IF EXISTS (
+      SELECT 1 FROM pg_policies
+      WHERE schemaname='public' AND tablename='secret_menu'
+        AND policyname=p
+    ) THEN
+      EXECUTE format('DROP POLICY %I ON public.secret_menu', p);
+    END IF;
+  END LOOP;
+END $$;
 
 CREATE POLICY "No direct menu modifications"
 ON public.secret_menu
@@ -98,3 +163,23 @@ CREATE POLICY "No direct menu deletes"
 ON public.secret_menu
 FOR DELETE
 USING (false);
+
+-- -------------------------------------------------
+-- E) ensure_secret_menu: KEEP SECURITY DEFINER but restrict EXECUTE instead
+--    Switching to INVOKER can break existing calls; restricting EXECUTE is safer.
+-- -------------------------------------------------
+-- If your current ensure_secret_menu exists as DEFINER, we keep it and restrict who can call it.
+-- (Do not overwrite your function body here; only lock EXECUTE.)
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname='public' AND p.proname='ensure_secret_menu'
+  ) THEN
+    REVOKE ALL ON FUNCTION public.ensure_secret_menu() FROM PUBLIC;
+    -- Only allow server-side/service usage. If you need client access, you can grant to authenticated.
+    -- GRANT EXECUTE ON FUNCTION public.ensure_secret_menu() TO authenticated;
+  END IF;
+END $$;
