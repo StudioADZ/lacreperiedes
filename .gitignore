@@ -22,3 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# ---------------------------------------
+# ENV (Vite / Supabase) - IMPORTANT
+# ---------------------------------------
+.env
+.env.*
+!.env.example
+
+# ---------------------------------------
+# Optional common caches (safe additions)
+# ---------------------------------------
+coverage
+.cache
+.turbo
+.vercel
+.netlify
