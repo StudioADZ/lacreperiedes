@@ -1,107 +1,66 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import {
-  CreditCard,
-  QrCode,
-  Loader2,
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  CreditCard, 
+  QrCode, 
+  Loader2, 
   Lock,
   ToggleLeft,
   ToggleRight,
   AlertCircle,
-  Settings,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  Settings
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PaymentQRPanelProps {
   adminPassword: string;
 }
 
-const safeJson = async <T,>(r: Response): Promise<T | null> => {
-  try {
-    return (await r.json()) as T;
-  } catch {
-    return null;
-  }
-};
-
 const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isEnabled, setIsEnabled] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string>("");
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   const fetchSettings = async () => {
-    if (!SUPABASE_URL) {
-      setError("Configuration manquante: VITE_SUPABASE_URL");
-      setIsLoading(false);
-      return;
-    }
-
     setIsLoading(true);
-    setError("");
-
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "get",
-          adminPassword,
-          settingKey: "payment_qr",
-        }),
-      });
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .eq('setting_key', 'payment_qr')
+        .maybeSingle();
 
-      const result = await safeJson<{ setting?: { is_active: boolean }; error?: string }>(response);
-
-      if (!response.ok) {
-        setError(result?.error || `Erreur serveur (${response.status})`);
-        return;
+      if (data) {
+        setIsEnabled(data.is_active);
       }
-
-      setIsEnabled(Boolean(result?.setting?.is_active));
-    } catch {
-      setError("Erreur de connexion (admin-settings inaccessible).");
+    } catch (error) {
+      console.error('Error fetching settings:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSettings();
-  }, [adminPassword]);
-
   const toggleEnabled = async () => {
-    if (!SUPABASE_URL) return;
-
-    const next = !isEnabled;
     setIsSaving(true);
-    setError("");
-
-    // optimistic + rollback si échec
-    setIsEnabled(next);
-
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-settings`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "update",
-          adminPassword,
-          settingKey: "payment_qr",
-          isActive: next,
-        }),
-      });
+      const { error } = await supabase
+        .from('admin_settings')
+        .update({ 
+          is_active: !isEnabled,
+          updated_at: new Date().toISOString()
+        })
+        .eq('setting_key', 'payment_qr');
 
-      if (!response.ok) {
-        setIsEnabled(!next);
-        const result = await safeJson<{ error?: string }>(response);
-        setError(result?.error || `Erreur serveur (${response.status})`);
+      if (!error) {
+        setIsEnabled(!isEnabled);
       }
-    } catch {
-      setIsEnabled(!next);
-      setError("Erreur de connexion (mise à jour impossible).");
+    } catch (error) {
+      console.error('Error updating settings:', error);
     } finally {
       setIsSaving(false);
     }
@@ -116,39 +75,52 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
   }
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="space-y-6"
+    >
       {/* Header */}
       <div className="card-warm text-center">
         <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
           <CreditCard className="w-8 h-8 text-muted-foreground" />
         </div>
         <h2 className="font-display text-xl font-bold">Paiement / QR</h2>
-        <p className="text-sm text-muted-foreground">Fonctionnalité en préparation</p>
-        <p className="text-xs text-muted-foreground mt-2">Feature flag uniquement (pas de paiement actif)</p>
-
-        {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+        <p className="text-sm text-muted-foreground">
+          Fonctionnalité en préparation
+        </p>
       </div>
 
       {/* Status Card */}
-      <div className={`card-warm border-2 ${isEnabled ? "border-herb/30" : "border-muted"}`}>
+      <div className={`card-warm border-2 ${isEnabled ? 'border-herb/30' : 'border-muted'}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isEnabled ? "bg-herb/10" : "bg-muted"
-              }`}
-            >
-              {isEnabled ? <QrCode className="w-5 h-5 text-herb" /> : <Lock className="w-5 h-5 text-muted-foreground" />}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              isEnabled ? 'bg-herb/10' : 'bg-muted'
+            }`}>
+              {isEnabled ? (
+                <QrCode className="w-5 h-5 text-herb" />
+              ) : (
+                <Lock className="w-5 h-5 text-muted-foreground" />
+              )}
             </div>
             <div>
-              <p className="font-semibold">{isEnabled ? "Activé" : "Désactivé"}</p>
+              <p className="font-semibold">
+                {isEnabled ? 'Activé' : 'Désactivé'}
+              </p>
               <p className="text-xs text-muted-foreground">
-                {isEnabled ? "Option visible (feature flag)" : "Fonctionnalité masquée"}
+                {isEnabled ? 'Les clients verront l\'option' : 'Fonctionnalité masquée'}
               </p>
             </div>
           </div>
 
-          <Button variant="outline" size="sm" onClick={toggleEnabled} disabled={isSaving || isLoading} className="gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleEnabled}
+            disabled={isSaving}
+            className="gap-2"
+          >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : isEnabled ? (
@@ -171,21 +143,24 @@ const PaymentQRPanel = ({ adminPassword }: PaymentQRPanelProps) => {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">Fonctionnalité en préparation</p>
+            <p className="font-semibold text-amber-800 dark:text-amber-200 text-sm">
+              Fonctionnalité en préparation
+            </p>
             <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              Ici on ne fait qu'activer/désactiver l'affichage. L'intégration paiement viendra ensuite.
+              Cette option permettra aux clients de payer via QR code depuis leur espace.
+              La configuration complète (prestataire de paiement, intégration) sera disponible prochainement.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Future Preview */}
+      {/* Future Features Preview */}
       <div className="card-warm opacity-60">
         <h3 className="font-display font-bold flex items-center gap-2 mb-4">
           <Settings className="w-5 h-5" />
           Configuration (à venir)
         </h3>
-
+        
         <div className="space-y-3 text-sm text-muted-foreground">
           <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/30">
             <CreditCard className="w-5 h-5" />

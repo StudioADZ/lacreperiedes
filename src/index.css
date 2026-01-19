@@ -4,35 +4,37 @@
 
 /* La Crêperie des Saveurs - Design System
    Warm, artisanal, premium, modern-bistro
+   Colors: caramel, butter, ivory, warm brown, plant green
 */
 
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap");
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Lora:wght@400;500;600&family=Inter:wght@300;400;500;600&display=swap');
 
 @layer base {
   :root {
-    /* Improves native UI rendering */
-    color-scheme: light;
-
     /* Core Palette - Warm Artisanal */
-    --background: 40 33% 96%;
-    --foreground: 25 30% 15%;
+    --background: 40 33% 96%; /* Ivory cream */
+    --foreground: 25 30% 15%; /* Deep espresso */
 
-    --card: 40 40% 98%;
+    --card: 40 40% 98%; /* Light cream */
     --card-foreground: 25 30% 15%;
 
     --popover: 40 40% 98%;
     --popover-foreground: 25 30% 15%;
 
-    --primary: 32 65% 45%;
+    /* Caramel Gold - Primary */
+    --primary: 32 65% 45%; /* Rich caramel */
     --primary-foreground: 40 33% 98%;
 
-    --secondary: 42 55% 88%;
+    /* Butter Cream - Secondary */
+    --secondary: 42 55% 88%; /* Soft butter */
     --secondary-foreground: 25 30% 20%;
 
+    /* Muted - Warm neutral */
     --muted: 35 20% 90%;
     --muted-foreground: 25 15% 45%;
 
-    --accent: 140 35% 40%;
+    /* Plant Green - Accent */
+    --accent: 140 35% 40%; /* Fresh herb green */
     --accent-foreground: 40 33% 98%;
 
     --destructive: 0 72% 51%;
@@ -48,21 +50,21 @@
     --caramel: 32 65% 45%;
     --caramel-light: 35 60% 60%;
     --caramel-dark: 28 70% 35%;
-
+    
     --butter: 42 55% 88%;
     --butter-light: 45 60% 94%;
     --butter-dark: 40 50% 75%;
-
+    
     --ivory: 40 33% 96%;
     --ivory-light: 40 40% 99%;
-
+    
     --espresso: 25 30% 15%;
     --espresso-light: 25 25% 30%;
-
+    
     --herb: 140 35% 40%;
     --herb-light: 140 30% 55%;
     --herb-dark: 140 40% 28%;
-
+    
     --terracotta: 18 55% 50%;
     --terracotta-light: 18 50% 65%;
 
@@ -74,12 +76,7 @@
     /* Gradients */
     --gradient-warm: linear-gradient(135deg, hsl(40 33% 96%) 0%, hsl(42 55% 88%) 100%);
     --gradient-caramel: linear-gradient(135deg, hsl(32 65% 45%) 0%, hsl(28 70% 35%) 100%);
-    --gradient-hero: linear-gradient(
-      180deg,
-      hsl(25 30% 15% / 0.6) 0%,
-      hsl(25 30% 15% / 0.3) 50%,
-      transparent 100%
-    );
+    --gradient-hero: linear-gradient(180deg, hsl(25 30% 15% / 0.6) 0%, hsl(25 30% 15% / 0.3) 50%, transparent 100%);
 
     /* Sidebar */
     --sidebar-background: 40 40% 98%;
@@ -93,8 +90,6 @@
   }
 
   .dark {
-    color-scheme: dark;
-
     --background: 25 25% 10%;
     --foreground: 40 33% 96%;
 
@@ -141,75 +136,35 @@
 
   body {
     @apply text-foreground antialiased;
-    font-family: "Inter", sans-serif;
-
-    /* SAFE: fallback background-color (keeps your existing gradient) */
-    background-color: hsl(var(--background));
-
-    /* Your current light gradient */
-    background-image: linear-gradient(
-      180deg,
-      hsl(35 45% 92%) 0%,
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(
+      180deg, 
+      hsl(35 45% 92%) 0%, 
       hsl(40 40% 95%) 30%,
       hsl(42 50% 96%) 100%
     );
-
     min-height: 100vh;
   }
 
-  /* SAFE: optional dark body background if you actually use .dark */
-  .dark body {
-    background-color: hsl(var(--background));
-    background-image: linear-gradient(
-      180deg,
-      hsl(25 25% 10%) 0%,
-      hsl(25 25% 12%) 40%,
-      hsl(25 25% 14%) 100%
-    );
-  }
-
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    font-family: "Playfair Display", serif;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
   }
 
   .font-display {
-    font-family: "Playfair Display", serif;
+    font-family: 'Playfair Display', serif;
   }
 
   .font-serif {
-    font-family: "Lora", serif;
+    font-family: 'Lora', serif;
   }
 
   .font-sans {
-    font-family: "Inter", sans-serif;
-  }
-
-  /* SAFE: iOS safe area helper used by your StickyBar */
-  .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  /* SAFE: respect reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.001ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.001ms !important;
-      scroll-behavior: auto !important;
-    }
+    font-family: 'Inter', sans-serif;
   }
 }
 
 @layer components {
-  /* (Ton contenu components inchangé) */
-
+  /* Hero Button Variant */
   .btn-hero {
     @apply bg-primary text-primary-foreground font-medium px-6 py-3 rounded-full;
     @apply shadow-[var(--shadow-warm)] transition-all duration-300;
@@ -222,6 +177,7 @@
     @apply transition-all duration-300 hover:bg-primary-foreground/10 hover:border-primary-foreground/50;
   }
 
+  /* Secondary Hero Button - Visible on dark backgrounds */
   .btn-secondary-hero {
     @apply bg-ivory/95 text-espresso font-medium px-6 py-3 rounded-full;
     @apply border-2 border-caramel/40;
@@ -231,12 +187,14 @@
     @apply active:scale-95 active:shadow-[0_2px_8px_-2px_hsl(25_30%_15%_/_0.3)];
   }
 
+  /* Warm Card */
   .card-warm {
     @apply bg-card rounded-2xl p-6;
     @apply shadow-[var(--shadow-soft)] border border-border/50;
     @apply transition-all duration-300 hover:shadow-[var(--shadow-warm)];
   }
 
+  /* Glowing Card - Premium effect */
   .card-glow {
     @apply bg-card/95 backdrop-blur-sm rounded-2xl p-6;
     @apply border border-caramel/20;
@@ -246,6 +204,7 @@
     @apply hover:border-caramel/30;
   }
 
+  /* Quiz Hero Card */
   .card-quiz-hero {
     @apply shadow-[0_0_30px_-8px_hsl(32_65%_45%_/_0.3),0_8px_25px_-5px_hsl(25_30%_15%_/_0.15)];
     @apply border-2 border-caramel/30;
@@ -253,10 +212,12 @@
     @apply hover:shadow-[0_0_40px_-8px_hsl(32_65%_45%_/_0.4),0_12px_30px_-6px_hsl(25_30%_15%_/_0.2)];
   }
 
+  /* Glass Effect */
   .glass {
     @apply bg-background/80 backdrop-blur-md border border-border/30;
   }
 
+  /* Gradient Overlays */
   .overlay-hero {
     background: var(--gradient-hero);
   }
@@ -265,11 +226,13 @@
     background: linear-gradient(180deg, transparent 0%, hsl(var(--background) / 0.8) 100%);
   }
 
+  /* Text Gradient */
   .text-gradient-caramel {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-caramel);
   }
 
+  /* Sticky Bar Styles */
   .sticky-bar {
     @apply fixed bottom-0 left-0 right-0 z-50;
     @apply bg-background/95 backdrop-blur-lg border-t border-border;
@@ -286,53 +249,29 @@
     @apply text-primary bg-secondary;
   }
 
+  /* Splash Screen */
   .splash-logo {
     animation: splash-pulse 2s ease-in-out infinite;
   }
 
   @keyframes splash-pulse {
-    0%,
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.05);
-      opacity: 0.9;
-    }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.9; }
   }
 
   @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes slide-up {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   @keyframes scale-in {
-    from {
-      opacity: 0;
-      transform: scale(0.9);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1);
-    }
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
   }
 
   .animate-fade-in {
@@ -347,10 +286,12 @@
     animation: scale-in 0.5s ease-out forwards;
   }
 
+  /* Parallax */
   .parallax-slow {
     transform: translateZ(-2px) scale(3);
   }
 
+  /* Quiz specific */
   .quiz-progress {
     @apply h-2 bg-secondary rounded-full overflow-hidden;
   }
@@ -360,6 +301,7 @@
     background-image: var(--gradient-caramel);
   }
 
+  /* Winner Card */
   .winner-card {
     @apply bg-gradient-to-br from-butter to-butter-light rounded-2xl p-4;
     @apply border-2 border-caramel/20 shadow-[var(--shadow-warm)];
@@ -371,42 +313,18 @@
     text-wrap: balance;
   }
 
-  .bg-caramel {
-    background-color: hsl(var(--caramel));
-  }
-  .bg-butter {
-    background-color: hsl(var(--butter));
-  }
-  .bg-ivory {
-    background-color: hsl(var(--ivory));
-  }
-  .bg-herb {
-    background-color: hsl(var(--herb));
-  }
-  .bg-espresso {
-    background-color: hsl(var(--espresso));
-  }
-  .bg-terracotta {
-    background-color: hsl(var(--terracotta));
-  }
+  .bg-caramel { background-color: hsl(var(--caramel)); }
+  .bg-butter { background-color: hsl(var(--butter)); }
+  .bg-ivory { background-color: hsl(var(--ivory)); }
+  .bg-herb { background-color: hsl(var(--herb)); }
+  .bg-espresso { background-color: hsl(var(--espresso)); }
+  .bg-terracotta { background-color: hsl(var(--terracotta)); }
 
-  .text-caramel {
-    color: hsl(var(--caramel));
-  }
-  .text-butter {
-    color: hsl(var(--butter));
-  }
-  .text-herb {
-    color: hsl(var(--herb));
-  }
-  .text-espresso {
-    color: hsl(var(--espresso));
-  }
-  .text-terracotta {
-    color: hsl(var(--terracotta));
-  }
+  .text-caramel { color: hsl(var(--caramel)); }
+  .text-butter { color: hsl(var(--butter)); }
+  .text-herb { color: hsl(var(--herb)); }
+  .text-espresso { color: hsl(var(--espresso)); }
+  .text-terracotta { color: hsl(var(--terracotta)); }
 
-  .border-caramel {
-    border-color: hsl(var(--caramel));
-  }
+  .border-caramel { border-color: hsl(var(--caramel)); }
 }

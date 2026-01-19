@@ -1,35 +1,19 @@
-/* SAFE: styles legacy / template Vite.
-   On garde, mais on évite d'imposer des règles globales trop agressives. */
-
 #root {
-  /* Important: text-align:center et max-width peuvent casser un design Tailwind.
-     SAFE: on ne supprime pas, mais on les rend faciles à neutraliser si besoin. */
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
-
-  /* Au lieu de forcer tout en center, on laisse neutre.
-     Si tu veux le centrage sur une page spécifique, applique une classe dédiée. */
-  text-align: inherit;
-}
-
-/* Optionnel: classe utilitaire si tu veux le comportement "template" sur une page précise */
-.root-centered {
   text-align: center;
 }
 
 .logo {
   height: 6em;
   padding: 1.5em;
+  will-change: filter;
   transition: filter 300ms;
 }
-
-/* will-change seulement quand c'est utile (hover), pour éviter de garder la perf hint tout le temps */
 .logo:hover {
-  will-change: filter;
   filter: drop-shadow(0 0 2em #646cffaa);
 }
-
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -43,9 +27,8 @@
   }
 }
 
-/* SAFE: on remplace le nth-of-type fragile par une classe explicite */
 @media (prefers-reduced-motion: no-preference) {
-  .logo--spin {
+  a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }

@@ -22,26 +22,14 @@ const toggleVariants = cva(
       variant: "default",
       size: "default",
     },
-  }
+  },
 );
-
-export interface ToggleProps
-  extends React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root>,
-    VariantProps<typeof toggleVariants> {}
 
 const Toggle = React.forwardRef<
   React.ElementRef<typeof TogglePrimitive.Root>,
-  ToggleProps
->(({ className, variant, size, type, ...props }, ref) => (
-  <TogglePrimitive.Root
-    ref={ref}
-    // ✅ SAFE: évite les submits involontaires dans les forms
-    type={type ?? "button"}
-    data-variant={variant ?? "default"}
-    data-size={size ?? "default"}
-    className={cn(toggleVariants({ variant, size }), className)}
-    {...props}
-  />
+  React.ComponentPropsWithoutRef<typeof TogglePrimitive.Root> & VariantProps<typeof toggleVariants>
+>(({ className, variant, size, ...props }, ref) => (
+  <TogglePrimitive.Root ref={ref} className={cn(toggleVariants({ variant, size, className }))} {...props} />
 ));
 
 Toggle.displayName = TogglePrimitive.Root.displayName;

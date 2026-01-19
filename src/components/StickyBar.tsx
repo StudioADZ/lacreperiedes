@@ -1,48 +1,47 @@
 import { Link, useLocation } from "react-router-dom";
+import { HelpCircle, Calendar, Star, MessageCircle } from "lucide-react";
 
 const stickyItems = [
-  {
-    path: "/quiz",
-    label: "Quiz",
-    emoji: "🎯",
+  { 
+    path: "/quiz", 
+    label: "Quiz", 
+    icon: HelpCircle,
+    emoji: "🎯"
   },
-  {
-    path: "/reserver",
-    label: "Réserver",
-    emoji: "📅",
+  { 
+    path: "/reserver", 
+    label: "Réserver", 
+    icon: Calendar,
+    emoji: "📅"
   },
-  {
-    path: "/avis",
-    label: "Avis",
-    emoji: "⭐",
+  { 
+    path: "/avis", 
+    label: "Avis", 
+    icon: Star,
+    emoji: "⭐"
   },
-  {
-    path: "https://wa.me/message/QVZO5N4ZDR64M1",
-    label: "WhatsApp",
+  { 
+    path: "https://wa.me/message/QVZO5N4ZDR64M1", 
+    label: "WhatsApp", 
+    icon: MessageCircle,
     emoji: "💬",
-    external: true,
+    external: true
   },
-] as const;
+];
 
 const StickyBar = () => {
   const location = useLocation();
-
-  const isPathActive = (path: string) => {
-    // ✅ Active même si sous-route (ex: /quiz/intro)
-    if (path === "/") return location.pathname === "/";
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
 
   return (
     <div className="sticky-bar safe-area-bottom">
       <div className="flex items-center justify-around px-2 py-2">
         {stickyItems.map((item) => {
-          const isActive = !("external" in item) && isPathActive(item.path);
-
-          if ("external" in item && item.external) {
+          const isActive = !item.external && location.pathname === item.path;
+          
+          if (item.external) {
             return (
               <a
-                key={`${item.label}-${item.path}`}
+                key={item.path}
                 href={item.path}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -56,9 +55,8 @@ const StickyBar = () => {
 
           return (
             <Link
-              key={`${item.label}-${item.path}`}
+              key={item.path}
               to={item.path}
-              aria-current={isActive ? "page" : undefined}
               className={`sticky-bar-item flex-1 max-w-[80px] ${isActive ? "active" : ""}`}
             >
               <span className="text-xl">{item.emoji}</span>

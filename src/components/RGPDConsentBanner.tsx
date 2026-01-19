@@ -1,52 +1,42 @@
-import { motion } from "framer-motion";
-import { Shield, FileText, Lock, Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { motion } from 'framer-motion';
+import { Shield, FileText, Lock, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface RGPDConsentBannerProps {
   onAccept: () => void;
-  context?: "quiz" | "form" | "general";
+  context?: 'quiz' | 'form' | 'general';
 }
 
-const RGPDConsentBanner = ({ onAccept, context = "general" }: RGPDConsentBannerProps) => {
+const RGPDConsentBanner = ({ onAccept, context = 'general' }: RGPDConsentBannerProps) => {
   const [privacyChecked, setPrivacyChecked] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
 
   const canAccept = privacyChecked && termsChecked;
 
-  const message = useMemo(() => {
-    const contextMessages = {
-      quiz: {
-        title: "🎮 Avant de jouer",
-        subtitle: "Votre consentement est requis pour participer au quiz",
-      },
-      form: {
-        title: "📝 Avant de continuer",
-        subtitle: "Votre consentement est requis pour soumettre ce formulaire",
-      },
-      general: {
-        title: "🔒 Protection de vos données",
-        subtitle: "Votre consentement est requis pour continuer",
-      },
-    } as const;
-
-    return contextMessages[context];
-  }, [context]);
-
-  const handleAccept = () => {
-    // ✅ Guard “défense en profondeur” (ne change pas la logique, mais sécurise)
-    if (!canAccept) return;
-    onAccept();
+  const contextMessages = {
+    quiz: {
+      title: '🎮 Avant de jouer',
+      subtitle: 'Votre consentement est requis pour participer au quiz',
+    },
+    form: {
+      title: '📝 Avant de continuer',
+      subtitle: 'Votre consentement est requis pour soumettre ce formulaire',
+    },
+    general: {
+      title: '🔒 Protection de vos données',
+      subtitle: 'Votre consentement est requis pour continuer',
+    },
   };
+
+  const message = contextMessages[context];
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      role="region"
-      aria-label="Consentement RGPD"
       className="card-warm border-2 border-primary/30 bg-gradient-to-br from-butter/50 to-ivory"
     >
       {/* Header */}
@@ -73,22 +63,15 @@ const RGPDConsentBanner = ({ onAccept, context = "general" }: RGPDConsentBannerP
               <span className="font-medium text-sm">Politique de confidentialité</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              J&apos;accepte la{" "}
-              <Link
-                to="/legal#privacy"
+              J'accepte la{' '}
+              <Link 
+                to="/legal#privacy" 
                 className="text-primary underline hover:no-underline"
-                onClick={(e) => {
-                  // ✅ Empêche le label de toggler la checkbox au clic du lien
-                  e.preventDefault();
-                  e.stopPropagation();
-                  // Laisse React Router gérer la nav via Link (sans “double click” label)
-                  window.location.hash = "#privacy";
-                  // Si tu veux éviter hash direct, supprime les 2 lignes au-dessus et garde uniquement preventDefault+stopPropagation.
-                }}
+                onClick={(e) => e.stopPropagation()}
               >
                 politique de confidentialité
-              </Link>{" "}
-              et le traitement de mes données personnelles.
+              </Link>
+              {' '}et le traitement de mes données personnelles.
             </p>
           </div>
         </label>
@@ -103,22 +86,18 @@ const RGPDConsentBanner = ({ onAccept, context = "general" }: RGPDConsentBannerP
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
-              <span className="font-medium text-sm">Conditions d&apos;utilisation</span>
+              <span className="font-medium text-sm">Conditions d'utilisation</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              J&apos;accepte les{" "}
-              <Link
-                to="/legal#terms"
+              J'accepte les{' '}
+              <Link 
+                to="/legal#terms" 
                 className="text-primary underline hover:no-underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.location.hash = "#terms";
-                }}
+                onClick={(e) => e.stopPropagation()}
               >
-                conditions générales d&apos;utilisation
-              </Link>{" "}
-              du site et du quiz.
+                conditions générales d'utilisation
+              </Link>
+              {' '}du site et du quiz.
             </p>
           </div>
         </label>
@@ -127,25 +106,30 @@ const RGPDConsentBanner = ({ onAccept, context = "general" }: RGPDConsentBannerP
       {/* RGPD Info */}
       <div className="p-3 rounded-xl bg-herb/5 border border-herb/20 mb-6">
         <p className="text-xs text-herb">
-          <strong>🇪🇺 Conformité RGPD :</strong> Vos données sont stockées de manière sécurisée et ne sont jamais
-          partagées avec des tiers. Vous pouvez demander leur suppression à tout moment.
+          <strong>🇪🇺 Conformité RGPD :</strong> Vos données sont stockées de manière sécurisée et ne sont jamais partagées avec des tiers. Vous pouvez demander leur suppression à tout moment.
         </p>
       </div>
 
       {/* Accept Button */}
-      <Button onClick={handleAccept} disabled={!canAccept} className="w-full btn-hero py-6 text-lg">
+      <Button
+        onClick={onAccept}
+        disabled={!canAccept}
+        className="w-full btn-hero py-6 text-lg"
+      >
         {canAccept ? (
           <>
             <Check className="w-5 h-5 mr-2" />
-            J&apos;accepte et je continue
+            J'accepte et je continue
           </>
         ) : (
-          "Veuillez accepter les conditions"
+          'Veuillez accepter les conditions'
         )}
       </Button>
 
       {/* Additional info */}
-      <p className="text-xs text-center text-muted-foreground mt-4">En continuant, vous confirmez avoir plus de 16 ans.</p>
+      <p className="text-xs text-center text-muted-foreground mt-4">
+        En continuant, vous confirmez avoir plus de 16 ans.
+      </p>
     </motion.div>
   );
 };

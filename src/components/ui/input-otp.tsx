@@ -4,49 +4,21 @@ import { Dot } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
-const InputOTP = React.forwardRef<
-  React.ElementRef<typeof OTPInput>,
-  React.ComponentPropsWithoutRef<typeof OTPInput>
->(({ className, containerClassName, ...props }, ref) => (
-  <OTPInput
-    ref={ref}
-    containerClassName={cn(
-      // Base existante (inchangée)
-      "flex items-center gap-2 has-[:disabled]:opacity-50",
-      // ✅ UX SAFE: wrap sur petits écrans + évite débordement
-      "flex-wrap",
-      containerClassName,
-    )}
-    className={cn(
-      // Base existante (inchangée)
-      "disabled:cursor-not-allowed",
-      // ✅ UX SAFE: focus visible sur le container input-otp (sans casser)
-      "outline-none",
-      className,
-    )}
-    {...props}
-  />
-));
+const InputOTP = React.forwardRef<React.ElementRef<typeof OTPInput>, React.ComponentPropsWithoutRef<typeof OTPInput>>(
+  ({ className, containerClassName, ...props }, ref) => (
+    <OTPInput
+      ref={ref}
+      containerClassName={cn("flex items-center gap-2 has-[:disabled]:opacity-50", containerClassName)}
+      className={cn("disabled:cursor-not-allowed", className)}
+      {...props}
+    />
+  ),
+);
 InputOTP.displayName = "InputOTP";
 
-const InputOTPGroup = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      // Base existante (inchangée)
-      "flex items-center",
-      // ✅ UX SAFE: permet le scroll horizontal si groupe long (OTP 8+)
-      "max-w-full overflow-x-auto",
-      // ✅ UX SAFE: espace visuel propre si overflow
-      "rounded-md",
-      className,
-    )}
-    {...props}
-  />
-));
+const InputOTPGroup = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(
+  ({ className, ...props }, ref) => <div ref={ref} className={cn("flex items-center", className)} {...props} />,
+);
 InputOTPGroup.displayName = "InputOTPGroup";
 
 const InputOTPSlot = React.forwardRef<
@@ -54,25 +26,14 @@ const InputOTPSlot = React.forwardRef<
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
   const inputOTPContext = React.useContext(OTPInputContext);
-
-  // ✅ Guard SAFE: si slots pas prêts (évite crash rare en hydration/SSR)
-  const slot = inputOTPContext?.slots?.[index];
-  const char = slot?.char ?? "";
-  const hasFakeCaret = !!slot?.hasFakeCaret;
-  const isActive = !!slot?.isActive;
+  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index];
 
   return (
     <div
       ref={ref}
       className={cn(
-        // Base existante (inchangée)
         "relative flex h-10 w-10 items-center justify-center border-y border-r border-input text-sm transition-all first:rounded-l-md first:border-l last:rounded-r-md",
-        // ✅ UX SAFE: focus ring seulement si actif
         isActive && "z-10 ring-2 ring-ring ring-offset-background",
-        // ✅ UX SAFE: meilleure lisibilité + tap target
-        "select-none",
-        // ✅ UX SAFE: style disabled lisible (si utilisé côté lib)
-        "data-[disabled=true]:opacity-50",
         className,
       )}
       {...props}
@@ -88,14 +49,13 @@ const InputOTPSlot = React.forwardRef<
 });
 InputOTPSlot.displayName = "InputOTPSlot";
 
-const InputOTPSeparator = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div">
->(({ className, ...props }, ref) => (
-  <div ref={ref} role="separator" className={cn("text-muted-foreground", className)} {...props}>
-    <Dot className="h-4 w-4" />
-  </div>
-));
+const InputOTPSeparator = React.forwardRef<React.ElementRef<"div">, React.ComponentPropsWithoutRef<"div">>(
+  ({ ...props }, ref) => (
+    <div ref={ref} role="separator" {...props}>
+      <Dot />
+    </div>
+  ),
+);
 InputOTPSeparator.displayName = "InputOTPSeparator";
 
 export { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator };

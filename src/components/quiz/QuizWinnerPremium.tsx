@@ -325,13 +325,6 @@ const QuizWinnerPremium = ({
           </p>
         </div>
 
-        {/* Expiration Info */}
-        <div className="mt-3 p-3 rounded-xl bg-caramel/10 border border-caramel/30">
-          <p className="text-xs text-caramel font-medium">
-            ⏰ Valable jusqu'à dimanche 23h59 – Après cette date, ce gain expire automatiquement.
-          </p>
-        </div>
-
         <p className="text-xs text-muted-foreground mt-3">
           ⏰ Valable 7 jours – 1 gain max par semaine
         </p>
@@ -536,11 +529,9 @@ const QuizWinnerPremium = ({
 
       {/* Info */}
       <p className="text-xs text-center text-muted-foreground">
-        Ton gain est valable jusqu'à dimanche 23h59.
+        Lot valable pendant 7 jours.
         <br />
-        Présente ton QR code au restaurant pour récupérer ton lot.
-        <br />
-        <span className="text-destructive/80">Après dimanche 23h59, le gain expire et n'est plus valide en caisse.</span>
+        Présente ton QR code au restaurant pour récupérer ton gain.
       </p>
     </motion.div>
   );
