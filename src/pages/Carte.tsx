@@ -6,18 +6,13 @@ import SecretMenuDisplay from "@/components/carte/SecretMenuDisplay";
 import { useSecretAccess } from "@/hooks/useSecretAccess";
 import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
-const Carte = () => {
-  const {
-    hasAccess,
-    isLoading: accessLoading,
-    verifyCode,
-    verifyAdminAccess,
-    isAdminAccess,
-  } = useSecretAccess();
+// ✅ A REMPLACER par TON composant existant de carte publique
+// ex: import MenuPublic from "@/components/carte/MenuPublic";
+import PublicMenuDisplay from "@/components/carte/PublicMenuDisplay";
 
-  // local loading to avoid "code doesn't work" feeling
+const Carte = () => {
+  const { hasAccess, isLoading: accessLoading, verifyCode } = useSecretAccess();
   const [submitting, setSubmitting] = useState(false);
-  const [adminSubmitting, setAdminSubmitting] = useState(false);
 
   const handleVerifyCode = async (code: string) => {
     try {
@@ -25,15 +20,6 @@ const Carte = () => {
       await verifyCode(code);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleVerifyAdmin = async (password: string) => {
-    try {
-      setAdminSubmitting(true);
-      await verifyAdminAccess(password);
-    } finally {
-      setAdminSubmitting(false);
     }
   };
 
@@ -48,7 +34,7 @@ const Carte = () => {
   return (
     <div className="min-h-screen pt-20 pb-24 px-4">
       <div className="max-w-lg mx-auto">
-        {/* Header - carte visible (pas "secrète") */}
+        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold mb-2">La Carte</h1>
           <p className="text-muted-foreground">
@@ -56,7 +42,13 @@ const Carte = () => {
           </p>
         </div>
 
-        {/* Section Menu Secret */}
+        {/* ✅ 1) CARTE PUBLIQUE — TOUJOURS VISIBLE */}
+        <div className="mb-10">
+          <PublicMenuDisplay />
+          {/* ou ton composant existant: <MenuPublic /> */}
+        </div>
+
+        {/* ✅ 2) MENU SECRET — SEULEMENT ICI */}
         <div className="mb-6">
           <div className="text-center mb-6">
             <span className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium">
@@ -72,31 +64,19 @@ const Carte = () => {
             </>
           ) : (
             <>
-              {/* Locked state (Q3: pas d’aperçu + juste message + form) */}
               <div className="card-warm mb-6 p-6 text-center">
                 <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
                   <Lock className="w-8 h-8 text-caramel" />
                 </div>
-
                 <p className="font-display font-bold text-lg">Menu Secret verrouillé</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   Entrez le code obtenu après le quiz pour accéder aux créations exclusives de la semaine.
                 </p>
               </div>
 
-              <SecretCodeForm
-                onSubmit={handleVerifyCode}
-                onAdminSubmit={handleVerifyAdmin}
-                isLoading={submitting || adminSubmitting}
-              />
+              {/* ✅ Pas d'admin sur cette page */}
+              <SecretCodeForm onSubmit={handleVerifyCode} isLoading={submitting} />
             </>
-          )}
-
-          {/* Admin indicator */}
-          {isAdminAccess && (
-            <div className="mt-4 p-2 rounded-lg bg-primary/10 text-center">
-              <p className="text-xs text-primary font-medium">🔓 Accès Admin actif</p>
-            </div>
           )}
         </div>
 
