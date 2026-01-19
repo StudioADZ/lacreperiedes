@@ -1,5 +1,8 @@
 project_id = "gwpycfojyekjjddzpqil"
 
+# -------------------------------------------------------
+# Public / App-facing functions (open access)
+# -------------------------------------------------------
 [functions.quiz-session]
 verify_jwt = false
 
@@ -9,9 +12,31 @@ verify_jwt = false
 [functions.verify-prize]
 verify_jwt = false
 
+# -------------------------------------------------------
+# Admin functions (currently protected by admin password in body)
+# NOTE: Leaving verify_jwt=false is "behavior-preserving".
+# Consider switching to verify_jwt=true later for stronger security.
+# -------------------------------------------------------
 [functions.admin-scan]
 verify_jwt = false
 
+# If these functions exist in your project, keep them declared here:
+[functions.admin-messages]
+verify_jwt = false
+
+[functions.admin-settings]
+verify_jwt = false
+
+[functions.social-posts]
+verify_jwt = false
+
+# -------------------------------------------------------
+# Scheduled jobs
+# -------------------------------------------------------
 [functions.weekly-health-check]
 verify_jwt = false
+
+# CRON NOTE:
+# This schedule is often interpreted as UTC.
+# "30 0 * * 0" = Sunday 00:30 (UTC) => can differ from Europe/Paris depending on DST.
 schedule = "30 0 * * 0"
