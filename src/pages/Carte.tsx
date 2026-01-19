@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UtensilsCrossed, Flame, Snowflake, Leaf, Lock, Loader2 } from "lucide-react";
+import { UtensilsCrossed, Flame, Snowflake, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import SocialFooter from "@/components/SocialFooter";
 import SecretCodeForm from "@/components/carte/SecretCodeForm";
@@ -9,9 +9,8 @@ import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
 const Carte = () => {
   const { hasAccess, isLoading: accessLoading, verifyCode, verifyAdminAccess, isAdminAccess } = useSecretAccess();
-  const [showBlurredPreview, setShowBlurredPreview] = useState(true);
+  const [showBlurredPreview] = useState(true);
 
-  // Loading state
   if (accessLoading) {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
@@ -29,33 +28,26 @@ const Carte = () => {
             <UtensilsCrossed className="w-4 h-4 inline mr-1" />
             Menu Secret
           </span>
+
+          {/* ✅ Texte rendu "visible" */}
           <h1 className="font-display text-3xl font-bold mb-3">
-            La Carte Secrète
+            La Carte
           </h1>
+
           <p className="text-muted-foreground">
             Créations exclusives réservées aux initiés
           </p>
         </div>
 
         {hasAccess ? (
-          /* Unlocked: Show full menu */
           <>
             <SecretMenuDisplay />
-            
-            {/* Google Review CTA after menu */}
             <GoogleReviewCTA variant="card" className="mt-8" />
           </>
         ) : (
-          /* Locked: Show blurred preview + code form */
           <>
-            {/* Blurred Preview */}
             {showBlurredPreview && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="relative mb-8"
-              >
-                {/* Blurred fake content */}
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative mb-8">
                 <div className="filter blur-sm opacity-50 pointer-events-none">
                   <div className="card-warm mb-4 p-6">
                     <div className="flex items-center gap-2 mb-4">
@@ -65,7 +57,7 @@ const Carte = () => {
                     <div className="h-4 bg-muted rounded w-3/4 mb-2" />
                     <div className="h-3 bg-muted rounded w-1/2" />
                   </div>
-                  
+
                   <div className="card-warm mb-4 p-6">
                     <div className="flex items-center gap-2 mb-4">
                       <Snowflake className="w-5 h-5 text-caramel" />
@@ -87,7 +79,6 @@ const Carte = () => {
                   </div>
                 </div>
 
-                {/* Lock overlay */}
                 <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-[2px] rounded-2xl">
                   <div className="text-center p-6">
                     <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
@@ -100,8 +91,7 @@ const Carte = () => {
               </motion.div>
             )}
 
-            {/* Code Entry Form */}
-            <SecretCodeForm 
+            <SecretCodeForm
               onSubmit={verifyCode}
               onAdminSubmit={verifyAdminAccess}
               isLoading={false}
@@ -109,12 +99,9 @@ const Carte = () => {
           </>
         )}
 
-        {/* Admin indicator */}
         {isAdminAccess && (
           <div className="mt-4 p-2 rounded-lg bg-primary/10 text-center">
-            <p className="text-xs text-primary font-medium">
-              🔓 Accès Admin actif (permanent)
-            </p>
+            <p className="text-xs text-primary font-medium">🔓 Accès Admin actif (permanent)</p>
           </div>
         )}
 
