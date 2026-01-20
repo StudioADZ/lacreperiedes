@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Loader2, Save, ChefHat, Sparkles } from 'lucide-react';
+import { Loader2, Save, ChefHat, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -39,6 +40,9 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
   });
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // ✅ NEW (comme CartePublicPanel) : toggle + bouton rendu public
+  const [showPreviewButton, setShowPreviewButton] = useState(true);
+
   useEffect(() => {
     fetchMenu();
   }, []);
@@ -46,10 +50,14 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
   const fetchMenu = async () => {
     setIsLoading(true);
     try {
-      // First ensure the menu exists for this week
-      await supabase.rpc('ensure_secret_menu');
+      // (On garde ta logique actuelle, sans “tout casser”)
+      // Si ensure_secret_menu échoue à cause de RLS, on continue quand même
+      try {
+        await supabase.rpc('ensure_secret_menu');
+      } catch (e) {
+        console.warn('ensure_secret_menu failed (maybe RLS):', e);
+      }
 
-      // Then fetch it
       const { data, error } = await supabase
         .from('secret_menu')
         .select('*')
@@ -78,6 +86,13 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
     }
   };
 
+  // ✅ NEW : fonction “Voir rendu public”
+  // (adapte l’URL si ton public est ailleurs, ex: "/carte" ou "/menu-secret")
+  const handleViewPublic = () => {
+    window.open('/carte', '_blank');
+  };
+
+  // ✅ UPDATED : handleSave “SAFE” (même style que CartePublicPanel)
   const handleSave = async () => {
     if (!menu) return;
 
@@ -85,6 +100,16 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
     setSaveMessage(null);
 
     try {
+      // Nettoyage simple (évite espaces)
+      const payload = {
+        menu_name: formData.menu_name.trim(),
+        secret_code: formData.secret_code.trim().toUpperCase(),
+        galette_special: formData.galette_special.trim(),
+        galette_special_description: formData.galette_special_description.trim(),
+        crepe_special: formData.crepe_special.trim(),
+        crepe_special_description: formData.crepe_special_description.trim(),
+      };
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -92,19 +117,21 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           action: 'update_secret_menu',
           adminPassword,
           menuId: menu.id,
-          menuData: formData,
+          menuData: payload,
         }),
       });
 
-      const result = await response.json();
+      const result = await response.json().catch(() => ({} as any));
 
-      if (response.ok) {
-        setSaveMessage({ type: 'success', text: 'Menu secret mis à jour !' });
-        fetchMenu();
-      } else {
+      if (!response.ok) {
         setSaveMessage({ type: 'error', text: result.message || 'Erreur lors de la sauvegarde' });
+        return;
       }
+
+      setSaveMessage({ type: 'success', text: 'Menu secret mis à jour !' });
+      await fetchMenu();
     } catch (error) {
+      console.error('Save error:', error);
       setSaveMessage({ type: 'error', text: 'Erreur de connexion' });
     } finally {
       setIsSaving(false);
@@ -127,9 +154,9 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
   }
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }} 
-      animate={{ opacity: 1, y: 0 }} 
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
       className="space-y-6"
     >
       {/* Header */}
@@ -142,6 +169,29 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           Semaine du {menu ? new Date(menu.week_start).toLocaleDateString('fr-FR') : '...'}
         </p>
       </div>
+
+      {/* ✅ NEW : Preview toggle + bouton (copié de ta Carte Public dans l’esprit) */}
+      <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border">
+        <div className="flex items-center gap-3">
+          {showPreviewButton ? (
+            <Eye className="w-5 h-5 text-primary" />
+          ) : (
+            <EyeOff className="w-5 h-5 text-muted-foreground" />
+          )}
+          <div>
+            <p className="font-medium text-sm">Bouton "Voir rendu public"</p>
+            <p className="text-xs text-muted-foreground">Afficher le lien vers la page publique</p>
+          </div>
+        </div>
+        <Switch checked={showPreviewButton} onCheckedChange={setShowPreviewButton} />
+      </div>
+
+      {showPreviewButton && (
+        <Button variant="outline" className="w-full gap-2" onClick={handleViewPublic}>
+          <Eye className="w-4 h-4" />
+          Voir rendu public
+        </Button>
+      )}
 
       {/* Form */}
       <div className="card-warm space-y-4">
@@ -167,7 +217,7 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
               placeholder="CREPE2025"
               className="font-mono"
             />
-            <Button variant="outline" size="sm" onClick={generateCode}>
+            <Button variant="outline" size="sm" onClick={generateCode} type="button">
               <Sparkles className="w-4 h-4" />
             </Button>
           </div>
@@ -216,21 +266,19 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
 
         {/* Save Message */}
         {saveMessage && (
-          <div className={`p-3 rounded-xl text-sm text-center ${
-            saveMessage.type === 'success' 
-              ? 'bg-herb/10 text-herb' 
-              : 'bg-destructive/10 text-destructive'
-          }`}>
+          <div
+            className={`p-3 rounded-xl text-sm text-center ${
+              saveMessage.type === 'success'
+                ? 'bg-herb/10 text-herb'
+                : 'bg-destructive/10 text-destructive'
+            }`}
+          >
             {saveMessage.text}
           </div>
         )}
 
         {/* Save Button */}
-        <Button 
-          onClick={handleSave} 
-          className="w-full btn-hero"
-          disabled={isSaving}
-        >
+        <Button onClick={handleSave} className="w-full btn-hero" disabled={isSaving}>
           {isSaving ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
