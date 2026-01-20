@@ -247,12 +247,17 @@ Deno.serve(async (req) => {
           secret_code: menuData.secret_code?.toUpperCase().slice(0, 20),
           galette_special: menuData.galette_special?.slice(0, 100) || null,
           galette_special_description: menuData.galette_special_description?.slice(0, 500) || null,
+          galette_special_price: menuData.galette_special_price?.slice(0, 20) || null,
+          galette_special_image_url: menuData.galette_special_image_url || null,
+          galette_special_video_url: menuData.galette_special_video_url || null,
           crepe_special: menuData.crepe_special?.slice(0, 100) || null,
           crepe_special_description: menuData.crepe_special_description?.slice(0, 500) || null,
-          galette_items: menuData.galette_items || [],
-          crepe_items: menuData.crepe_items || [],
+          crepe_special_price: menuData.crepe_special_price?.slice(0, 20) || null,
+          crepe_special_image_url: menuData.crepe_special_image_url || null,
+          crepe_special_video_url: menuData.crepe_special_video_url || null,
           valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
           valid_to: menuData.valid_to ? new Date(menuData.valid_to).toISOString() : null,
+          is_active: menuData.is_active !== undefined ? menuData.is_active : true,
           updated_at: new Date().toISOString(),
         })
         .eq('id', menuId)
@@ -265,6 +270,79 @@ Deno.serve(async (req) => {
       }
 
       return successResponse({ success: true, menu: data })
+    }
+
+    if (action === 'update_carte_public') {
+      const { carteId, carteData } = body
+
+      if (!carteId || !carteData) {
+        return errorResponse('missing_data', 'Données requises')
+      }
+
+      const { data, error } = await supabase
+        .from('carte_public')
+        .update({
+          galette_items: carteData.galette_items || [],
+          crepe_items: carteData.crepe_items || [],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', carteId)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Carte update error:', error)
+        return serverErrorResponse()
+      }
+
+      return successResponse({ success: true, carte: data })
+    }
+
+    if (action === 'validate_daily_code') {
+      const { code } = body
+
+      if (!code) {
+        return errorResponse('missing_code', 'Code requis')
+      }
+
+      // Get active secret menu
+      const { data: menu, error: menuError } = await supabase
+        .from('secret_menu')
+        .select('id, secret_code, valid_from, valid_to, is_active')
+        .eq('is_active', true)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (menuError || !menu) {
+        return successResponse({ valid: false, message: 'Aucun menu secret actif' })
+      }
+
+      // Check if within valid period
+      const now = new Date()
+      const validFrom = menu.valid_from ? new Date(menu.valid_from) : null
+      const validTo = menu.valid_to ? new Date(menu.valid_to) : null
+
+      if (validFrom && now < validFrom) {
+        return successResponse({ valid: false, message: 'Menu secret pas encore disponible' })
+      }
+      if (validTo && now > validTo) {
+        return successResponse({ valid: false, message: 'Menu secret expiré' })
+      }
+
+      // Get daily code
+      const { data: dailyCode } = await supabase.rpc('get_daily_code', { 
+        p_secret_code: menu.secret_code 
+      })
+
+      // Check if submitted code matches daily code or main secret code
+      const isValid = code.toUpperCase() === dailyCode?.toUpperCase() || 
+                      code.toUpperCase() === menu.secret_code?.toUpperCase()
+
+      return successResponse({ 
+        valid: isValid, 
+        message: isValid ? 'Code valide' : 'Code incorrect' 
+      })
     }
 
     if (action === 'get_security_token') {

@@ -624,15 +624,6 @@ export type Database = {
       }
     }
     Views: {
-      carte_public_view: {
-        Row: {
-          crepe_items: Json | null
-          galette_items: Json | null
-          id: string | null
-          updated_at: string | null
-        }
-        Relationships: []
-      }
       quiz_questions_public: {
         Row: {
           category: string | null

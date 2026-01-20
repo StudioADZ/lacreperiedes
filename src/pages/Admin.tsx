@@ -15,6 +15,9 @@ import {
   Newspaper,
   Sparkles,
   ChefHat,
+  UtensilsCrossed,
+  Mail,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +28,9 @@ import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
 import QuizParticipationsPanel from "@/components/admin/QuizParticipationsPanel";
 import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
+import CartePublicPanel from "@/components/admin/CartePublicPanel";
 import MessagesPanel from "@/components/admin/MessagesPanel";
 import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
-import { Mail, CreditCard } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -70,7 +73,7 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "quiz" | "messages" | "payment">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "carte" | "quiz" | "messages" | "payment">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -306,10 +309,19 @@ const Admin = () => {
             className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <ChefHat className="w-4 h-4" />
-            <span className="text-[10px]">Menu</span>
+            <span className="text-[10px]">Secret</span>
           </Button>
         </div>
-        <div className="grid grid-cols-4 gap-1.5 mb-6">
+        <div className="grid grid-cols-5 gap-1.5 mb-6">
+          <Button
+            variant={activeTab === "carte" ? "default" : "outline"}
+            onClick={() => setActiveTab("carte")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            <span className="text-[10px]">Carte</span>
+          </Button>
           <Button
             variant={activeTab === "messages" ? "default" : "outline"}
             onClick={() => setActiveTab("messages")}
@@ -350,6 +362,10 @@ const Admin = () => {
 
         {activeTab === "menu" && (
           <SecretMenuAdminPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "carte" && (
+          <CartePublicPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "messages" && (
