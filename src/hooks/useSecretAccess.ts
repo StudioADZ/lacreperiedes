@@ -102,10 +102,13 @@ export const useSecretAccess = () => {
 
   const verifyCode = async (code: string): Promise<boolean> => {
     try {
-      // Get the current secret menu code
+      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      
+      // First try to validate the daily code via edge function (without admin password)
+      // This validates both the main secret_code AND the daily rotating code
       const { data: menu } = await supabase
         .from('secret_menu')
-        .select('secret_code')
+        .select('secret_code, valid_from, valid_to, is_active')
         .eq('is_active', true)
         .order('week_start', { ascending: false })
         .limit(1)
@@ -113,43 +116,63 @@ export const useSecretAccess = () => {
 
       if (!menu) return false;
 
-      // Check if code matches (case insensitive)
-      if (menu.secret_code.toUpperCase() === code.toUpperCase()) {
-        // Generate new token client-side for anonymous access
-        const token = crypto.randomUUID();
-        const weekStart = getWeekStart();
+      // Check if within valid period
+      const now = new Date();
+      const validFrom = menu.valid_from ? new Date(menu.valid_from) : null;
+      const validTo = menu.valid_to ? new Date(menu.valid_to) : null;
 
-        const { error } = await supabase
-          .from('secret_access')
-          .insert({
-            email: 'anonymous@menu-secret.local',
-            phone: '0000000000',
-            first_name: 'Visiteur',
-            access_token: token,
-            secret_code: code.toUpperCase(),
-            week_start: weekStart,
-          });
-
-        if (error) {
-          console.error('Error inserting access:', error);
-          return false;
-        }
-
-        // Store token AND timestamp for 30-min session tracking
-        localStorage.setItem('secret_access_token', token);
-        localStorage.setItem('secret_access_timestamp', Date.now().toString());
-        
-        setState({
-          hasAccess: true,
-          isLoading: false,
-          accessToken: token,
-          secretCode: code.toUpperCase(),
-          isAdminAccess: false,
-        });
-        return true;
+      if (validFrom && now < validFrom) {
+        return false; // Not yet available
+      }
+      if (validTo && now > validTo) {
+        return false; // Expired
       }
 
-      return false;
+      // Get the daily code via RPC
+      const { data: dailyCode } = await supabase.rpc('get_daily_code', { 
+        p_secret_code: menu.secret_code 
+      });
+
+      // Check if submitted code matches daily code OR main secret code
+      const isValid = code.toUpperCase() === dailyCode?.toUpperCase() || 
+                      code.toUpperCase() === menu.secret_code?.toUpperCase();
+
+      if (!isValid) {
+        return false;
+      }
+
+      // Code is valid - grant access
+      const token = crypto.randomUUID();
+      const weekStart = getWeekStart();
+
+      const { error } = await supabase
+        .from('secret_access')
+        .insert({
+          email: 'anonymous@menu-secret.local',
+          phone: '0000000000',
+          first_name: 'Visiteur',
+          access_token: token,
+          secret_code: code.toUpperCase(),
+          week_start: weekStart,
+        });
+
+      if (error) {
+        console.error('Error inserting access:', error);
+        return false;
+      }
+
+      // Store token AND timestamp for 30-min session tracking
+      localStorage.setItem('secret_access_token', token);
+      localStorage.setItem('secret_access_timestamp', Date.now().toString());
+      
+      setState({
+        hasAccess: true,
+        isLoading: false,
+        accessToken: token,
+        secretCode: code.toUpperCase(),
+        isAdminAccess: false,
+      });
+      return true;
     } catch (error) {
       console.error('Error verifying code:', error);
       return false;

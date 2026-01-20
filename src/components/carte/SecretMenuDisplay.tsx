@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ChefHat, Sparkles, Flame, Snowflake, Euro, Loader2, Play } from 'lucide-react';
+import { ChefHat, Sparkles, Flame, Snowflake, Euro, Loader2, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface MenuItem {
-  name: string;
-  description: string;
-  price: string;
-  image_url?: string;
-}
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface SecretMenuData {
   menu_name: string;
@@ -22,10 +17,8 @@ interface SecretMenuData {
   crepe_special_price: string | null;
   crepe_special_image_url: string | null;
   crepe_special_video_url: string | null;
-  galette_items: MenuItem[];
-  crepe_items: MenuItem[];
-  valid_from: string;
-  valid_to: string;
+  valid_from: string | null;
+  valid_to: string | null;
 }
 
 const SecretMenuDisplay = () => {
@@ -38,9 +31,10 @@ const SecretMenuDisplay = () => {
 
   const fetchMenu = async () => {
     try {
+      // Use the public view that hides the secret_code
       const { data, error } = await supabase
-        .from('secret_menu')
-        .select('menu_name, galette_special, galette_special_description, galette_special_price, galette_special_image_url, galette_special_video_url, crepe_special, crepe_special_description, crepe_special_price, crepe_special_image_url, crepe_special_video_url, galette_items, crepe_items, valid_from, valid_to')
+        .from('secret_menu_public')
+        .select('menu_name, galette_special, galette_special_description, galette_special_price, galette_special_image_url, galette_special_video_url, crepe_special, crepe_special_description, crepe_special_price, crepe_special_image_url, crepe_special_video_url, valid_from, valid_to')
         .eq('is_active', true)
         .order('week_start', { ascending: false })
         .limit(1)
@@ -49,11 +43,7 @@ const SecretMenuDisplay = () => {
       if (error) throw error;
 
       if (data) {
-        setMenu({
-          ...data,
-          galette_items: Array.isArray(data.galette_items) ? (data.galette_items as unknown as MenuItem[]) : [],
-          crepe_items: Array.isArray(data.crepe_items) ? (data.crepe_items as unknown as MenuItem[]) : [],
-        });
+        setMenu(data as SecretMenuData);
       }
     } catch (error) {
       console.error('Error fetching secret menu:', error);
@@ -78,40 +68,32 @@ const SecretMenuDisplay = () => {
     );
   }
 
-  const renderMenuItem = (item: MenuItem, index: number) => (
-    <motion.div
-      key={index}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="p-4 rounded-xl bg-background/50 border border-caramel/20"
-    >
-      {item.image_url && (
-        <div className="aspect-video rounded-lg overflow-hidden mb-3">
-          <img 
-            src={item.image_url} 
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      )}
-      <div className="flex justify-between items-start gap-3">
-        <div className="flex-1">
-          <h4 className="font-display font-bold text-primary">{item.name}</h4>
-          <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
-        </div>
-        <span className="font-display font-bold text-caramel whitespace-nowrap flex items-center gap-1">
-          {item.price}
-        </span>
+  // Check if there's any special content
+  const hasContent = menu.galette_special || menu.crepe_special;
+
+  if (!hasContent) {
+    return (
+      <div className="card-warm text-center py-8">
+        <p className="text-muted-foreground">Le menu secret de cette semaine arrive bientôt...</p>
       </div>
-    </motion.div>
-  );
+    );
+  }
+
+  // Format validity dates safely
+  const formatDate = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    try {
+      return format(new Date(dateStr), 'dd MMM yyyy', { locale: fr });
+    } catch {
+      return null;
+    }
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-8"
+      className="space-y-6"
     >
       {/* Header */}
       <motion.div
@@ -123,10 +105,17 @@ const SecretMenuDisplay = () => {
           <Sparkles className="w-4 h-4" />
           <span className="text-sm font-medium">Menu Exclusif</span>
         </div>
-        <h1 className="font-display text-3xl font-bold mb-2">{menu.menu_name}</h1>
-        <p className="text-sm text-muted-foreground">
-          Valable du {new Date(menu.valid_from).toLocaleDateString('fr-FR')} au {new Date(menu.valid_to).toLocaleDateString('fr-FR')}
-        </p>
+        {menu.menu_name && (
+          <h2 className="font-display text-2xl font-bold mb-2">{menu.menu_name}</h2>
+        )}
+        {(menu.valid_from || menu.valid_to) && (
+          <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
+            <Calendar className="w-4 h-4" />
+            {menu.valid_from && formatDate(menu.valid_from)}
+            {menu.valid_from && menu.valid_to && ' → '}
+            {menu.valid_to && formatDate(menu.valid_to)}
+          </p>
+        )}
       </motion.div>
 
       {/* Featured Specials */}
@@ -249,43 +238,17 @@ const SecretMenuDisplay = () => {
         </div>
       )}
 
-      {/* Galettes Section */}
-      {menu.galette_items.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-display text-lg font-bold flex items-center gap-2">
-            <Flame className="w-5 h-5 text-terracotta" />
-            Galettes Secrètes
-          </h3>
-          <div className="space-y-3">
-            {menu.galette_items.map((item, index) => renderMenuItem(item, index))}
-          </div>
-        </div>
-      )}
-
-      {/* Crêpes Section */}
-      {menu.crepe_items.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="font-display text-lg font-bold flex items-center gap-2">
-            <Snowflake className="w-5 h-5 text-caramel" />
-            Crêpes Secrètes
-          </h3>
-          <div className="space-y-3">
-            {menu.crepe_items.map((item, index) => renderMenuItem(item, index + 3))}
-          </div>
-        </div>
-      )}
-
       {/* Footer Note */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="text-center p-6 rounded-2xl bg-caramel/5 border border-caramel/10"
+        transition={{ delay: 0.3 }}
+        className="text-center p-4 rounded-xl bg-caramel/5 border border-caramel/10"
       >
         <p className="text-sm text-muted-foreground">
-          🔒 Ce menu exclusif est réservé aux participants du quiz
+          🔒 Menu exclusif réservé aux participants du quiz
         </p>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-xs text-muted-foreground mt-1">
           Les créations changent chaque semaine !
         </p>
       </motion.div>

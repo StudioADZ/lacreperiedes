@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { UtensilsCrossed, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import SocialFooter from "@/components/SocialFooter";
@@ -6,7 +5,6 @@ import SecretCodeForm from "@/components/carte/SecretCodeForm";
 import SecretMenuDisplay from "@/components/carte/SecretMenuDisplay";
 import CartePublicDisplay from "@/components/carte/CartePublicDisplay";
 import { useSecretAccess } from "@/hooks/useSecretAccess";
-import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 
 const Carte = () => {
   const { hasAccess, isLoading: accessLoading, verifyCode, verifyAdminAccess, isAdminAccess } = useSecretAccess();
@@ -57,10 +55,7 @@ const Carte = () => {
         </div>
 
         {hasAccess ? (
-          <>
-            <SecretMenuDisplay />
-            <GoogleReviewCTA variant="card" className="mt-8" />
-          </>
+          <SecretMenuDisplay />
         ) : (
           <motion.div 
             initial={{ opacity: 0 }}
