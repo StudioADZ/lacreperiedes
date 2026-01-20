@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      carte_public: {
+        Row: {
+          created_at: string
+          crepe_items: Json | null
+          galette_items: Json | null
+          id: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crepe_items?: Json | null
+          galette_items?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crepe_items?: Json | null
+          galette_items?: Json | null
+          id?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -412,6 +439,7 @@ export type Database = {
           crepe_special_image_url: string | null
           crepe_special_price: string | null
           crepe_special_video_url: string | null
+          daily_code_seed: string | null
           galette_items: Json | null
           galette_special: string | null
           galette_special_description: string | null
@@ -435,6 +463,7 @@ export type Database = {
           crepe_special_image_url?: string | null
           crepe_special_price?: string | null
           crepe_special_video_url?: string | null
+          daily_code_seed?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
@@ -458,6 +487,7 @@ export type Database = {
           crepe_special_image_url?: string | null
           crepe_special_price?: string | null
           crepe_special_video_url?: string | null
+          daily_code_seed?: string | null
           galette_items?: Json | null
           galette_special?: string | null
           galette_special_description?: string | null
@@ -594,6 +624,15 @@ export type Database = {
       }
     }
     Views: {
+      carte_public_view: {
+        Row: {
+          crepe_items: Json | null
+          galette_items: Json | null
+          id: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       quiz_questions_public: {
         Row: {
           category: string | null
@@ -733,6 +772,10 @@ export type Database = {
       generate_access_token: { Args: never; Returns: string }
       generate_prize_code: { Args: never; Returns: string }
       get_current_week_start: { Args: never; Returns: string }
+      get_daily_code: {
+        Args: { p_date?: string; p_secret_code: string }
+        Returns: string
+      }
       grant_secret_access: {
         Args: {
           p_email: string
