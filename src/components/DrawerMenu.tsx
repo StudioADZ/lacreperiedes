@@ -1,7 +1,7 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link, useLocation } from "react-router-dom";
 import { Home, HelpCircle, UtensilsCrossed, Calendar, Star, Share2, FileText, Settings, Heart, User } from "lucide-react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 
 interface DrawerMenuProps {
   open: boolean;

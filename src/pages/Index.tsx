@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, MapPin, Clock, Phone, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import crepes from "@/assets/crepes.jpg";
 import SocialFooter from "@/components/SocialFooter";
 import GoogleMap from "@/components/home/GoogleMap";

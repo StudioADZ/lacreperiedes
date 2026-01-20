@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 
