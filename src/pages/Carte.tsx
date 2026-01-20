@@ -1,7 +1,7 @@
 import { UtensilsCrossed, Lock, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import SocialFooter from "@/components/SocialFooter";
-import SecretCodeForm from "@/components/carte/SecretCodeForm";
+import SecretCodeInput from "@/components/carte/SecretCodeInput";
 import SecretMenuDisplay from "@/components/carte/SecretMenuDisplay";
 import CartePublicDisplay from "@/components/carte/CartePublicDisplay";
 import { useSecretAccess } from "@/hooks/useSecretAccess";
@@ -84,7 +84,7 @@ const Carte = () => {
         )}
 
         {!hasAccess && (
-          <SecretCodeForm 
+          <SecretCodeInput 
             onSubmit={verifyCode}
             onAdminSubmit={verifyAdminAccess}
           />
