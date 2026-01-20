@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo.png';
 
 interface Winner {
   id: string;

@@ -763,10 +763,9 @@ export type Database = {
       generate_access_token: { Args: never; Returns: string }
       generate_prize_code: { Args: never; Returns: string }
       get_current_week_start: { Args: never; Returns: string }
-      get_daily_code: {
-        Args: { p_date?: string; p_secret_code: string }
-        Returns: string
-      }
+      get_daily_code:
+        | { Args: { p_date?: string; p_secret_code: string }; Returns: string }
+        | { Args: { p_week_start?: string }; Returns: string }
       grant_secret_access: {
         Args: {
           p_email: string
@@ -788,6 +787,7 @@ export type Database = {
         Args: { p_secret_code: string; p_user_id: string }
         Returns: boolean
       }
+      validate_secret_code: { Args: { p_code: string }; Returns: boolean }
       verify_secret_access: { Args: { p_token: string }; Returns: boolean }
     }
     Enums: {

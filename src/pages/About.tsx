@@ -1,6 +1,6 @@
 import { Heart, MapPin, Clock, Award, Utensils } from "lucide-react";
 import { motion } from "framer-motion";
-import logo from "@/assets/logo.jpg";
+import logo from "@/assets/logo.png";
 import storefront from "@/assets/storefront.jpg";
 
 const About = () => {

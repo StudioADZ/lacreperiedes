@@ -5,7 +5,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import ClientDashboard from '@/components/client/ClientDashboard';
 import { Button } from '@/components/ui/button';
 import { User, Gift, Calendar, Lock, Star, ChevronRight, Loader2 } from 'lucide-react';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo.png';
 
 const Client = () => {
   const { isAuthenticated, isLoading } = useAuth();

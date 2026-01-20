@@ -12,9 +12,10 @@ interface QuizPreFormProps {
   isLoading: boolean;
   error?: string;
   savedData?: UserData | null;
+  score?: number;
 }
 
-const QuizPreForm = ({ onSubmit, isLoading, error, savedData }: QuizPreFormProps) => {
+const QuizPreForm = ({ onSubmit, isLoading, error, savedData, score }: QuizPreFormProps) => {
   const [firstName, setFirstName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -79,9 +80,18 @@ const QuizPreForm = ({ onSubmit, isLoading, error, savedData }: QuizPreFormProps
         <h2 className="font-display text-2xl font-bold mb-2">
           Avant de découvrir ton résultat…
         </h2>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground mb-4">
           Renseigne tes coordonnées pour valider ta participation
         </p>
+        
+        {/* Score display */}
+        {score !== undefined && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-herb/10 to-butter/20 border border-herb/30">
+            <span className="font-medium text-sm">Ton score :</span>
+            <span className="text-2xl font-bold text-herb">{score}</span>
+            <span className="text-muted-foreground">/10</span>
+          </div>
+        )}
       </div>
 
       {/* Form */}

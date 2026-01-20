@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
-import logo from '@/assets/logo.jpg';
+import logo from '@/assets/logo.png';
 
 interface RecentWin {
   id: string;

@@ -456,6 +456,22 @@ const Quiz = () => {
             />
           </div>
 
+          {/* Score indicator */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-4 p-3 rounded-xl bg-gradient-to-r from-herb/10 to-butter/20 border border-herb/30 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-herb" />
+              <span className="font-medium text-sm">Votre score</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="text-2xl font-bold text-herb">{score}</span>
+              <span className="text-muted-foreground">/10</span>
+            </div>
+          </motion.div>
+
           <AnimatePresence mode="wait">
             <QuizQuestion
               key={currentQuestionIndex}
@@ -485,6 +501,7 @@ const Quiz = () => {
             isLoading={submitLoading}
             error={submitError || undefined}
             savedData={userData}
+            score={score}
           />
         </div>
       </div>
@@ -539,6 +556,7 @@ const Quiz = () => {
             firstName={currentFirstName}
             email={userData?.email || ''}
             phone={userData?.phone || ''}
+            score={score}
             stockRemaining={stockData || { formule_complete_remaining: 0, galette_remaining: 0, crepe_remaining: 0 }}
             onPlayAgain={handlePlayAgain}
           />

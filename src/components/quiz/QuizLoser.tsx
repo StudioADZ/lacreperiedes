@@ -9,6 +9,7 @@ interface QuizLoserProps {
   firstName: string;
   email: string;
   phone: string;
+  score?: number;
   stockRemaining: {
     formule_complete_remaining: number;
     galette_remaining: number;
@@ -17,7 +18,7 @@ interface QuizLoserProps {
   onPlayAgain: () => void;
 }
 
-const QuizLoser = ({ firstName, email, phone, stockRemaining, onPlayAgain }: QuizLoserProps) => {
+const QuizLoser = ({ firstName, email, phone, score, stockRemaining, onPlayAgain }: QuizLoserProps) => {
   const [secretCode, setSecretCode] = useState<string | null>(null);
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
@@ -86,6 +87,15 @@ const QuizLoser = ({ firstName, email, phone, stockRemaining, onPlayAgain }: Qui
         <h2 className="font-display text-2xl font-bold mb-2">
           Bien joué {firstName} !
         </h2>
+
+        {/* Score display */}
+        {score !== undefined && (
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-butter/20 border border-primary/30 mb-4">
+            <span className="font-medium text-sm">Ton score :</span>
+            <span className="text-2xl font-bold text-primary">{score}</span>
+            <span className="text-muted-foreground">/10</span>
+          </div>
+        )}
 
         <p className="text-muted-foreground mb-4">
           {hasStockLeft 

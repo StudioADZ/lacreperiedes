@@ -102,50 +102,24 @@ export const useSecretAccess = () => {
 
   const verifyCode = async (code: string): Promise<boolean> => {
     try {
-      const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+      // Use the database function to validate code (handles daily + weekly)
+      const { data: isValid, error } = await supabase
+        .rpc('validate_secret_code', { p_code: code.trim().toUpperCase() });
       
-      // First try to validate the daily code via edge function (without admin password)
-      // This validates both the main secret_code AND the daily rotating code
-      const { data: menu } = await supabase
-        .from('secret_menu')
-        .select('secret_code, valid_from, valid_to, is_active')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!menu) return false;
-
-      // Check if within valid period
-      const now = new Date();
-      const validFrom = menu.valid_from ? new Date(menu.valid_from) : null;
-      const validTo = menu.valid_to ? new Date(menu.valid_to) : null;
-
-      if (validFrom && now < validFrom) {
-        return false; // Not yet available
+      if (error) {
+        console.error('Code validation error:', error);
+        return false;
       }
-      if (validTo && now > validTo) {
-        return false; // Expired
-      }
-
-      // Get the daily code via RPC
-      const { data: dailyCode } = await supabase.rpc('get_daily_code', { 
-        p_secret_code: menu.secret_code 
-      });
-
-      // Check if submitted code matches daily code OR main secret code
-      const isValid = code.toUpperCase() === dailyCode?.toUpperCase() || 
-                      code.toUpperCase() === menu.secret_code?.toUpperCase();
-
+      
       if (!isValid) {
         return false;
       }
 
-      // Code is valid - grant access
+      // Code is valid - grant access with 30-min session
       const token = crypto.randomUUID();
       const weekStart = getWeekStart();
 
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('secret_access')
         .insert({
           email: 'anonymous@menu-secret.local',
@@ -156,8 +130,8 @@ export const useSecretAccess = () => {
           week_start: weekStart,
         });
 
-      if (error) {
-        console.error('Error inserting access:', error);
+      if (insertError) {
+        console.error('Error inserting access:', insertError);
         return false;
       }
 
