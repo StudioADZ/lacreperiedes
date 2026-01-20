@@ -365,7 +365,7 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
         : "Perdu",
     ]);
 
-    const csvContent = [headers.join(","), ...dataRows.map((r) => r.map((c) => `"${String(c).replaceAll('"', '""')}"`).join(","))].join(
+    const csvContent = [headers.join(","), ...dataRows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join(
       "\n"
     );
 
