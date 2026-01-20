@@ -59,19 +59,29 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full px-4 sm:px-0"
     >
       {/* Main Secret Code Form */}
-      <div className="card-warm max-w-md mx-auto text-center">
-        <div className="w-20 h-20 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-6">
-          <Lock className="w-10 h-10 text-caramel" />
+      <div className="max-w-md mx-auto bg-card/95 backdrop-blur-sm rounded-2xl p-6 sm:p-8 shadow-xl border border-border/50 text-center">
+        {/* Lock Icon */}
+        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-caramel/20 to-caramel/5 flex items-center justify-center mx-auto mb-5 sm:mb-6 shadow-inner">
+          <Lock className="w-8 h-8 sm:w-10 sm:h-10 text-caramel" />
         </div>
 
-        <h2 className="font-display text-2xl font-bold mb-2">Menu Secret</h2>
-        <p className="text-muted-foreground mb-6">
-          Entrez le code secret pour découvrir les créations exclusives de la semaine
+        {/* Title */}
+        <h2 className="font-display text-2xl sm:text-3xl font-bold text-foreground mb-3">
+          Menu Secret
+        </h2>
+        
+        {/* Description */}
+        <p className="text-muted-foreground text-sm sm:text-base leading-relaxed mb-6 sm:mb-8 max-w-xs mx-auto">
+          Entrez le code secret pour découvrir
+          <br />
+          les créations exclusives de la semaine
         </p>
 
+        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="relative">
             <Input
@@ -81,20 +91,41 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
                 setError('');
               }}
               placeholder="CODE SECRET"
-              className={`text-center font-mono text-xl tracking-widest py-6 ${
-                error ? 'border-destructive' : ''
-              }`}
+              className={`
+                w-full text-center font-mono text-lg sm:text-xl tracking-[0.2em] 
+                py-4 sm:py-5 px-4
+                bg-background/80 border-2 
+                focus:border-caramel focus:ring-2 focus:ring-caramel/20
+                placeholder:text-muted-foreground/50 placeholder:tracking-[0.15em]
+                transition-all duration-200
+                ${error ? 'border-destructive/70 bg-destructive/5' : 'border-border'}
+              `}
               maxLength={20}
               disabled={submitting || isLoading}
+              autoComplete="off"
+              autoCapitalize="characters"
             />
             {error && (
-              <p className="text-destructive text-sm mt-2">{error}</p>
+              <motion.p 
+                initial={{ opacity: 0, y: -5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-destructive/80 text-sm mt-2 font-medium"
+              >
+                {error}
+              </motion.p>
             )}
           </div>
 
           <Button
             type="submit"
-            className="w-full btn-hero py-6"
+            className="
+              w-full py-5 sm:py-6 text-base sm:text-lg font-semibold
+              bg-gradient-to-r from-caramel to-caramel-dark 
+              hover:from-caramel-dark hover:to-caramel
+              text-white shadow-lg shadow-caramel/25
+              transition-all duration-300 hover:shadow-xl hover:shadow-caramel/30
+              disabled:opacity-50 disabled:cursor-not-allowed
+            "
             disabled={submitting || isLoading || !code.trim()}
           >
             {submitting ? (
@@ -108,17 +139,18 @@ const SecretCodeForm = ({ onSubmit, onAdminSubmit, isLoading }: SecretCodeFormPr
           </Button>
         </form>
 
-        <div className="mt-8 p-4 rounded-xl bg-secondary/30 border border-border">
+        {/* Help Section */}
+        <div className="mt-6 sm:mt-8 p-4 rounded-xl bg-secondary/40 border border-border/30">
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-2">
-            <Gift className="w-4 h-4" />
+            <Gift className="w-4 h-4 text-caramel" />
             <span className="font-medium">Comment obtenir le code ?</span>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             Participez au quiz de la crêperie pour débloquer l'accès au menu secret de la semaine !
           </p>
           <a
             href="/quiz"
-            className="inline-block mt-3 text-sm text-primary hover:underline font-medium"
+            className="inline-flex items-center gap-1 mt-3 text-sm text-caramel hover:text-caramel-dark font-medium transition-colors"
           >
             🎮 Jouer au Quiz
           </a>
