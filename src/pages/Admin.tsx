@@ -14,7 +14,6 @@ import {
   CameraOff,
   Newspaper,
   Sparkles,
-  ChefHat,
   UtensilsCrossed,
   Mail,
   CreditCard,
@@ -26,9 +25,8 @@ import confetti from "canvas-confetti";
 import QRScanner from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
-import QuizParticipationsPanel from "@/components/admin/QuizParticipationsPanel";
-import SecretMenuAdminPanel from "@/components/admin/SecretMenuAdminPanel";
-import CartePublicPanel from "@/components/admin/CartePublicPanel";
+import QuizStatsPanel from "@/components/admin/QuizStatsPanel";
+import CarteMenuPanel from "@/components/admin/CarteMenuPanel";
 import MessagesPanel from "@/components/admin/MessagesPanel";
 import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 
@@ -48,21 +46,6 @@ interface VerifyResult {
   message?: string;
 }
 
-interface Stats {
-  weekStart: string;
-  stock: {
-    formule_complete_remaining: number;
-    formule_complete_total: number;
-    galette_remaining: number;
-    galette_total: number;
-    crepe_remaining: number;
-    crepe_total: number;
-  };
-  totalParticipations: number;
-  totalWinners: number;
-  totalClaimed: number;
-}
-
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -72,8 +55,7 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"scan" | "stats" | "actus" | "splash" | "menu" | "carte" | "quiz" | "messages" | "payment">("scan");
+  const [activeTab, setActiveTab] = useState<"scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash">("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
@@ -85,7 +67,6 @@ const Admin = () => {
     if (stored) {
       storedPassword.current = stored;
       setIsAuthenticated(true);
-      fetchStats(stored);
     }
   }, []);
 
@@ -111,28 +92,10 @@ const Admin = () => {
       storedPassword.current = password;
       sessionStorage.setItem("admin_auth", password);
       setIsAuthenticated(true);
-      setStats(data);
     } catch (error) {
       setAuthError("Erreur de connexion");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchStats = async (pwd: string) => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stats", adminPassword: pwd }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error("Stats fetch error:", error);
     }
   };
 
@@ -200,7 +163,6 @@ const Admin = () => {
 
       if (data.success) {
         setResult((prev) => (prev ? { ...prev, claimed: true, claimedAt: new Date().toISOString() } : null));
-        fetchStats(storedPassword.current);
 
         // Success animation
         confetti({
@@ -270,10 +232,10 @@ const Admin = () => {
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
-          <p className="text-sm text-muted-foreground">Validation des lots quiz</p>
+          <p className="text-sm text-muted-foreground">Gestion de la crêperie</p>
         </div>
 
-        {/* Tabs */}
+        {/* Main Tabs - Simplified */}
         <div className="grid grid-cols-4 gap-1.5 mb-4">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
@@ -290,29 +252,9 @@ const Admin = () => {
             size="sm"
             className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
-            <Gift className="w-4 h-4" />
-            <span className="text-[10px]">Quiz</span>
-          </Button>
-          <Button
-            variant={activeTab === "stats" ? "default" : "outline"}
-            onClick={() => setActiveTab("stats")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
             <BarChart3 className="w-4 h-4" />
-            <span className="text-[10px]">Stats</span>
+            <span className="text-[10px]">Quiz & Stats</span>
           </Button>
-          <Button
-            variant={activeTab === "menu" ? "default" : "outline"}
-            onClick={() => setActiveTab("menu")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <ChefHat className="w-4 h-4" />
-            <span className="text-[10px]">Secret</span>
-          </Button>
-        </div>
-        <div className="grid grid-cols-5 gap-1.5 mb-6">
           <Button
             variant={activeTab === "carte" ? "default" : "outline"}
             onClick={() => setActiveTab("carte")}
@@ -320,7 +262,7 @@ const Admin = () => {
             className="flex flex-col items-center gap-1 h-auto py-2 px-1"
           >
             <UtensilsCrossed className="w-4 h-4" />
-            <span className="text-[10px]">Carte</span>
+            <span className="text-[10px]">La Carte</span>
           </Button>
           <Button
             variant={activeTab === "messages" ? "default" : "outline"}
@@ -331,6 +273,10 @@ const Admin = () => {
             <Mail className="w-4 h-4" />
             <span className="text-[10px]">Messages</span>
           </Button>
+        </div>
+        
+        {/* Secondary Tabs */}
+        <div className="grid grid-cols-3 gap-1.5 mb-6">
           <Button
             variant={activeTab === "payment" ? "default" : "outline"}
             onClick={() => setActiveTab("payment")}
@@ -360,12 +306,13 @@ const Admin = () => {
           </Button>
         </div>
 
-        {activeTab === "menu" && (
-          <SecretMenuAdminPanel adminPassword={storedPassword.current} />
+        {/* Tab Content */}
+        {activeTab === "quiz" && (
+          <QuizStatsPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "carte" && (
-          <CartePublicPanel adminPassword={storedPassword.current} />
+          <CarteMenuPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "messages" && (
@@ -546,82 +493,6 @@ const Admin = () => {
               )}
             </AnimatePresence>
           </div>
-        )}
-
-        {activeTab === "stats" && stats && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Week Info */}
-            <div className="card-warm text-center">
-              <p className="text-sm text-muted-foreground mb-1">Semaine du</p>
-              <p className="font-display text-lg font-semibold">
-                {new Date(stats.weekStart).toLocaleDateString("fr-FR", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="card-warm text-center py-4">
-                <p className="text-2xl font-bold text-primary">{stats.totalParticipations}</p>
-                <p className="text-xs text-muted-foreground">Participations</p>
-              </div>
-              <div className="card-warm text-center py-4">
-                <p className="text-2xl font-bold text-herb">{stats.totalWinners}</p>
-                <p className="text-xs text-muted-foreground">Gagnants</p>
-              </div>
-              <div className="card-warm text-center py-4">
-                <p className="text-2xl font-bold text-caramel">{stats.totalClaimed}</p>
-                <p className="text-xs text-muted-foreground">Réclamés</p>
-              </div>
-            </div>
-
-            {/* Stock */}
-            {stats.stock && (
-              <div className="card-warm">
-                <h3 className="font-display font-semibold mb-4">Stock restant</h3>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="text-xl">🏆</span>
-                      <span>Formules</span>
-                    </span>
-                    <span className="font-bold text-lg">
-                      {stats.stock.formule_complete_remaining}/{stats.stock.formule_complete_total}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="text-xl">🥈</span>
-                      <span>Galettes</span>
-                    </span>
-                    <span className="font-bold text-lg">
-                      {stats.stock.galette_remaining}/{stats.stock.galette_total}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                      <span className="text-xl">🥉</span>
-                      <span>Crêpes</span>
-                    </span>
-                    <span className="font-bold text-lg">
-                      {stats.stock.crepe_remaining}/{stats.stock.crepe_total}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <Button onClick={() => fetchStats(storedPassword.current)} variant="outline" className="w-full">
-              Actualiser les stats
-            </Button>
-          </motion.div>
-        )}
-
-        {activeTab === "quiz" && (
-          <QuizParticipationsPanel adminPassword={storedPassword.current} />
         )}
 
         {activeTab === "actus" && (
