@@ -3,6 +3,7 @@ Allow: /
 
 User-agent: Bingbot
 Allow: /
+Crawl-delay: 5
 
 User-agent: Twitterbot
 Allow: /
@@ -10,5 +11,21 @@ Allow: /
 User-agent: facebookexternalhit
 Allow: /
 
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /login/
+Disallow: /search/
+Disallow: /*?*
+
+Sitemap: https://tonsite.fr/sitemap.xml
