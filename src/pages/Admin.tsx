@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera,
@@ -17,6 +17,7 @@ import {
   UtensilsCrossed,
   Mail,
   CreditCard,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,104 +45,162 @@ interface VerifyResult {
   createdAt?: string;
   error?: string;
   message?: string;
+  // some endpoints may return success for claim
+  success?: boolean;
 }
 
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
+  const [adminPassword, setAdminPassword] = useState("");
   const [authError, setAuthError] = useState("");
 
   const [manualCode, setManualCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash">("scan");
+
+  const [activeTab, setActiveTab] = useState<
+    "scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash"
+  >("scan");
+
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
-  const storedPassword = useRef("");
-
-  // Check stored auth
+  // Load stored auth
   useEffect(() => {
     const stored = sessionStorage.getItem("admin_auth");
     if (stored) {
-      storedPassword.current = stored;
+      setAdminPassword(stored);
       setIsAuthenticated(true);
     }
   }, []);
+
+  const apiFetch = useCallback(
+    async (payload: Record<string, unknown>) => {
+      if (!SUPABASE_URL) {
+        throw new Error("missing_supabase_url");
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // Return consistent error object
+        return { ok: false, data };
+      }
+
+      return { ok: true, data };
+    },
+    []
+  );
 
   const handleLogin = async () => {
     setAuthError("");
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stats", adminPassword: password }),
+      const { ok, data } = await apiFetch({
+        action: "stats",
+        adminPassword: password,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setAuthError(data.message || "Mot de passe incorrect");
-        setIsLoading(false);
+      if (!ok) {
+        setAuthError(data?.message || "Mot de passe incorrect");
         return;
       }
 
-      storedPassword.current = password;
+      setAdminPassword(password);
       sessionStorage.setItem("admin_auth", password);
       setIsAuthenticated(true);
     } catch (error) {
-      setAuthError("Erreur de connexion");
+      if ((error as Error)?.message === "missing_supabase_url") {
+        setAuthError("Configuration manquante (VITE_SUPABASE_URL)");
+      } else {
+        setAuthError("Erreur de connexion");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleVerify = useCallback(async (code: string) => {
-    if (!code.trim()) return;
-
-    // Prevent duplicate scans
-    if (code.toUpperCase() === lastScannedCode) return;
-    setLastScannedCode(code.toUpperCase());
-
-    setIsLoading(true);
+  const handleLogout = () => {
+    sessionStorage.removeItem("admin_auth");
+    setIsAuthenticated(false);
+    setPassword("");
+    setAdminPassword("");
     setResult(null);
-    setManualCode(code.toUpperCase());
-
-    // Stop scanner while showing result
+    setManualCode("");
+    setLastScannedCode(null);
     setScannerActive(false);
+    setActiveTab("scan");
+  };
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+  const handleVerify = useCallback(
+    async (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) return;
+
+      const normalized = trimmed.toUpperCase();
+
+      // Prevent duplicate scans
+      if (normalized === lastScannedCode) return;
+      setLastScannedCode(normalized);
+
+      setIsLoading(true);
+      setResult(null);
+      setManualCode(normalized);
+
+      // Stop scanner while showing result
+      setScannerActive(false);
+
+      try {
+        const { ok, data } = await apiFetch({
           action: "verify",
-          code: code.toUpperCase(),
-          adminPassword: storedPassword.current,
-        }),
-      });
-
-      const data = await response.json();
-      setResult(data);
-
-      // Celebration for valid unclaimed prize
-      if (data.valid && !data.claimed) {
-        confetti({
-          particleCount: 80,
-          spread: 60,
-          origin: { y: 0.6 },
-          colors: ["#b8860b", "#daa520", "#ffd700", "#228b22"],
+          code: normalized,
+          adminPassword,
         });
+
+        if (!ok) {
+          setResult({
+            valid: false,
+            error: data?.error || "verify_failed",
+            message: data?.message || "Erreur de vérification",
+          });
+          return;
+        }
+
+        setResult(data);
+
+        // Celebration for valid unclaimed prize
+        if (data?.valid && !data?.claimed) {
+          confetti({
+            particleCount: 80,
+            spread: 60,
+            origin: { y: 0.6 },
+            colors: ["#b8860b", "#daa520", "#ffd700", "#228b22"],
+          });
+        }
+      } catch (error) {
+        setResult({
+          valid: false,
+          error: "connection_error",
+          message:
+            (error as Error)?.message === "missing_supabase_url"
+              ? "Configuration manquante (VITE_SUPABASE_URL)"
+              : "Erreur de connexion",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      setResult({ valid: false, error: "connection_error", message: "Erreur de connexion" });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [lastScannedCode]);
+    },
+    [adminPassword, apiFetch, lastScannedCode]
+  );
 
   const handleClaim = async () => {
     if (!result?.id) return;
@@ -149,22 +208,19 @@ const Admin = () => {
     setClaimLoading(true);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "claim",
-          code: manualCode.toUpperCase(),
-          adminPassword: storedPassword.current,
-        }),
+      const { ok, data } = await apiFetch({
+        action: "claim",
+        code: manualCode.toUpperCase(),
+        adminPassword,
       });
 
-      const data = await response.json();
+      if (!ok) return;
 
-      if (data.success) {
-        setResult((prev) => (prev ? { ...prev, claimed: true, claimedAt: new Date().toISOString() } : null));
+      if (data?.success) {
+        setResult((prev) =>
+          prev ? { ...prev, claimed: true, claimedAt: new Date().toISOString() } : null
+        );
 
-        // Success animation
         confetti({
           particleCount: 50,
           spread: 45,
@@ -220,6 +276,12 @@ const Admin = () => {
             <Button onClick={handleLogin} className="w-full btn-hero" disabled={isLoading || !password}>
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Connexion"}
             </Button>
+
+            {!SUPABASE_URL && (
+              <p className="text-xs text-destructive mt-2">
+                VITE_SUPABASE_URL est manquant dans l’environnement.
+              </p>
+            )}
           </div>
         </motion.div>
       </div>
@@ -230,12 +292,19 @@ const Admin = () => {
     <div className="min-h-screen pt-20 pb-24 px-4">
       <div className="max-w-lg mx-auto">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-6 relative">
           <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
           <p className="text-sm text-muted-foreground">Gestion de la crêperie</p>
+
+          <div className="absolute right-0 top-0">
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              <LogOut className="w-4 h-4 mr-1" />
+              Déconnexion
+            </Button>
+          </div>
         </div>
 
-        {/* Main Tabs - Simplified */}
+        {/* Main Tabs */}
         <div className="grid grid-cols-4 gap-1.5 mb-4">
           <Button
             variant={activeTab === "scan" ? "default" : "outline"}
@@ -246,6 +315,7 @@ const Admin = () => {
             <Scan className="w-4 h-4" />
             <span className="text-[10px]">Scanner</span>
           </Button>
+
           <Button
             variant={activeTab === "quiz" ? "default" : "outline"}
             onClick={() => setActiveTab("quiz")}
@@ -255,6 +325,7 @@ const Admin = () => {
             <BarChart3 className="w-4 h-4" />
             <span className="text-[10px]">Quiz & Stats</span>
           </Button>
+
           <Button
             variant={activeTab === "carte" ? "default" : "outline"}
             onClick={() => setActiveTab("carte")}
@@ -264,6 +335,7 @@ const Admin = () => {
             <UtensilsCrossed className="w-4 h-4" />
             <span className="text-[10px]">La Carte</span>
           </Button>
+
           <Button
             variant={activeTab === "messages" ? "default" : "outline"}
             onClick={() => setActiveTab("messages")}
@@ -274,7 +346,7 @@ const Admin = () => {
             <span className="text-[10px]">Messages</span>
           </Button>
         </div>
-        
+
         {/* Secondary Tabs */}
         <div className="grid grid-cols-3 gap-1.5 mb-6">
           <Button
@@ -286,6 +358,7 @@ const Admin = () => {
             <CreditCard className="w-4 h-4" />
             <span className="text-[10px]">Paiement</span>
           </Button>
+
           <Button
             variant={activeTab === "actus" ? "default" : "outline"}
             onClick={() => setActiveTab("actus")}
@@ -295,6 +368,7 @@ const Admin = () => {
             <Newspaper className="w-4 h-4" />
             <span className="text-[10px]">Actus</span>
           </Button>
+
           <Button
             variant={activeTab === "splash" ? "default" : "outline"}
             onClick={() => setActiveTab("splash")}
@@ -307,21 +381,13 @@ const Admin = () => {
         </div>
 
         {/* Tab Content */}
-        {activeTab === "quiz" && (
-          <QuizStatsPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "quiz" && <QuizStatsPanel adminPassword={adminPassword} />}
 
-        {activeTab === "carte" && (
-          <CarteMenuPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "carte" && <CarteMenuPanel adminPassword={adminPassword} />}
 
-        {activeTab === "messages" && (
-          <MessagesPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "messages" && <MessagesPanel adminPassword={adminPassword} />}
 
-        {activeTab === "payment" && (
-          <PaymentQRPanel adminPassword={storedPassword.current} />
-        )}
+        {activeTab === "payment" && <PaymentQRPanel adminPassword={adminPassword} />}
 
         {activeTab === "scan" && (
           <div className="space-y-6">
@@ -351,7 +417,7 @@ const Admin = () => {
                     )}
                   </Button>
                 </div>
-                
+
                 {scannerActive ? (
                   <QRScanner onScan={handleVerify} isActive={scannerActive} />
                 ) : (
@@ -399,8 +465,8 @@ const Admin = () => {
                     result.valid && !result.claimed
                       ? "border-2 border-herb shadow-[0_0_30px_-8px_hsl(140_35%_40%_/_0.3)]"
                       : result.claimed
-                        ? "border-muted"
-                        : "border-destructive/30"
+                      ? "border-muted"
+                      : "border-destructive/30"
                   }`}
                 >
                   {/* Status Icon */}
@@ -412,8 +478,8 @@ const Admin = () => {
                       result.valid && !result.claimed
                         ? "bg-herb/10"
                         : result.claimed
-                          ? "bg-muted"
-                          : "bg-destructive/10"
+                        ? "bg-muted"
+                        : "bg-destructive/10"
                     }`}
                   >
                     {result.valid && !result.claimed ? (
@@ -452,7 +518,11 @@ const Admin = () => {
 
                       {/* Claim Button */}
                       {!result.claimed && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                        >
                           <Button onClick={handleClaim} className="w-full btn-hero text-lg py-6" disabled={claimLoading}>
                             {claimLoading ? (
                               <Loader2 className="w-5 h-5 animate-spin" />
@@ -497,13 +567,13 @@ const Admin = () => {
 
         {activeTab === "actus" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <ActusLivePanel adminPassword={storedPassword.current} />
+            <ActusLivePanel adminPassword={adminPassword} />
           </motion.div>
         )}
 
         {activeTab === "splash" && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <SplashSettingsPanel adminPassword={storedPassword.current} />
+            <SplashSettingsPanel adminPassword={adminPassword} />
           </motion.div>
         )}
       </div>
