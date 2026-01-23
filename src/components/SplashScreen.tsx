@@ -32,14 +32,16 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [config, setConfig] = useState<SplashSettings>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ✅ Précharge le logo (important pour prod/Lovable)
+  // ✅ Précharge logo (utile)
   useEffect(() => {
+    let cancelled = false;
+
     const img = new Image();
-    img.onload = () => setLogoReady(true);
-    img.onerror = () => setLogoReady(true); // on bloque pas si erreur
+    img.onload = () => !cancelled && setLogoReady(true);
+    img.onerror = () => !cancelled && setLogoReady(true);
     img.src = logo;
 
-    // Bonus: hint navigateur
+    // Hint navigateur
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "image";
@@ -47,6 +49,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     document.head.appendChild(link);
 
     return () => {
+      cancelled = true;
       try {
         document.head.removeChild(link);
       } catch {}
@@ -161,12 +164,12 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
         /* Portes 3D */
         @keyframes doorOpenLeft {
-          0% { transform: translateZ(0) rotateY(0deg); }
-          100% { transform: translateZ(0) rotateY(80deg); }
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(80deg); }
         }
         @keyframes doorOpenRight {
-          0% { transform: translateZ(0) rotateY(0deg); }
-          100% { transform: translateZ(0) rotateY(-80deg); }
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(-80deg); }
         }
 
         .overlay-enter { pointer-events: none; }
@@ -196,35 +199,43 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           transform-style: preserve-3d;
         }
 
+        /* ✅ Ici: portes = conteneurs, l'image est un <img> (plus fiable que background-image) */
         .door {
           width: 50%;
           height: 100%;
-          background-image: url("${logo}");
-          background-repeat: no-repeat;
-          background-size: cover;
-          filter: saturate(0.98) contrast(1.04);
+          overflow: hidden;
           backface-visibility: hidden;
           transform-style: preserve-3d;
           will-change: transform;
         }
 
+        .door img {
+          width: 200%;
+          height: 100%;
+          object-fit: cover;
+          filter: saturate(0.98) contrast(1.04);
+          display: block;
+          user-select: none;
+          -webkit-user-drag: none;
+        }
+
         .door.left {
           transform-origin: left center;
-          background-position: left center;
           animation: doorOpenLeft 600ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
           animation-delay: 820ms;
           box-shadow: inset -14px 0 26px rgba(0,0,0,0.24);
           border-right: 1px solid rgba(255,255,255,0.12);
         }
+        .door.left img { transform: translateX(0); }
 
         .door.right {
           transform-origin: right center;
-          background-position: right center;
           animation: doorOpenRight 600ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
           animation-delay: 820ms;
           box-shadow: inset 14px 0 26px rgba(0,0,0,0.24);
           border-left: 1px solid rgba(0,0,0,0.06);
         }
+        .door.right img { transform: translateX(-50%); }
 
         .door-back {
           position: absolute;
@@ -237,6 +248,16 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           .door-frame { width: 220px; height: 220px; }
         }
       `}</style>
+
+      {/* ✅ Force rendu du logo dans le DOM (même invisible) => Lovable/CDN arrête de troll */}
+      <img
+        src={logo}
+        alt=""
+        aria-hidden
+        className="absolute -z-10 opacity-0 pointer-events-none"
+        loading="eager"
+        decoding="sync"
+      />
 
       {isEntering && (
         <div className="absolute inset-0 z-[220] overlay-enter">
@@ -252,8 +273,12 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           <div className="door-frame">
             <div className="door-back" />
             <div className="door-panels">
-              <div className="door left" />
-              <div className="door right" />
+              <div className="door left">
+                <img src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
+              </div>
+              <div className="door right">
+                <img src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
+              </div>
             </div>
           </div>
         </div>
