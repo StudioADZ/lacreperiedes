@@ -23,21 +23,18 @@ const queryClient = new QueryClient();
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
-  const [appReady, setAppReady] = useState(false);
 
   // Check if splash was already shown this session
   useEffect(() => {
     const splashShown = sessionStorage.getItem("splashShown");
     if (splashShown) {
       setShowSplash(false);
-      setAppReady(true);
     }
   }, []);
 
   const handleSplashComplete = () => {
     sessionStorage.setItem("splashShown", "true");
     setShowSplash(false);
-    setAppReady(true);
   };
 
   return (
@@ -45,33 +42,32 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        
-        {/* True splash gate - blocks all content until user clicks */}
+
+        {/* APP TOUJOURS RENDUE → le hero existe derrière la porte */}
+        <BrowserRouter>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/quiz" element={<Quiz />} />
+              <Route path="/carte" element={<Carte />} />
+              <Route path="/reserver" element={<Reserver />} />
+              <Route path="/avis" element={<Avis />} />
+              <Route path="/social" element={<Social />} />
+              <Route path="/legal" element={<Legal />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/admin" element={<Admin />} />
+              <Route path="/verify/:code" element={<Verify />} />
+              <Route path="/client" element={<Client />} />
+              <Route path="/mon-compte" element={<Client />} />
+            </Route>
+
+            {/* Catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+
+        {/* Splash = overlay uniquement */}
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-        
-        {/* Only render app content after splash is dismissed */}
-        {appReady && (
-          <BrowserRouter>
-            <Routes>
-              <Route element={<Layout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/quiz" element={<Quiz />} />
-                <Route path="/carte" element={<Carte />} />
-                <Route path="/reserver" element={<Reserver />} />
-                <Route path="/avis" element={<Avis />} />
-                <Route path="/social" element={<Social />} />
-                <Route path="/legal" element={<Legal />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/verify/:code" element={<Verify />} />
-                <Route path="/client" element={<Client />} />
-                <Route path="/mon-compte" element={<Client />} />
-              </Route>
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        )}
       </TooltipProvider>
     </QueryClientProvider>
   );
