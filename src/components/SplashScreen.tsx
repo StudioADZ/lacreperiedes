@@ -28,8 +28,30 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const [isEntering, setIsEntering] = useState(false);
+  const [logoReady, setLogoReady] = useState(false);
   const [config, setConfig] = useState<SplashSettings>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
+
+  // ✅ Précharge le logo (important pour prod/Lovable)
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setLogoReady(true);
+    img.onerror = () => setLogoReady(true); // on bloque pas si erreur
+    img.src = logo;
+
+    // Bonus: hint navigateur
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = logo;
+    document.head.appendChild(link);
+
+    return () => {
+      try {
+        document.head.removeChild(link);
+      } catch {}
+    };
+  }, []);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -68,7 +90,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   }, []);
 
   const handleEnter = () => {
-    if (isLoading || isEntering) return;
+    if (isLoading || isEntering || !logoReady) return;
     setIsEntering(true);
 
     window.setTimeout(() => {
@@ -90,6 +112,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const rootStyle: CSSProperties = hasBackgroundImage
     ? { background: bgCss, backgroundSize: "cover", backgroundPosition: "center" }
     : { background: bgCss };
+
+  const canEnter = !isLoading && logoReady && !isEntering;
 
   return (
     <div
@@ -128,26 +152,25 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           will-change: transform, filter, box-shadow, background-position;
         }
 
-        /* Zoom du "cadre" logo (encore un peu reculé) */
+        /* Zoom cadre logo */
         @keyframes logoZoomFull {
           0% { transform: translate(-50%, -50%) scale(1); border-radius: 9999px; }
           70% { transform: translate(-50%, -50%) scale(2.35); border-radius: 30px; }
           100% { transform: translate(-50%, -50%) scale(2.55); border-radius: 26px; }
         }
 
-        /* Portes 3D (SUR le logo, pas sur l'écran) */
+        /* Portes 3D */
         @keyframes doorOpenLeft {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(80deg); }
+          0% { transform: translateZ(0) rotateY(0deg); }
+          100% { transform: translateZ(0) rotateY(80deg); }
         }
         @keyframes doorOpenRight {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(-80deg); }
+          0% { transform: translateZ(0) rotateY(0deg); }
+          100% { transform: translateZ(0) rotateY(-80deg); }
         }
 
         .overlay-enter { pointer-events: none; }
 
-        /* Le "cadre" qui zoome, et à l'intérieur les 2 portes */
         .door-frame {
           position: absolute;
           left: 50%;
@@ -161,9 +184,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           animation: logoZoomFull 800ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
           z-index: 3;
 
-          /* perspective appliquée au cadre => la porte s'ouvre SUR le logo */
           perspective: 900px;
           transform-style: preserve-3d;
+          will-change: transform;
         }
 
         .door-panels {
@@ -182,6 +205,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           filter: saturate(0.98) contrast(1.04);
           backface-visibility: hidden;
           transform-style: preserve-3d;
+          will-change: transform;
         }
 
         .door.left {
@@ -202,7 +226,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           border-left: 1px solid rgba(0,0,0,0.06);
         }
 
-        /* petit fond derrière les portes (optionnel, mais ça donne de la profondeur) */
         .door-back {
           position: absolute;
           inset: 0;
@@ -217,7 +240,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       {isEntering && (
         <div className="absolute inset-0 z-[220] overlay-enter">
-          {/* fond anti-flash */}
           <div
             className="absolute inset-0"
             style={{
@@ -227,7 +249,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             }}
           />
 
-          {/* Cadre logo qui zoome + portes qui s'ouvrent SUR le logo */}
           <div className="door-frame">
             <div className="door-back" />
             <div className="door-panels">
@@ -267,6 +288,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               src={logo}
               alt="La Crêperie des Saveurs"
               className="w-full h-full object-cover"
+              loading="eager"
+              decoding="sync"
             />
           </div>
           <div
@@ -280,7 +303,11 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
             hasBackgroundImage ? "text-white drop-shadow-lg" : "text-espresso"
           }`}
         >
-          {isLoading ? <Loader2 className="w-6 h-6 animate-spin mx-auto" /> : config.event_title}
+          {isLoading ? (
+            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+          ) : (
+            config.event_title
+          )}
         </h1>
 
         <p
@@ -304,7 +331,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         <Button
           onClick={handleEnter}
           size="lg"
-          disabled={isLoading || isEntering}
+          disabled={!canEnter}
           className="text-base md:text-lg px-8 py-6 rounded-full animate-fade-in cta-animated shadow-[0_18px_65px_-18px_rgba(143,90,32,0.95)] hover:shadow-[0_26px_90px_-22px_rgba(143,90,32,1)]"
           style={{
             animationDelay: "0.3s",
@@ -312,12 +339,18 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               "linear-gradient(90deg, hsl(32 65% 45%), hsl(38 75% 58%), hsl(32 65% 45%))",
           }}
         >
-          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : config.cta_text}
+          {!logoReady || isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            config.cta_text
+          )}
         </Button>
       </div>
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div className={`w-16 h-1 rounded-full ${hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"}`} />
+        <div
+          className={`w-16 h-1 rounded-full ${hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"}`}
+        />
       </div>
     </div>
   );
