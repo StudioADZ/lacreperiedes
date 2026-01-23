@@ -41,7 +41,6 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
     img.onerror = () => !cancelled && setLogoReady(true);
     img.src = logo;
 
-    // Hint navigateur
     const link = document.createElement("link");
     link.rel = "preload";
     link.as = "image";
@@ -71,7 +70,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
         if (response.ok) {
           const data = await response.json();
-          if (data.length > 0) {
+          if (data?.length) {
             setConfig({
               event_title: data[0].event_title || DEFAULT_CONFIG.event_title,
               event_subtitle:
@@ -104,7 +103,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
   const hasBackgroundImage = !!config.background_image_url;
 
   const bgCss = hasBackgroundImage
-    ? `linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.4)), url(${config.background_image_url})`
+    ? `linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)), url(${config.background_image_url})`
     : `linear-gradient(180deg,
         hsl(40 33% 96%) 0%,
         hsl(35 45% 92%) 30%,
@@ -124,7 +123,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
       style={rootStyle}
     >
       <style>{`
-        /* CTA animé (gradient + pulse + glow) */
+        /* ===== CTA animé (gradient + pulse + glow) ===== */
         @keyframes gradientShift {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -132,158 +131,57 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         }
         @keyframes ctaPulse {
           0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
-          50% { transform: translateY(-1px) scale(1.03); filter: brightness(1.06); }
+          50% { transform: translateY(-2px) scale(1.045); filter: brightness(1.10); }
         }
         @keyframes ctaGlow {
           0%, 100% {
             box-shadow:
-              0 18px 65px -18px rgba(143, 90, 32, 0.90),
+              0 20px 70px -18px rgba(143, 90, 32, 0.95),
               0 0 0 0 rgba(143, 90, 32, 0.00);
           }
           50% {
             box-shadow:
-              0 26px 92px -22px rgba(143, 90, 32, 1.00),
-              0 0 0 16px rgba(143, 90, 32, 0.18);
+              0 34px 110px -26px rgba(143, 90, 32, 1.00),
+              0 0 0 20px rgba(143, 90, 32, 0.22);
           }
         }
         .cta-animated {
-          background-size: 220% 220%;
+          background-size: 240% 240%;
           animation:
-            gradientShift 5s ease-in-out infinite,
-            ctaPulse 1.8s ease-in-out infinite,
-            ctaGlow 1.8s ease-in-out infinite;
+            gradientShift 4.8s ease-in-out infinite,
+            ctaPulse 1.7s ease-in-out infinite,
+            ctaGlow 1.7s ease-in-out infinite;
           will-change: transform, filter, box-shadow, background-position;
         }
 
-        /* Zoom cadre logo */
-        @keyframes logoZoomFull {
-          0% { transform: translate(-50%, -50%) scale(1); border-radius: 9999px; }
-          70% { transform: translate(-50%, -50%) scale(2.35); border-radius: 30px; }
-          100% { transform: translate(-50%, -50%) scale(2.55); border-radius: 26px; }
+        /* ===== Logo + Glow animation (plus visible) ===== */
+        @keyframes logoFloat {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-7px) scale(1.02); }
         }
-
-        /* Portes 3D */
-        @keyframes doorOpenLeft {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(80deg); }
+        @keyframes glowBreath {
+          0%, 100% {
+            transform: scale(1.18);
+            opacity: 0.38;
+            filter: blur(24px);
+          }
+          50% {
+            transform: scale(1.42);
+            opacity: 0.60;
+            filter: blur(34px);
+          }
         }
-        @keyframes doorOpenRight {
-          0% { transform: rotateY(0deg); }
-          100% { transform: rotateY(-80deg); }
-        }
-
-        .overlay-enter { pointer-events: none; }
-
-        .door-frame {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          width: 180px;
-          height: 180px;
-          transform: translate(-50%, -50%);
-          border-radius: 9999px;
-          overflow: hidden;
-          box-shadow: 0 18px 80px rgba(0,0,0,0.25);
-          animation: logoZoomFull 800ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
-          z-index: 3;
-
-          perspective: 900px;
-          transform-style: preserve-3d;
+        .logo-float {
+          animation: logoFloat 2.6s ease-in-out infinite;
           will-change: transform;
         }
-
-        .door-panels {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          transform-style: preserve-3d;
-        }
-
-        /* ✅ Ici: portes = conteneurs, l'image est un <img> (plus fiable que background-image) */
-        .door {
-          width: 50%;
-          height: 100%;
-          overflow: hidden;
-          backface-visibility: hidden;
-          transform-style: preserve-3d;
-          will-change: transform;
-        }
-
-        .door img {
-          width: 200%;
-          height: 100%;
-          object-fit: cover;
-          filter: saturate(0.98) contrast(1.04);
-          display: block;
-          user-select: none;
-          -webkit-user-drag: none;
-        }
-
-        .door.left {
-          transform-origin: left center;
-          animation: doorOpenLeft 600ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
-          animation-delay: 820ms;
-          box-shadow: inset -14px 0 26px rgba(0,0,0,0.24);
-          border-right: 1px solid rgba(255,255,255,0.12);
-        }
-        .door.left img { transform: translateX(0); }
-
-        .door.right {
-          transform-origin: right center;
-          animation: doorOpenRight 600ms cubic-bezier(0.2, 0.9, 0.2, 1) forwards;
-          animation-delay: 820ms;
-          box-shadow: inset 14px 0 26px rgba(0,0,0,0.24);
-          border-left: 1px solid rgba(0,0,0,0.06);
-        }
-        .door.right img { transform: translateX(-50%); }
-
-        .door-back {
-          position: absolute;
-          inset: 0;
-          background: rgba(0,0,0,0.08);
-          opacity: 0.55;
-        }
-
-        @media (min-width: 768px) {
-          .door-frame { width: 220px; height: 220px; }
+        .logo-glow-anim {
+          animation: glowBreath 2.6s ease-in-out infinite;
+          will-change: transform, opacity, filter;
         }
       `}</style>
 
-      {/* ✅ Force rendu du logo dans le DOM (même invisible) => Lovable/CDN arrête de troll */}
-      <img
-        src={logo}
-        alt=""
-        aria-hidden
-        className="absolute -z-10 opacity-0 pointer-events-none"
-        loading="eager"
-        decoding="sync"
-      />
-
-      {isEntering && (
-        <div className="absolute inset-0 z-[220] overlay-enter">
-          <div
-            className="absolute inset-0"
-            style={{
-              background: bgCss,
-              backgroundSize: hasBackgroundImage ? "cover" : undefined,
-              backgroundPosition: hasBackgroundImage ? "center" : undefined,
-            }}
-          />
-
-          <div className="door-frame">
-            <div className="door-back" />
-            <div className="door-panels">
-              <div className="door left">
-                <img src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
-              </div>
-              <div className="door right">
-                <img src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* texture légère si pas de background image */}
       {!hasBackgroundImage && (
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
           <div
@@ -297,18 +195,20 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         </div>
       )}
 
+      {/* glow “ambiance” */}
       {!hasBackgroundImage && (
         <div className="absolute inset-0 pointer-events-none">
           <div
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-20"
+            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[650px] h-[650px] rounded-full blur-3xl opacity-25"
             style={{ background: "hsl(32 65% 45%)" }}
           />
         </div>
       )}
 
       <div className="relative flex flex-col items-center text-center px-6 max-w-md">
+        {/* LOGO + GLOW (animés) */}
         <div className="relative mb-8">
-          <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden shadow-[0_8px_40px_-8px_hsl(32_65%_45%_/_0.4)] border-4 border-butter/50">
+          <div className="w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden border-4 border-butter/50 logo-float shadow-[0_10px_55px_-10px_hsl(32_65%_45%_/_0.55)]">
             <img
               src={logo}
               alt="La Crêperie des Saveurs"
@@ -317,8 +217,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               decoding="sync"
             />
           </div>
+
           <div
-            className="absolute inset-0 rounded-full blur-2xl opacity-30 -z-10 scale-125"
+            className="absolute inset-0 rounded-full -z-10 scale-125 logo-glow-anim"
             style={{ background: "hsl(32 65% 45%)" }}
           />
         </div>
@@ -353,11 +254,15 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           {config.game_line}
         </p>
 
+        {/* CTA : garde animation + glow même quand on clique (disabled sans fade) */}
         <Button
           onClick={handleEnter}
           size="lg"
           disabled={!canEnter}
-          className="text-base md:text-lg px-8 py-6 rounded-full animate-fade-in cta-animated shadow-[0_18px_65px_-18px_rgba(143,90,32,0.95)] hover:shadow-[0_26px_90px_-22px_rgba(143,90,32,1)]"
+          className="text-base md:text-lg px-8 py-6 rounded-full animate-fade-in cta-animated
+                     shadow-[0_20px_75px_-20px_rgba(143,90,32,1)]
+                     hover:shadow-[0_34px_115px_-28px_rgba(143,90,32,1)]
+                     disabled:opacity-100 disabled:cursor-not-allowed"
           style={{
             animationDelay: "0.3s",
             backgroundImage:
@@ -366,6 +271,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
         >
           {!logoReady || isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
+          ) : isEntering ? (
+            "Ouverture…"
           ) : (
             config.cta_text
           )}
@@ -374,7 +281,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
         <div
-          className={`w-16 h-1 rounded-full ${hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"}`}
+          className={`w-16 h-1 rounded-full ${
+            hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"
+          }`}
         />
       </div>
     </div>
