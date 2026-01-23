@@ -26,10 +26,11 @@ const Index = () => {
           {/* Caramel/ivory warm overlay */}
           <div className="absolute inset-0 bg-gradient-to-b from-caramel/20 via-transparent to-ivory/10" />
           {/* Vignette effect */}
-          <div 
+          <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)"
+              background:
+                "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)",
             }}
           />
           {/* Bottom fade to background */}
@@ -37,14 +38,15 @@ const Index = () => {
         </div>
 
         {/* Content */}
-        <div className="relative h-full flex flex-col items-center justify-center px-6 text-center">
+        <div className="relative h-full flex flex-col items-center justify-center px-6 text-center -translate-y-10 sm:translate-y-0">
           {/* Logo with glow */}
           <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden mb-6 animate-scale-in">
             {/* Glow effect behind logo */}
-            <div 
+            <div
               className="absolute -inset-4 rounded-full opacity-60 blur-xl"
               style={{
-                background: "radial-gradient(circle, hsl(35 60% 60% / 0.6) 0%, transparent 70%)"
+                background:
+                  "radial-gradient(circle, hsl(35 60% 60% / 0.6) 0%, transparent 70%)",
               }}
             />
             <div className="relative w-full h-full rounded-full overflow-hidden shadow-elevated border-4 border-ivory/40">
@@ -59,20 +61,41 @@ const Index = () => {
           {/* Typography - sharper and more premium */}
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
             La Crêperie
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)]">des Saveurs</span>
+            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)]">
+              des Saveurs
+            </span>
           </h1>
 
-          <p className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide" style={{ animationDelay: "0.3s" }}>
+          <p
+            className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide"
+            style={{ animationDelay: "0.3s" }}
+          >
             Crêpes & Galettes artisanales à Mamers
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: "0.5s" }}>
+          <div
+            className="flex flex-col sm:flex-row gap-4 animate-fade-in"
+            style={{ animationDelay: "0.5s" }}
+          >
             <Link to="/quiz">
               <Button className="btn-hero group text-base px-8 py-4">
                 <span>Jouez au Quiz</span>
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
+
+            {/* ✅ Réserver : style différent (secondary) */}
+            <a
+              href="https://calendar.app.google/hjhLsTjEpA5dyrEy9"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button className="btn-secondary-hero group text-base px-8 py-4">
+                <span>Réserver</span>
+                <ExternalLink className="ml-2 w-4 h-4 opacity-90 group-hover:translate-x-1 transition-transform" />
+              </Button>
+            </a>
+
             <Link to="/carte">
               <button className="btn-secondary-hero text-base px-8 py-4">
                 Découvrir la carte
@@ -100,13 +123,13 @@ const Index = () => {
             className="card-glow flex items-start gap-4 group cursor-pointer hover:border-primary/40 transition-all relative overflow-hidden"
           >
             {/* Blurred map background */}
-            <div 
+            <div
               className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
               style={{
                 backgroundImage: `url('https://maps.googleapis.com/maps/api/staticmap?center=48.3506,0.3656&zoom=15&size=400x200&maptype=roadmap&style=feature:all|saturation:-100')`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
-                filter: "blur(2px)"
+                filter: "blur(2px)",
               }}
             />
             <div className="relative w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
@@ -149,15 +172,16 @@ const Index = () => {
           </a>
 
           {/* Contact Card - Phone call */}
-          <a href="tel:0259660176" className="card-glow flex items-start gap-4 group cursor-pointer hover:border-terracotta/40 transition-all">
+          <a
+            href="tel:0259660176"
+            className="card-glow flex items-start gap-4 group cursor-pointer hover:border-terracotta/40 transition-all"
+          >
             <div className="w-12 h-12 rounded-xl bg-terracotta/10 flex items-center justify-center flex-shrink-0 group-hover:bg-terracotta/20 transition-colors">
               <Phone className="w-6 h-6 text-terracotta" />
             </div>
             <div>
               <h3 className="font-display font-semibold text-lg">Appelez-nous</h3>
-              <p className="text-primary font-medium text-lg mt-1">
-                02 59 66 01 76
-              </p>
+              <p className="text-primary font-medium text-lg mt-1">02 59 66 01 76</p>
             </div>
           </a>
         </div>
@@ -172,14 +196,10 @@ const Index = () => {
           <div className="card-quiz-hero relative overflow-hidden rounded-3xl">
             {/* Background Image */}
             <div className="absolute inset-0">
-              <img
-                src={crepes}
-                alt="Crêpes artisanales"
-                className="w-full h-full object-cover"
-              />
+              <img src={crepes} alt="Crêpes artisanales" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-br from-butter/90 via-butter/80 to-caramel-light/70" />
             </div>
-            
+
             {/* Content */}
             <div className="relative p-6 md:p-8">
               <span className="inline-block px-3 py-1 bg-primary/20 backdrop-blur-sm rounded-full text-xs font-medium mb-4 text-espresso border border-caramel/30">
@@ -216,8 +236,8 @@ const Index = () => {
             <img src={logo} alt="Amatekoe" className="w-full h-full object-cover" />
           </div>
           <p className="text-muted-foreground font-serif leading-relaxed">
-            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans d'expérience 
-            dans la restauration. Chaque crêpe est préparée avec passion et savoir-faire artisanal, 
+            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans d'expérience
+            dans la restauration. Chaque crêpe est préparée avec passion et savoir-faire artisanal,
             pour vous offrir une expérience authentique au cœur de Mamers.
           </p>
         </div>
