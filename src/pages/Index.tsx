@@ -12,238 +12,135 @@ import SocialWall from "@/components/home/SocialWall";
 const Index = () => {
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]">
-      {/* Hero Section - Premium quality */}
-      <section className="relative h-[85vh] min-h-[600px] overflow-hidden">
-        {/* Background Image with blur and darkening */}
+      {/* HERO */}
+      <section className="relative min-h-[85vh] overflow-hidden">
         <div className="absolute inset-0">
           <img
             src={storefront}
-            alt="La Crêperie des Saveurs - Devanture"
-            className="w-full h-full object-cover scale-105 blur-[1px]"
+            alt="La Crêperie des Saveurs"
+            className="w-full h-full object-cover scale-110 blur-[1.5px]"
           />
-          {/* Dark overlay for contrast */}
-          <div className="absolute inset-0 bg-espresso/50" />
-          {/* Caramel/ivory warm overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-caramel/20 via-transparent to-ivory/10" />
-          {/* Vignette effect */}
+          <div className="absolute inset-0 bg-espresso/55" />
+          <div className="absolute inset-0 bg-gradient-to-b from-caramel/25 via-transparent to-ivory/10" />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.4) 100%)",
+                "radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%)",
             }}
           />
-          {/* Bottom fade to background */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
         </div>
 
-        {/* Content */}
-        <div className="relative h-full flex flex-col items-center justify-center px-6 text-center -translate-y-10 sm:translate-y-0">
-          {/* Logo with glow */}
-          <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden mb-6 animate-scale-in">
-            {/* Glow effect behind logo */}
+        <div className="relative flex flex-col items-center justify-center px-6 pt-24 pb-16 text-center">
+          {/* Logo */}
+          <div className="relative mb-6">
             <div
-              className="absolute -inset-4 rounded-full opacity-60 blur-xl"
+              className="absolute -inset-6 rounded-full blur-2xl opacity-60"
               style={{
                 background:
-                  "radial-gradient(circle, hsl(35 60% 60% / 0.6) 0%, transparent 70%)",
+                  "radial-gradient(circle, hsl(38 70% 55% / 0.55) 0%, transparent 70%)",
               }}
             />
-            <div className="relative w-full h-full rounded-full overflow-hidden shadow-elevated border-4 border-ivory/40">
-              <img
-                src={logo}
-                alt="La Crêperie des Saveurs"
-                className="w-full h-full object-cover"
-              />
+            <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-[5px] border-ivory/40 shadow-elevated">
+              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
             </div>
           </div>
 
-          {/* Typography - sharper and more premium */}
-          <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 animate-slide-up tracking-tight drop-shadow-lg">
-            La Crêperie
-            <span className="block text-caramel-light drop-shadow-[0_2px_10px_rgba(218,165,32,0.5)]">
+          {/* Title */}
+          <h1 className="font-display font-bold text-white leading-[0.95] drop-shadow-[0_12px_35px_rgba(0,0,0,0.55)]">
+            <span className="block text-4xl md:text-5xl lg:text-6xl">
+              La Crêperie
+            </span>
+            <span className="block text-5xl md:text-6xl lg:text-7xl mt-2 bg-gradient-to-r from-[hsl(43_85%_65%)] via-[hsl(38_70%_55%)] to-[hsl(20_75%_55%)] bg-clip-text text-transparent">
               des Saveurs
             </span>
           </h1>
 
-          <p
-            className="text-lg md:text-xl text-white/95 font-serif mb-8 animate-fade-in drop-shadow-md tracking-wide"
-            style={{ animationDelay: "0.3s" }}
-          >
+          <p className="mt-5 text-lg md:text-xl text-white/95 font-serif max-w-md">
             Crêpes & Galettes artisanales à Mamers
           </p>
 
-          <div
-            className="flex flex-col sm:flex-row gap-4 animate-fade-in"
-            style={{ animationDelay: "0.5s" }}
-          >
+          {/* CTA */}
+          <div className="mt-8 w-full max-w-xl flex flex-col gap-4">
             <Link to="/quiz">
-              <Button className="btn-hero group text-base px-8 py-4">
-                <span>Jouez au Quiz</span>
-                <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-gradient-to-r from-[hsl(38_70%_55%)] to-[hsl(20_70%_52%)] text-white shadow-[0_18px_45px_rgba(218,165,32,0.25)]">
+                Jouez au Quiz <ArrowRight className="ml-2" />
               </Button>
             </Link>
 
-            {/* ✅ Réserver : style différent (secondary) */}
             <a
               href="https://calendar.app.google/hjhLsTjEpA5dyrEy9"
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button className="btn-secondary-hero group text-base px-8 py-4">
-                <span>Réserver</span>
-                <ExternalLink className="ml-2 w-4 h-4 opacity-90 group-hover:translate-x-1 transition-transform" />
+              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-gradient-to-r from-[hsl(35_60%_45%)] to-[hsl(28_55%_40%)] text-white shadow-lg">
+                Réserver <ExternalLink className="ml-2" />
               </Button>
             </a>
 
             <Link to="/carte">
-              <button className="btn-secondary-hero text-base px-8 py-4">
+              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-white/90 backdrop-blur text-espresso shadow-lg">
                 Découvrir la carte
-              </button>
+              </Button>
             </Link>
           </div>
         </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-          <div className="w-6 h-10 rounded-full border-2 border-white/40 flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-white/70 rounded-full animate-pulse" />
-          </div>
-        </div>
       </section>
 
-      {/* Info Cards - Clickable */}
-      <section className="px-4 -mt-16 relative z-10">
+      {/* INFO CARDS — REMONTÉES + TRANSPARENCE */}
+      <section className="px-4 -mt-10 relative z-20">
         <div className="max-w-lg mx-auto grid gap-4">
-          {/* Location Card - Opens Google Maps */}
-          <a
-            href="https://maps.app.goo.gl/6KdHfHSUs1MbzakLA"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card-glow flex items-start gap-4 group cursor-pointer hover:border-primary/40 transition-all relative overflow-hidden"
-          >
-            {/* Blurred map background */}
-            <div
-              className="absolute inset-0 opacity-10 group-hover:opacity-20 transition-opacity"
-              style={{
-                backgroundImage: `url('https://maps.googleapis.com/maps/api/staticmap?center=48.3506,0.3656&zoom=15&size=400x200&maptype=roadmap&style=feature:all|saturation:-100')`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "blur(2px)",
-              }}
-            />
-            <div className="relative w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-              <MapPin className="w-6 h-6 text-primary" />
-            </div>
-            <div className="relative flex-1">
-              <h3 className="font-display font-semibold text-lg flex items-center gap-2">
-                Nous trouver
-                <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                17 Place Carnot – Galerie des Halles
-              </p>
-              <p className="text-muted-foreground text-sm">72600 Mamers</p>
-            </div>
-          </a>
-
-          {/* Hours Card - Opens booking calendar */}
-          <a
-            href="https://calendar.app.google/nZShjcjWUyTcGLR97"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="card-glow flex items-start gap-4 group cursor-pointer hover:border-accent/40 transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center flex-shrink-0 group-hover:bg-accent/20 transition-colors">
-              <Clock className="w-6 h-6 text-accent" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-display font-semibold text-lg flex items-center gap-2">
-                Horaires
-                <ExternalLink className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h3>
-              <p className="text-muted-foreground text-sm mt-1">
-                Samedi & Dimanche uniquement
-              </p>
-              <p className="text-muted-foreground text-sm">
-                12h00 – 14h00 • 19h00 – 21h00
-              </p>
-            </div>
-          </a>
-
-          {/* Contact Card - Phone call */}
-          <a
-            href="tel:0259660176"
-            className="card-glow flex items-start gap-4 group cursor-pointer hover:border-terracotta/40 transition-all"
-          >
-            <div className="w-12 h-12 rounded-xl bg-terracotta/10 flex items-center justify-center flex-shrink-0 group-hover:bg-terracotta/20 transition-colors">
-              <Phone className="w-6 h-6 text-terracotta" />
-            </div>
-            <div>
-              <h3 className="font-display font-semibold text-lg">Appelez-nous</h3>
-              <p className="text-primary font-medium text-lg mt-1">02 59 66 01 76</p>
-            </div>
-          </a>
+          {[
+            {
+              icon: <MapPin className="w-6 h-6 text-primary" />,
+              title: "Nous trouver",
+              text: ["17 Place Carnot – Galerie des Halles", "72600 Mamers"],
+              href: "https://maps.app.goo.gl/6KdHfHSUs1MbzakLA",
+            },
+            {
+              icon: <Clock className="w-6 h-6 text-accent" />,
+              title: "Horaires",
+              text: ["Samedi & Dimanche uniquement", "12h00 – 14h00 • 19h00 – 21h00"],
+              href: "https://calendar.app.google/nZShjcjWUyTcGLR97",
+            },
+            {
+              icon: <Phone className="w-6 h-6 text-terracotta" />,
+              title: "Appelez-nous",
+              text: ["02 59 66 01 76"],
+              href: "tel:0259660176",
+            },
+          ].map((item, i) => (
+            <a
+              key={i}
+              href={item.href}
+              className="
+                backdrop-blur-xl bg-white/65
+                border border-white/40
+                rounded-2xl p-5
+                shadow-[0_12px_30px_rgba(0,0,0,0.12)]
+                flex gap-4 items-start
+                hover:bg-white/75 transition
+              "
+            >
+              <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
+                {item.icon}
+              </div>
+              <div>
+                <h3 className="font-display font-semibold text-lg">{item.title}</h3>
+                {item.text.map((t, idx) => (
+                  <p key={idx} className="text-sm text-muted-foreground">
+                    {t}
+                  </p>
+                ))}
+              </div>
+            </a>
+          ))}
         </div>
       </section>
 
-      {/* Booking CTA */}
       <BookingCTA />
-
-      {/* Quiz Promo Section */}
-      <section className="px-4 mt-12">
-        <div className="max-w-lg mx-auto">
-          <div className="card-quiz-hero relative overflow-hidden rounded-3xl">
-            {/* Background Image */}
-            <div className="absolute inset-0">
-              <img src={crepes} alt="Crêpes artisanales" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-br from-butter/90 via-butter/80 to-caramel-light/70" />
-            </div>
-
-            {/* Content */}
-            <div className="relative p-6 md:p-8">
-              <span className="inline-block px-3 py-1 bg-primary/20 backdrop-blur-sm rounded-full text-xs font-medium mb-4 text-espresso border border-caramel/30">
-                🎁 Chaque semaine
-              </span>
-              <h2 className="font-display text-2xl md:text-3xl font-bold mb-3 text-espresso">
-                Gagnez des crêpes gratuites !
-              </h2>
-              <p className="text-espresso/80 text-sm mb-6 max-w-xs">
-                Participez à notre quiz hebdomadaire et tentez de remporter une formule complète, une galette ou une crêpe.
-              </p>
-              <Link to="/quiz">
-                <Button className="btn-hero group w-full sm:w-auto">
-                  <span>Jouer maintenant</span>
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Google Map */}
       <GoogleMap />
-
-      {/* Social Wall - Actus Live */}
       <SocialWall />
-
-      {/* Story Section */}
-      <section className="px-4 mt-12">
-        <div className="max-w-lg mx-auto text-center">
-          <h2 className="font-display text-2xl font-bold mb-4">Notre Histoire</h2>
-          <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-4 shadow-warm">
-            <img src={logo} alt="Amatekoe" className="w-full h-full object-cover" />
-          </div>
-          <p className="text-muted-foreground font-serif leading-relaxed">
-            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans d'expérience
-            dans la restauration. Chaque crêpe est préparée avec passion et savoir-faire artisanal,
-            pour vous offrir une expérience authentique au cœur de Mamers.
-          </p>
-        </div>
-      </section>
-
-      {/* Social Footer */}
       <SocialFooter />
     </div>
   );
