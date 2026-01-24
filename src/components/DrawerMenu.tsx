@@ -29,17 +29,11 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-80 bg-ivory border-r-0 p-0">
         <div className="flex flex-col h-full">
-          {/* Header with Logo */}
+          {/* Header with Logo (texte supprimé, logo uniquement) */}
           <div className="p-6 border-b border-border/50 bg-butter/30">
-            <Link to="/" onClick={() => onOpenChange(false)} className="flex items-center gap-4">
+            <Link to="/" onClick={() => onOpenChange(false)} className="flex items-center justify-center">
               <div className="w-16 h-16 rounded-full overflow-hidden shadow-warm">
                 <img src={logo} alt="La Crêperie des Saveurs" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <h2 className="font-display text-lg font-semibold text-foreground">
-                  La Crêperie
-                </h2>
-                <p className="text-sm text-muted-foreground">des Saveurs</p>
               </div>
             </Link>
           </div>
@@ -50,7 +44,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
               {menuItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
-                
+
                 return (
                   <li key={item.path}>
                     <Link
