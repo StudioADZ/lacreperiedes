@@ -3,7 +3,6 @@ import { ArrowRight, MapPin, Clock, Phone, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
 import logo from "@/assets/logo.png";
-import crepes from "@/assets/crepes.jpg";
 import SocialFooter from "@/components/SocialFooter";
 import GoogleMap from "@/components/home/GoogleMap";
 import BookingCTA from "@/components/home/BookingCTA";
@@ -12,7 +11,107 @@ import SocialWall from "@/components/home/SocialWall";
 const Index = () => {
   return (
     <div className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]">
-      {/* HERO */}
+      <style>{`
+        /* ===== Glow border animé (palette logo) ===== */
+        @keyframes borderFlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        @keyframes textFlow {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+
+        /* ===== CTA dégradé animé (pour les 2 CTA colorés) ===== */
+        @keyframes ctaFlow {
+          0% { background-position: 0% 50%; transform: translateY(0); }
+          50% { background-position: 100% 50%; transform: translateY(-1px); }
+          100% { background-position: 0% 50%; transform: translateY(0); }
+        }
+        .cta-anim {
+          background-size: 240% 240%;
+          animation: ctaFlow 4.8s ease-in-out infinite;
+          will-change: background-position, transform;
+        }
+        .cta-glow {
+          box-shadow:
+            0 18px 45px rgba(218,165,32,0.22),
+            0 0 0 1px rgba(255,255,255,0.18);
+          transition: box-shadow .25s ease, transform .25s ease, filter .25s ease;
+        }
+        .cta-glow:hover {
+          transform: translateY(-1px);
+          filter: brightness(1.02);
+          box-shadow:
+            0 24px 70px rgba(218,165,32,0.30),
+            0 0 0 1px rgba(255,255,255,0.22);
+        }
+
+        /* ===== Cards glow (utilisé sous le hero + CTA "Découvrir la carte") ===== */
+        .glow-card {
+          position: relative;
+          border-radius: 1rem; /* matches rounded-2xl */
+          isolation: isolate;
+        }
+        .glow-card::before {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          background: linear-gradient(90deg,
+            hsl(43 85% 65%),
+            hsl(38 70% 55%),
+            hsl(20 75% 55%),
+            hsl(43 85% 65%)
+          );
+          background-size: 260% 260%;
+          animation: borderFlow 6.5s ease-in-out infinite;
+          opacity: 0.85;
+          z-index: -2;
+        }
+        .glow-card::after {
+          content: "";
+          position: absolute;
+          inset: 1px;
+          border-radius: inherit;
+          background: rgba(255,255,255,0.62);
+          backdrop-filter: blur(18px);
+          -webkit-backdrop-filter: blur(18px);
+          z-index: -1;
+        }
+        .glow-card-shadow {
+          box-shadow:
+            0 12px 30px rgba(0,0,0,0.12),
+            0 0 0 1px rgba(255,255,255,0.25),
+            0 18px 55px rgba(212,160,83,0.20);
+          transition: transform .25s ease, box-shadow .25s ease;
+        }
+        .glow-card:hover.glow-card-shadow {
+          transform: translateY(-2px);
+          box-shadow:
+            0 18px 46px rgba(0,0,0,0.14),
+            0 0 0 1px rgba(255,255,255,0.32),
+            0 26px 80px rgba(212,160,83,0.28);
+        }
+        .glow-title {
+          background: linear-gradient(90deg,
+            hsl(43 85% 65%),
+            hsl(38 70% 55%),
+            hsl(20 75% 55%),
+            hsl(43 85% 65%)
+          );
+          background-size: 260% 260%;
+          animation: textFlow 7.5s ease-in-out infinite;
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 6px 16px rgba(0,0,0,0.16));
+        }
+      `}</style>
+
+      {/* HERO — VERSION ORIGINALE (on ne touche pas) */}
       <section className="relative min-h-[85vh] overflow-hidden">
         <div className="absolute inset-0">
           <img
@@ -60,10 +159,16 @@ const Index = () => {
             Crêpes & Galettes artisanales à Mamers
           </p>
 
-          {/* CTA */}
+          {/* CTA (garde la même structure, mais on remet l'animation) */}
           <div className="mt-8 w-full max-w-xl flex flex-col gap-4">
             <Link to="/quiz">
-              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-gradient-to-r from-[hsl(38_70%_55%)] to-[hsl(20_70%_52%)] text-white shadow-[0_18px_45px_rgba(218,165,32,0.25)]">
+              <Button
+                className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, hsl(43 85% 65%), hsl(38 70% 55%), hsl(20 75% 55%), hsl(43 85% 65%))",
+                }}
+              >
                 Jouez au Quiz <ArrowRight className="ml-2" />
               </Button>
             </Link>
@@ -73,21 +178,31 @@ const Index = () => {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-gradient-to-r from-[hsl(35_60%_45%)] to-[hsl(28_55%_40%)] text-white shadow-lg">
+              <Button
+                className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
+                }}
+              >
                 Réserver <ExternalLink className="ml-2" />
               </Button>
             </a>
 
-            <Link to="/carte">
-              <Button className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold bg-white/90 backdrop-blur text-espresso shadow-lg">
+            {/* ✅ CTA 3 = même animation/bordure/opacité/padding que les 3 cartes */}
+            <Link
+              to="/carte"
+              className="glow-card glow-card-shadow rounded-2xl p-5 flex items-center justify-center transition text-center"
+            >
+              <h3 className="font-display font-semibold text-lg glow-title">
                 Découvrir la carte
-              </Button>
+              </h3>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* INFO CARDS — REMONTÉES + TRANSPARENCE */}
+      {/* INFO CARDS — glow */}
       <section className="px-4 -mt-10 relative z-20">
         <div className="max-w-lg mx-auto grid gap-4">
           {[
@@ -113,20 +228,15 @@ const Index = () => {
             <a
               key={i}
               href={item.href}
-              className="
-                backdrop-blur-xl bg-white/65
-                border border-white/40
-                rounded-2xl p-5
-                shadow-[0_12px_30px_rgba(0,0,0,0.12)]
-                flex gap-4 items-start
-                hover:bg-white/75 transition
-              "
+              className="glow-card glow-card-shadow rounded-2xl p-5 flex gap-4 items-start transition"
             >
               <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
                 {item.icon}
               </div>
               <div>
-                <h3 className="font-display font-semibold text-lg">{item.title}</h3>
+                <h3 className="font-display font-semibold text-lg glow-title">
+                  {item.title}
+                </h3>
                 {item.text.map((t, idx) => (
                   <p key={idx} className="text-sm text-muted-foreground">
                     {t}
