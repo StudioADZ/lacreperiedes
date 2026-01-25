@@ -251,6 +251,22 @@ const Index = () => {
       <BookingCTA />
       <GoogleMap />
       <SocialWall />
+
+      {/* NOTRE HISTOIRE */}
+      <section className="px-4 mt-12">
+        <div className="max-w-lg mx-auto text-center">
+          <h2 className="font-display text-2xl font-bold mb-4">Notre Histoire</h2>
+          <div className="w-20 h-20 rounded-full overflow-hidden mx-auto mb-4 shadow-warm">
+            <img src={logo} alt="Amatekoe" className="w-full h-full object-cover" />
+          </div>
+          <p className="text-muted-foreground font-serif leading-relaxed">
+            Né à Lomé au Togo, arrivé en France en 1997, Amatekoe apporte plus de 12 ans d'expérience
+            dans la restauration. Chaque crêpe est préparée avec passion et savoir-faire artisanal,
+            pour vous offrir une expérience authentique au cœur de Mamers.
+          </p>
+        </div>
+      </section>
+
       <SocialFooter />
     </div>
   );
