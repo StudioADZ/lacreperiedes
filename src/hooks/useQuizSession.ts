@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDeviceFingerprint } from './useDeviceFingerprint';
-import { quizStart, quizAnswer, quizReset } from '@/services/edge/quizSession';
+import { quizStart, quizAnswer, quizReset } from '../services/edge/quizSession';
 
 interface Question {
   id: string;
@@ -39,12 +39,10 @@ export const useQuizSession = () => {
     answers: [],
   });
 
-  // Handle visibility change (tab switch detection)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden && state.session && !state.session.answers?.length) {
-        // Only reset if quiz just started (prevent accidental resets)
-        // resetSession();
+        // volontairement désactivé (comportement actuel)
       }
     };
 
@@ -79,7 +77,7 @@ export const useQuizSession = () => {
       answers: data.session.answers?.map((a: any) => ({
         answer: a.answer,
         isCorrect: a.isCorrect,
-        correctAnswer: '', // We don't have this from the session
+        correctAnswer: '',
       })) || [],
     }));
 
