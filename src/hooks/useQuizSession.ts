@@ -1,7 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useDeviceFingerprint } from './useDeviceFingerprint';
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+import { quizStart, quizAnswer, quizReset } from '@/services/edge/quizSession';
 
 interface Question {
   id: string;
@@ -58,49 +57,33 @@ export const useQuizSession = () => {
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'start',
-          deviceFingerprint,
-        }),
-      });
+    const res = await quizStart(deviceFingerprint);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: data.message || 'Erreur lors du démarrage',
-        }));
-        return { success: false, error: data.error };
-      }
-
+    if (!res.ok) {
       setState(prev => ({
         ...prev,
         isLoading: false,
-        session: data.session,
-        questions: data.questions,
-        currentQuestionIndex: data.session.current_question || 0,
-        answers: data.session.answers?.map((a: any) => ({
-          answer: a.answer,
-          isCorrect: a.isCorrect,
-          correctAnswer: '', // We don't have this from the session
-        })) || [],
-      }));
-
-      return { success: true };
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Erreur de connexion',
+        error: res.error || 'Erreur lors du démarrage',
       }));
       return { success: false, error: 'connection_error' };
     }
+
+    const data: any = res.data;
+
+    setState(prev => ({
+      ...prev,
+      isLoading: false,
+      session: data.session,
+      questions: data.questions,
+      currentQuestionIndex: data.session.current_question || 0,
+      answers: data.session.answers?.map((a: any) => ({
+        answer: a.answer,
+        isCorrect: a.isCorrect,
+        correctAnswer: '', // We don't have this from the session
+      })) || [],
+    }));
+
+    return { success: true };
   }, [deviceFingerprint]);
 
   const submitAnswer = useCallback(async (answer: string) => {
@@ -108,64 +91,43 @@ export const useQuizSession = () => {
 
     setState(prev => ({ ...prev, isLoading: true }));
 
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'answer',
-          deviceFingerprint,
-          sessionId: state.session.id,
-          answer,
-          questionIndex: state.currentQuestionIndex,
-        }),
-      });
+    const res = await quizAnswer({
+      deviceFingerprint,
+      sessionId: state.session.id,
+      answer,
+      questionIndex: state.currentQuestionIndex,
+    });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: data.message || 'Erreur lors de la soumission',
-        }));
-        return { success: false, error: data.error };
-      }
-
+    if (!res.ok) {
       setState(prev => ({
         ...prev,
         isLoading: false,
-        currentQuestionIndex: prev.currentQuestionIndex + 1,
-        answers: [...prev.answers, {
-          answer,
-          isCorrect: data.isCorrect,
-          correctAnswer: data.correctAnswer,
-        }],
-      }));
-
-      return { success: true, isCorrect: data.isCorrect, correctAnswer: data.correctAnswer };
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: 'Erreur de connexion',
+        error: res.error || 'Erreur lors de la soumission',
       }));
       return { success: false, error: 'connection_error' };
     }
+
+    const data: any = res.data;
+
+    setState(prev => ({
+      ...prev,
+      isLoading: false,
+      currentQuestionIndex: prev.currentQuestionIndex + 1,
+      answers: [...prev.answers, {
+        answer,
+        isCorrect: data.isCorrect,
+        correctAnswer: data.correctAnswer,
+      }],
+    }));
+
+    return { success: true, isCorrect: data.isCorrect, correctAnswer: data.correctAnswer };
   }, [state.session, state.currentQuestionIndex, deviceFingerprint]);
 
   const resetSession = useCallback(async () => {
     if (!deviceFingerprint) return;
 
     try {
-      await fetch(`${SUPABASE_URL}/functions/v1/quiz-session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'reset',
-          deviceFingerprint,
-        }),
-      });
+      await quizReset(deviceFingerprint);
     } catch (error) {
       console.error('Reset error:', error);
     }
