@@ -1,66 +1,133 @@
-import { useEffect, useRef, useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  CheckCircle,
+  XCircle,
+  Loader2,
+  Gift,
+  Calendar,
+  Lock,
+  Scan,
+  BarChart3,
+  AlertCircle,
+  CameraOff,
+  Newspaper,
+  Sparkles,
+  UtensilsCrossed,
+  Mail,
+  CreditCard,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
-import { adminStats, adminVerify, adminClaim } from "../services/edge/adminScan";
+import QRScanner from "@/components/admin/QRScanner";
+import ActusLivePanel from "@/components/admin/ActusLivePanel";
+import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
+import QuizStatsPanel from "@/components/admin/QuizStatsPanel";
+import CarteMenuPanel from "@/components/admin/CarteMenuPanel";
+import MessagesPanel from "@/components/admin/MessagesPanel";
+import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 
-const SESSION_DURATION = 30 * 60 * 1000;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-export default function Admin() {
-  const [password, setPassword] = useState("");
+interface VerifyResult {
+  valid: boolean;
+  id?: string;
+  firstName?: string;
+  prize?: string;
+  weekNumber?: number;
+  weekStart?: string;
+  claimed?: boolean;
+  claimedAt?: string;
+  createdAt?: string;
+  error?: string;
+  message?: string;
+}
+
+const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [password, setPassword] = useState("");
+  const [authError, setAuthError] = useState("");
 
-  const [result, setResult] = useState<any>(null);
   const [manualCode, setManualCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [result, setResult] = useState<VerifyResult | null>(null);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash">("scan");
+  const [scannerActive, setScannerActive] = useState(false);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
-  const storedPassword = useRef<string>("");
+  const storedPassword = useRef("");
 
+  // Check stored auth
   useEffect(() => {
-    const saved = sessionStorage.getItem("admin_auth");
-    if (saved) {
-      const parsed = JSON.parse(saved);
-      if (Date.now() - parsed.timestamp < SESSION_DURATION) {
-        storedPassword.current = parsed.password;
-        setIsAuthenticated(true);
-      } else {
-        sessionStorage.removeItem("admin_auth");
-      }
+    const stored = sessionStorage.getItem("admin_auth");
+    if (stored) {
+      storedPassword.current = stored;
+      setIsAuthenticated(true);
     }
   }, []);
 
   const handleLogin = async () => {
+    setAuthError("");
     setIsLoading(true);
-    setAuthError(null);
 
-    const res = await adminStats(password);
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "stats", adminPassword: password }),
+      });
 
-    if (!res.ok) {
-      setAuthError(res.error || "Mot de passe incorrect");
+      const data = await response.json();
+
+      if (!response.ok) {
+        setAuthError(data.message || "Mot de passe incorrect");
+        setIsLoading(false);
+        return;
+      }
+
+      storedPassword.current = password;
+      sessionStorage.setItem("admin_auth", password);
+      setIsAuthenticated(true);
+    } catch (error) {
+      setAuthError("Erreur de connexion");
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    storedPassword.current = password;
-    sessionStorage.setItem(
-      "admin_auth",
-      JSON.stringify({ password, timestamp: Date.now() })
-    );
-    setIsAuthenticated(true);
-    setIsLoading(false);
   };
 
-  const handleVerify = async (code: string) => {
-    if (!storedPassword.current) return;
+  const handleVerify = useCallback(async (code: string) => {
+    if (!code.trim()) return;
+
+    // Prevent duplicate scans
+    if (code.toUpperCase() === lastScannedCode) return;
+    setLastScannedCode(code.toUpperCase());
 
     setIsLoading(true);
     setResult(null);
+    setManualCode(code.toUpperCase());
 
-    const res = await adminVerify(code, storedPassword.current);
+    // Stop scanner while showing result
+    setScannerActive(false);
 
-    if (res.ok) {
-      const data: any = res.data;
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "verify",
+          code: code.toUpperCase(),
+          adminPassword: storedPassword.current,
+        }),
+      });
+
+      const data = await response.json();
       setResult(data);
 
+      // Celebration for valid unclaimed prize
       if (data.valid && !data.claimed) {
         confetti({
           particleCount: 80,
@@ -69,98 +136,379 @@ export default function Admin() {
           colors: ["#b8860b", "#daa520", "#ffd700", "#228b22"],
         });
       }
-    } else {
-      setResult({
-        valid: false,
-        error: "connection_error",
-        message: res.error,
-      });
+    } catch (error) {
+      setResult({ valid: false, error: "connection_error", message: "Erreur de connexion" });
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
-  };
+  }, [lastScannedCode]);
 
   const handleClaim = async () => {
-    if (!manualCode || !storedPassword.current) return;
+    if (!result?.id) return;
 
-    setIsLoading(true);
+    setClaimLoading(true);
 
-    const res = await adminClaim(manualCode, storedPassword.current);
-
-    if (res.ok) {
-      const data: any = res.data;
-      setResult(data);
-    } else {
-      setResult({
-        valid: false,
-        error: "connection_error",
-        message: res.error,
+    try {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "claim",
+          code: manualCode.toUpperCase(),
+          adminPassword: storedPassword.current,
+        }),
       });
-    }
 
-    setIsLoading(false);
+      const data = await response.json();
+
+      if (data.success) {
+        setResult((prev) => (prev ? { ...prev, claimed: true, claimedAt: new Date().toISOString() } : null));
+
+        // Success animation
+        confetti({
+          particleCount: 50,
+          spread: 45,
+          origin: { y: 0.7 },
+          colors: ["#228b22", "#32cd32", "#90ee90"],
+        });
+      }
+    } catch (error) {
+      console.error("Claim error:", error);
+    } finally {
+      setClaimLoading(false);
+    }
   };
 
+  const handleReset = () => {
+    setResult(null);
+    setManualCode("");
+    setLastScannedCode(null);
+  };
+
+  // Login screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-sm space-y-4">
-          <h1 className="text-2xl font-bold text-center">Admin</h1>
-          <input
-            type="password"
-            className="w-full p-2 border rounded"
-            placeholder="Mot de passe admin"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          {authError && (
-            <p className="text-sm text-red-600 text-center">{authError}</p>
-          )}
-          <button
-            onClick={handleLogin}
-            disabled={isLoading}
-            className="w-full p-2 bg-black text-white rounded"
-          >
-            {isLoading ? "Connexion..." : "Connexion"}
-          </button>
-        </div>
+      <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card-warm w-full max-w-sm"
+        >
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+              <Lock className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="font-display text-2xl font-bold">Admin</h1>
+            <p className="text-sm text-muted-foreground">Accès réservé au personnel</p>
+          </div>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="password">Mot de passe</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                placeholder="••••••••"
+                className={authError ? "border-destructive" : ""}
+              />
+              {authError && <p className="text-xs text-destructive">{authError}</p>}
+            </div>
+
+            <Button onClick={handleLogin} className="w-full btn-hero" disabled={isLoading || !password}>
+              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Connexion"}
+            </Button>
+          </div>
+        </motion.div>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Admin</h1>
+    <div className="min-h-screen pt-20 pb-24 px-4">
+      <div className="max-w-lg mx-auto">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
+          <p className="text-sm text-muted-foreground">Gestion de la crêperie</p>
+        </div>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          className="flex-1 p-2 border rounded"
-          placeholder="Code à vérifier"
-          value={manualCode}
-          onChange={(e) => setManualCode(e.target.value)}
-        />
-        <button
-          onClick={() => handleVerify(manualCode)}
-          disabled={isLoading}
-          className="p-2 bg-blue-600 text-white rounded"
-        >
-          Vérifier
-        </button>
-        <button
-          onClick={handleClaim}
-          disabled={isLoading}
-          className="p-2 bg-green-600 text-white rounded"
-        >
-          Valider
-        </button>
+        {/* Main Tabs - Simplified */}
+        <div className="grid grid-cols-4 gap-1.5 mb-4">
+          <Button
+            variant={activeTab === "scan" ? "default" : "outline"}
+            onClick={() => setActiveTab("scan")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Scan className="w-4 h-4" />
+            <span className="text-[10px]">Scanner</span>
+          </Button>
+          <Button
+            variant={activeTab === "quiz" ? "default" : "outline"}
+            onClick={() => setActiveTab("quiz")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span className="text-[10px]">Quiz & Stats</span>
+          </Button>
+          <Button
+            variant={activeTab === "carte" ? "default" : "outline"}
+            onClick={() => setActiveTab("carte")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            <span className="text-[10px]">La Carte</span>
+          </Button>
+          <Button
+            variant={activeTab === "messages" ? "default" : "outline"}
+            onClick={() => setActiveTab("messages")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Mail className="w-4 h-4" />
+            <span className="text-[10px]">Messages</span>
+          </Button>
+        </div>
+        
+        {/* Secondary Tabs */}
+        <div className="grid grid-cols-3 gap-1.5 mb-6">
+          <Button
+            variant={activeTab === "payment" ? "default" : "outline"}
+            onClick={() => setActiveTab("payment")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span className="text-[10px]">Paiement</span>
+          </Button>
+          <Button
+            variant={activeTab === "actus" ? "default" : "outline"}
+            onClick={() => setActiveTab("actus")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Newspaper className="w-4 h-4" />
+            <span className="text-[10px]">Actus</span>
+          </Button>
+          <Button
+            variant={activeTab === "splash" ? "default" : "outline"}
+            onClick={() => setActiveTab("splash")}
+            size="sm"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="text-[10px]">Splash</span>
+          </Button>
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === "quiz" && (
+          <QuizStatsPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "carte" && (
+          <CarteMenuPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "messages" && (
+          <MessagesPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "payment" && (
+          <PaymentQRPanel adminPassword={storedPassword.current} />
+        )}
+
+        {activeTab === "scan" && (
+          <div className="space-y-6">
+            {/* QR Scanner */}
+            {!result && (
+              <div className="card-warm">
+                <div className="flex items-center justify-between mb-4">
+                  <Label className="flex items-center gap-2">
+                    <Camera className="w-4 h-4" />
+                    Scanner QR
+                  </Label>
+                  <Button
+                    variant={scannerActive ? "destructive" : "outline"}
+                    size="sm"
+                    onClick={() => setScannerActive(!scannerActive)}
+                  >
+                    {scannerActive ? (
+                      <>
+                        <CameraOff className="w-4 h-4 mr-1" />
+                        Arrêter
+                      </>
+                    ) : (
+                      <>
+                        <Camera className="w-4 h-4 mr-1" />
+                        Activer
+                      </>
+                    )}
+                  </Button>
+                </div>
+                
+                {scannerActive ? (
+                  <QRScanner onScan={handleVerify} isActive={scannerActive} />
+                ) : (
+                  <div className="aspect-square rounded-xl bg-muted/50 flex flex-col items-center justify-center text-muted-foreground">
+                    <Camera className="w-12 h-12 mb-3 opacity-30" />
+                    <p className="text-sm">Appuyez sur Activer pour scanner</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Manual Input */}
+            {!result && (
+              <div className="card-warm">
+                <Label htmlFor="code" className="mb-2 block flex items-center gap-2">
+                  <Scan className="w-4 h-4" />
+                  Ou saisir manuellement
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="code"
+                    value={manualCode}
+                    onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                    onKeyDown={(e) => e.key === "Enter" && handleVerify(manualCode)}
+                    placeholder="XXXXXXXX"
+                    className="font-mono text-lg tracking-wider"
+                    maxLength={8}
+                  />
+                  <Button onClick={() => handleVerify(manualCode)} disabled={isLoading || !manualCode.trim()}>
+                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Result */}
+            <AnimatePresence mode="wait">
+              {result && (
+                <motion.div
+                  key={result.valid ? "valid" : "invalid"}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className={`card-glow text-center py-8 ${
+                    result.valid && !result.claimed
+                      ? "border-2 border-herb shadow-[0_0_30px_-8px_hsl(140_35%_40%_/_0.3)]"
+                      : result.claimed
+                        ? "border-muted"
+                        : "border-destructive/30"
+                  }`}
+                >
+                  {/* Status Icon */}
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
+                      result.valid && !result.claimed
+                        ? "bg-herb/10"
+                        : result.claimed
+                          ? "bg-muted"
+                          : "bg-destructive/10"
+                    }`}
+                  >
+                    {result.valid && !result.claimed ? (
+                      <CheckCircle className="w-10 h-10 text-herb" />
+                    ) : result.claimed ? (
+                      <AlertCircle className="w-10 h-10 text-muted-foreground" />
+                    ) : (
+                      <XCircle className="w-10 h-10 text-destructive" />
+                    )}
+                  </motion.div>
+
+                  {result.valid ? (
+                    <>
+                      {/* Status Badge */}
+                      <div
+                        className={`inline-block px-4 py-2 rounded-full text-sm font-bold mb-4 ${
+                          result.claimed ? "bg-muted text-muted-foreground" : "bg-herb/10 text-herb"
+                        }`}
+                      >
+                        {result.claimed ? "❌ DÉJÀ UTILISÉ" : "✓ VALIDE"}
+                      </div>
+
+                      {/* Winner Info */}
+                      <h2 className="font-display text-2xl font-bold mb-2">{result.firstName}</h2>
+
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground mb-4">
+                        <Calendar className="w-4 h-4" />
+                        <span>Semaine {result.weekNumber}</span>
+                      </div>
+
+                      {/* Prize */}
+                      <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-caramel/10 to-caramel/5 border border-caramel/20 mb-6">
+                        <Gift className="w-6 h-6 text-caramel" />
+                        <span className="font-display text-xl font-bold text-primary">{result.prize}</span>
+                      </div>
+
+                      {/* Claim Button */}
+                      {!result.claimed && (
+                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                          <Button onClick={handleClaim} className="w-full btn-hero text-lg py-6" disabled={claimLoading}>
+                            {claimLoading ? (
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                              <>
+                                <CheckCircle className="w-5 h-5 mr-2" />
+                                Marquer comme utilisé
+                              </>
+                            )}
+                          </Button>
+                        </motion.div>
+                      )}
+
+                      {result.claimed && result.claimedAt && (
+                        <p className="text-sm text-muted-foreground">
+                          Utilisé le{" "}
+                          {new Date(result.claimedAt).toLocaleDateString("fr-FR", {
+                            weekday: "long",
+                            day: "numeric",
+                            month: "long",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <h2 className="font-display text-xl font-bold text-destructive mb-2">Code invalide</h2>
+                      <p className="text-muted-foreground">{result.message || "Ce code n'existe pas"}</p>
+                    </>
+                  )}
+
+                  <Button variant="outline" onClick={handleReset} className="mt-6">
+                    Nouveau scan
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {activeTab === "actus" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <ActusLivePanel adminPassword={storedPassword.current} />
+          </motion.div>
+        )}
+
+        {activeTab === "splash" && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <SplashSettingsPanel adminPassword={storedPassword.current} />
+          </motion.div>
+        )}
       </div>
-
-      {result && (
-        <pre className="bg-gray-100 p-4 rounded overflow-auto">
-          {JSON.stringify(result, null, 2)}
-        </pre>
-      )}
     </div>
   );
-}
+};
+
+export default Admin;
