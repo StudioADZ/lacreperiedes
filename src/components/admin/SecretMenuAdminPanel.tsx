@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
+import { updateSecretMenu } from "@/services/edge/secretMenuAdmin";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -148,44 +149,38 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
     setSaveMessage(null);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'update_secret_menu',
-          adminPassword,
-          menuId: menu.id,
-          menuData: {
-            menu_name: formData.menu_name,
-            secret_code: formData.secret_code,
-            galette_special: formData.galette_special || null,
-            galette_special_description: formData.galette_special_description || null,
-            galette_special_price: formData.galette_special_price || null,
-            galette_special_image_url: formData.galette_special_image_url || null,
-            galette_special_video_url: formData.galette_special_video_url || null,
-            crepe_special: formData.crepe_special || null,
-            crepe_special_description: formData.crepe_special_description || null,
-            crepe_special_price: formData.crepe_special_price || null,
-            crepe_special_image_url: formData.crepe_special_image_url || null,
-            crepe_special_video_url: formData.crepe_special_video_url || null,
-            valid_from: formData.valid_from,
-            valid_to: formData.valid_to,
-            is_active: formData.is_active,
-          },
-        }),
+      const res = await updateSecretMenu({
+        menuId: menu.id,
+        adminPassword,
+        menuData: {
+          menu_name: formData.menu_name,
+          secret_code: formData.secret_code,
+
+          galette_special: formData.galette_special || null,
+          galette_special_description: formData.galette_special_description || null,
+          galette_special_price: formData.galette_special_price || null,
+          galette_special_image_url: formData.galette_special_image_url || null,
+          galette_special_video_url: formData.galette_special_video_url || null,
+
+          crepe_special: formData.crepe_special || null,
+          crepe_special_description: formData.crepe_special_description || null,
+          crepe_special_price: formData.crepe_special_price || null,
+          crepe_special_image_url: formData.crepe_special_image_url || null,
+          crepe_special_video_url: formData.crepe_special_video_url || null,
+
+          valid_from: formData.valid_from || null,
+          valid_to: formData.valid_to || null,
+          is_active: formData.is_active,
+        },
       });
 
-      const result = await response.json();
-
-      if (response.ok) {
+      if (res.ok) {
         setSaveMessage({ type: 'success', text: 'Menu secret mis à jour !' });
         fetchMenu();
       } else {
-        setSaveMessage({ type: 'error', text: result.message || 'Erreur lors de la sauvegarde' });
+        setSaveMessage({ type: 'error', text: res.error || 'Erreur lors de la sauvegarde' });
       }
-    } catch (error) {
-      setSaveMessage({ type: 'error', text: 'Erreur de connexion' });
-    } finally {
+} finally {
       setIsSaving(false);
     }
   };
