@@ -1,3 +1,5 @@
+import { useState, useEffect, useCallback } from "react";
+import { getWeeklyCode, hasWonThisWeek, markWonThisWeek } from "@/features/quiz/services/localCodes";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const QUESTION_TIME_LIMIT = 30;
 
@@ -57,6 +59,11 @@ const Quiz = () => {
 
   // Handle starting the quiz
   const handleStart = async () => {
+    if (alreadyWon) {
+      setSubmitError('Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊');
+      return;
+    }
+
     const result = await startSession();
     if (result?.success) {
       setPhase('playing');
