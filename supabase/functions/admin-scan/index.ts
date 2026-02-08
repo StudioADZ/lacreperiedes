@@ -353,6 +353,40 @@ Deno.serve(async (req) => {
       })
     }
 
+    if (action === 'list_messages') {
+      const { data: messages, error } = await supabase
+        .from('messages')
+        .select('id, sender_type, sender_name, sender_email, sender_phone, subject, message, is_read, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+      if (error) {
+        console.error('List messages error')
+        return serverErrorResponse()
+      }
+
+      return successResponse({ messages })
+    }
+
+    if (action === 'mark_message_read') {
+      const { messageId } = body
+      if (!messageId) {
+        return errorResponse('missing_id', 'ID message requis')
+      }
+
+      const { error } = await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('id', messageId)
+
+      if (error) {
+        console.error('Mark read error')
+        return serverErrorResponse()
+      }
+
+      return successResponse({ success: true })
+    }
+
     return errorResponse('invalid_action', 'Action non reconnue')
 
   } catch (error: unknown) {
