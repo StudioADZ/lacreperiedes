@@ -17,13 +17,16 @@ import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import { motion, AnimatePresence } from "framer-motion";
 
+// ✅ AJOUT : logique locale (code visible seulement si déjà gagné)
+import { getWeeklyCode, hasWonThisWeek } from "@/features/quiz/services/localCodes";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const QUESTION_TIME_LIMIT = 30;
 
-type QuizPhase = 'intro' | 'playing' | 'form' | 'processing' | 'winner' | 'loser';
+type QuizPhase = "intro" | "playing" | "form" | "processing" | "winner" | "loser";
 
 const Quiz = () => {
-  const [phase, setPhase] = useState<QuizPhase>('intro');
+  const [phase, setPhase] = useState<QuizPhase>("intro");
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; correctAnswer: string } | null>(null);
@@ -41,9 +44,13 @@ const Quiz = () => {
     galette_remaining: number;
     crepe_remaining: number;
   } | null>(null);
-  const [currentFirstName, setCurrentFirstName] = useState<string>('');
+  const [currentFirstName, setCurrentFirstName] = useState<string>("");
   const [timerKey, setTimerKey] = useState(0);
   const [timerActive, setTimerActive] = useState(false);
+
+  // ✅ AJOUT : statut “déjà gagné” + code hebdo affichable
+  const [alreadyWon, setAlreadyWon] = useState(false);
+  const [weeklyCode, setWeeklyCode] = useState<string | null>(null);
 
   const { data: stock, isLoading: stockLoading } = useWeeklyStock();
   const { userData, saveUserData, hasPlayedBefore } = useUserMemory();
@@ -62,22 +69,39 @@ const Quiz = () => {
     resetSession,
   } = useQuizSession();
 
+  // ✅ AJOUT : on lit localStorage au chargement (si déjà gagné, on montre le code)
+  useEffect(() => {
+    try {
+      const won = hasWonThisWeek();
+      setAlreadyWon(won);
+      setWeeklyCode(getWeeklyCode());
+    } catch {
+      setAlreadyWon(false);
+      setWeeklyCode(null);
+    }
+  }, []);
+
   // Handle starting the quiz
   const handleStart = async () => {
     const result = await startSession();
     if (result?.success) {
-      setPhase('playing');
-      setTimerKey(prev => prev + 1);
+      setPhase("playing");
+      setTimerKey((prev) => prev + 1);
       setTimerActive(true);
-    } else if (result?.error === 'already_won') {
-      setSubmitError('Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊');
+    } else if (result?.error === "already_won") {
+      setSubmitError("Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊");
+      // (optionnel) si le serveur répond already_won, on rafraîchit l’état local
+      try {
+        setAlreadyWon(hasWonThisWeek());
+        setWeeklyCode(getWeeklyCode());
+      } catch {}
     }
   };
 
   // Handle time up
   const handleTimeUp = useCallback(() => {
     if (showResult || isLoading) return;
-    handleAnswer('TIMEOUT');
+    handleAnswer("TIMEOUT");
   }, [showResult, isLoading]);
 
   // Handle answering a question
@@ -85,7 +109,7 @@ const Quiz = () => {
     if (showResult || isLoading) return;
 
     setTimerActive(false);
-    setSelectedAnswer(answer === 'TIMEOUT' ? null : answer);
+    setSelectedAnswer(answer === "TIMEOUT" ? null : answer);
     const result = await submitAnswer(answer);
 
     if (result?.success) {
@@ -99,9 +123,9 @@ const Quiz = () => {
 
         if (currentQuestionIndex + 1 >= 10) {
           // Quiz complete -> show form (or skip if already known)
-          setPhase('form');
+          setPhase("form");
         } else {
-          setTimerKey(prev => prev + 1);
+          setTimerKey((prev) => prev + 1);
           setTimerActive(true);
         }
       }, 1500);
@@ -115,12 +139,12 @@ const Quiz = () => {
     setSubmitLoading(true);
     setSubmitError(null);
     setCurrentFirstName(data.firstName);
-    setPhase('processing');
+    setPhase("processing");
 
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-submit`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           sessionId: session.id,
           deviceFingerprint,
@@ -131,12 +155,12 @@ const Quiz = () => {
       const result = await response.json();
 
       if (!response.ok) {
-        if (result.error === 'phone_already_won' || result.error === 'email_already_won') {
-          setSubmitError('Tu as déjà gagné cette semaine 😊 Reviens la semaine prochaine !');
-          setPhase('form');
+        if (result.error === "phone_already_won" || result.error === "email_already_won") {
+          setSubmitError("Tu as déjà gagné cette semaine 😊 Reviens la semaine prochaine !");
+          setPhase("form");
         } else {
-          setSubmitError(result.message || 'Erreur lors de la soumission');
-          setPhase('form');
+          setSubmitError(result.message || "Erreur lors de la soumission");
+          setPhase("form");
         }
         setSubmitLoading(false);
         return;
@@ -166,14 +190,23 @@ const Quiz = () => {
           prize: result.prizeWon,
           prizeCode: result.prizeCode,
         });
-        setPhase('winner');
+
+        // ✅ Si tu relies markWonThisWeek() ailleurs, pas ici.
+        // Ici on laisse le serveur gérer la victoire.
+        // Mais on peut rafraîchir l’affichage local:
+        try {
+          setAlreadyWon(hasWonThisWeek());
+          setWeeklyCode(getWeeklyCode());
+        } catch {}
+
+        setPhase("winner");
       } else {
         setCurrentFirstName(result.firstName);
-        setPhase('loser');
+        setPhase("loser");
       }
     } catch (err) {
-      setSubmitError('Erreur de connexion');
-      setPhase('form');
+      setSubmitError("Erreur de connexion");
+      setPhase("form");
     } finally {
       setSubmitLoading(false);
     }
@@ -182,33 +215,31 @@ const Quiz = () => {
   // Handle play again
   const handlePlayAgain = () => {
     resetSession();
-    setPhase('intro');
+    setPhase("intro");
     setWinnerData(null);
     setSubmitError(null);
     setTimerActive(false);
     setStockData(null);
+
+    // ✅ Recheck code à chaque retour intro
+    try {
+      setAlreadyWon(hasWonThisWeek());
+      setWeeklyCode(getWeeklyCode());
+    } catch {}
   };
 
   // RGPD Consent Screen - Show before intro if not consented
-  if (!consentLoading && !hasConsented && phase === 'intro') {
+  if (!consentLoading && !hasConsented && phase === "intro") {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
               🎯 Quiz Hebdomadaire
             </span>
-            <h1 className="font-display text-3xl font-bold mb-3">
-              Testez vos connaissances !
-            </h1>
-            <p className="text-muted-foreground">
-              Répondez à 10 questions et gagnez des crêpes gratuites
-            </p>
+            <h1 className="font-display text-3xl font-bold mb-3">Testez vos connaissances !</h1>
+            <p className="text-muted-foreground">Répondez à 10 questions et gagnez des crêpes gratuites</p>
           </motion.div>
 
           {/* RGPD Consent Banner */}
@@ -219,26 +250,36 @@ const Quiz = () => {
   }
 
   // Intro Screen
-  if (phase === 'intro') {
+  if (phase === "intro") {
     return (
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
           {/* Header */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-8">
             <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
               🎯 Quiz Hebdomadaire
             </span>
-            <h1 className="font-display text-3xl font-bold mb-3">
-              Testez vos connaissances !
-            </h1>
-            <p className="text-muted-foreground">
-              Répondez à 10 questions et gagnez des crêpes gratuites
-            </p>
+            <h1 className="font-display text-3xl font-bold mb-3">Testez vos connaissances !</h1>
+            <p className="text-muted-foreground">Répondez à 10 questions et gagnez des crêpes gratuites</p>
           </motion.div>
+
+          {/* ✅ AJOUT : déjà gagné -> on affiche le code */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-6 border-herb/30 bg-gradient-to-br from-herb/10 to-butter/20"
+            >
+              <h2 className="font-display text-lg font-bold mb-2 text-center">✅ Tu as déjà gagné cette semaine</h2>
+              <p className="text-sm text-muted-foreground text-center mb-3">Voici ton code valable toute la semaine :</p>
+
+              <div className="rounded-xl bg-background/60 border border-border/60 p-4 text-center">
+                <p className="text-2xl font-bold tracking-wider">{weeklyCode}</p>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center mt-3">Reviens dimanche prochain pour retenter ta chance 🎯</p>
+            </motion.div>
+          )}
 
           {/* Weekly Countdown */}
           <motion.div
@@ -277,9 +318,7 @@ const Quiz = () => {
             transition={{ delay: 0.1 }}
             className="card-warm mb-6 bg-gradient-to-br from-butter/50 to-caramel/10 border-caramel/30"
           >
-            <h2 className="font-display text-xl font-bold mb-4 text-center">
-              🎁 Lots de la semaine
-            </h2>
+            <h2 className="font-display text-xl font-bold mb-4 text-center">🎁 Lots de la semaine</h2>
             {stockLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -295,10 +334,10 @@ const Quiz = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-2xl font-bold ${stock.formule_complete_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                    <span className={`text-2xl font-bold ${stock.formule_complete_remaining > 0 ? "text-herb" : "text-destructive"}`}>
                       {stock.formule_complete_remaining}
                     </span>
-                    <p className="text-xs text-muted-foreground">restant{stock.formule_complete_remaining !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground">restant{stock.formule_complete_remaining !== 1 ? "s" : ""}</p>
                   </div>
                 </div>
 
@@ -311,10 +350,10 @@ const Quiz = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-2xl font-bold ${stock.galette_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                    <span className={`text-2xl font-bold ${stock.galette_remaining > 0 ? "text-herb" : "text-destructive"}`}>
                       {stock.galette_remaining}
                     </span>
-                    <p className="text-xs text-muted-foreground">restant{stock.galette_remaining !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground">restant{stock.galette_remaining !== 1 ? "s" : ""}</p>
                   </div>
                 </div>
 
@@ -327,46 +366,32 @@ const Quiz = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-2xl font-bold ${stock.crepe_remaining > 0 ? 'text-herb' : 'text-destructive'}`}>
+                    <span className={`text-2xl font-bold ${stock.crepe_remaining > 0 ? "text-herb" : "text-destructive"}`}>
                       {stock.crepe_remaining}
                     </span>
-                    <p className="text-xs text-muted-foreground">restant{stock.crepe_remaining !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-muted-foreground">restant{stock.crepe_remaining !== 1 ? "s" : ""}</p>
                   </div>
                 </div>
               </div>
             ) : null}
-            <p className="text-xs text-muted-foreground text-center mt-4">
-              Nouvelle semaine chaque dimanche à minuit
-            </p>
+            <p className="text-xs text-muted-foreground text-center mt-4">Nouvelle semaine chaque dimanche à minuit</p>
 
             {/* Google Reviews Buttons */}
             <div className="flex gap-3 mt-4 pt-4 border-t border-border/50">
-              <a
-                href="https://g.page/r/CVTqauGmET0TEAE/preview"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-              >
+              <a href="https://g.page/r/CVTqauGmET0TEAE/preview" target="_blank" rel="noopener noreferrer" className="flex-1">
                 <Button variant="outline" size="sm" className="w-full gap-2 h-10">
                   <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                   <span className="text-xs">Voir les avis</span>
                 </Button>
               </a>
-              <a
-                href="https://g.page/r/CVTqauGmET0TEAE/preview"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex-1"
-              >
+              <a href="https://g.page/r/CVTqauGmET0TEAE/preview" target="_blank" rel="noopener noreferrer" className="flex-1">
                 <Button variant="default" size="sm" className="w-full gap-2 h-10">
                   <MessageSquare className="w-4 h-4" />
                   <span className="text-xs">Laisser un avis</span>
                 </Button>
               </a>
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-2">
-              Merci, ça aide énormément une petite crêperie locale. 💛
-            </p>
+            <p className="text-xs text-muted-foreground text-center mt-2">Merci, ça aide énormément une petite crêperie locale. 💛</p>
           </motion.div>
 
           {/* Rules */}
@@ -382,15 +407,25 @@ const Quiz = () => {
             </h2>
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm">
-                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">1</span>
-                <span>Répondez à <strong>10 questions</strong> sur la culture sarthoise et les crêpes</span>
+                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">
+                  1
+                </span>
+                <span>
+                  Répondez à <strong>10 questions</strong> sur la culture sarthoise et les crêpes
+                </span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">2</span>
-                <span><strong>30 secondes</strong> par question – soyez rapide !</span>
+                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">
+                  2
+                </span>
+                <span>
+                  <strong>30 secondes</strong> par question – soyez rapide !
+                </span>
               </li>
               <li className="flex items-start gap-3 text-sm">
-                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">3</span>
+                <span className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium flex-shrink-0">
+                  3
+                </span>
                 <span>Présentez votre QR code au restaurant pour récupérer votre gain</span>
               </li>
             </ul>
@@ -409,15 +444,12 @@ const Quiz = () => {
           )}
 
           {/* Start Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <Button
               className="w-full btn-hero text-lg py-6 group"
               onClick={handleStart}
-              disabled={isLoading || !deviceFingerprint}
+              // ✅ AJOUT : bloquer si déjà gagné + code présent
+              disabled={isLoading || !deviceFingerprint || (alreadyWon && !!weeklyCode)}
             >
               {isLoading ? (
                 <>
@@ -426,38 +458,33 @@ const Quiz = () => {
                 </>
               ) : (
                 <>
-                  <span>Commencer le Quiz</span>
-                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <span>{alreadyWon && weeklyCode ? "Déjà gagné cette semaine" : "Commencer le Quiz"}</span>
+                  {!alreadyWon && !weeklyCode && (
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  )}
                 </>
               )}
             </Button>
           </motion.div>
 
-          <p className="text-xs text-center text-muted-foreground mt-4">
-            1 participation gagnante max par semaine et par personne
-          </p>
+          <p className="text-xs text-center text-muted-foreground mt-4">1 participation gagnante max par semaine et par personne</p>
         </div>
       </div>
     );
   }
 
   // Playing phase
-  if (phase === 'playing' && currentQuestion) {
+  if (phase === "playing" && currentQuestion) {
     return (
       <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
           {/* Timer */}
           <div className="mb-4">
-            <QuizTimer
-              duration={QUESTION_TIME_LIMIT}
-              onTimeUp={handleTimeUp}
-              isActive={timerActive}
-              resetKey={timerKey}
-            />
+            <QuizTimer duration={QUESTION_TIME_LIMIT} onTimeUp={handleTimeUp} isActive={timerActive} resetKey={timerKey} />
           </div>
 
           {/* Score indicator */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             className="mb-4 p-3 rounded-xl bg-gradient-to-r from-herb/10 to-butter/20 border border-herb/30 flex items-center justify-between"
@@ -492,45 +519,31 @@ const Quiz = () => {
   }
 
   // Form phase
-  if (phase === 'form') {
+  if (phase === "form") {
     return (
       <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
-          <QuizPreForm
-            onSubmit={handleFormSubmit}
-            isLoading={submitLoading}
-            error={submitError || undefined}
-            savedData={userData}
-            score={score}
-          />
+          <QuizPreForm onSubmit={handleFormSubmit} isLoading={submitLoading} error={submitError || undefined} savedData={userData} score={score} />
         </div>
       </div>
     );
   }
 
   // Processing phase
-  if (phase === 'processing') {
+  if (phase === "processing") {
     return (
       <div className="min-h-screen pt-20 pb-8 px-4 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="card-warm text-center py-12 max-w-sm"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="card-warm text-center py-12 max-w-sm">
           <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-          <h2 className="font-display text-xl font-bold mb-2">
-            Calcul de ton résultat...
-          </h2>
-          <p className="text-muted-foreground">
-            Un instant {currentFirstName} ! 🎯
-          </p>
+          <h2 className="font-display text-xl font-bold mb-2">Calcul de ton résultat...</h2>
+          <p className="text-muted-foreground">Un instant {currentFirstName} ! 🎯</p>
         </motion.div>
       </div>
     );
   }
 
   // Winner phase
-  if (phase === 'winner' && winnerData) {
+  if (phase === "winner" && winnerData) {
     return (
       <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
@@ -548,14 +561,14 @@ const Quiz = () => {
   }
 
   // Loser phase
-  if (phase === 'loser') {
+  if (phase === "loser") {
     return (
       <div className="min-h-screen pt-20 pb-8 px-4">
         <div className="max-w-lg mx-auto">
           <QuizLoser
             firstName={currentFirstName}
-            email={userData?.email || ''}
-            phone={userData?.phone || ''}
+            email={userData?.email || ""}
+            phone={userData?.phone || ""}
             score={score}
             stockRemaining={stockData || { formule_complete_remaining: 0, galette_remaining: 0, crepe_remaining: 0 }}
             onPlayAgain={handlePlayAgain}
