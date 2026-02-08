@@ -17,12 +17,19 @@ import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import { motion, AnimatePresence } from "framer-motion";
 
+// ✅ ajout: win local + code hebdo
+import { markWonThisWeek, hasWonThisWeek, getWeeklyCode } from "@/features/quiz/services/localCodes";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const QUESTION_TIME_LIMIT = 30;
 
 type QuizPhase = 'intro' | 'playing' | 'form' | 'processing' | 'winner' | 'loser';
 
 const Quiz = () => {
+  // ✅ ajout: état victoire + code hebdo
+  const [alreadyWon, setAlreadyWon] = useState<boolean>(hasWonThisWeek());
+  const [weeklyCode, setWeeklyCode] = useState<string | null>(getWeeklyCode());
+
   const [phase, setPhase] = useState<QuizPhase>('intro');
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -61,6 +68,14 @@ const Quiz = () => {
     submitAnswer,
     resetSession,
   } = useQuizSession();
+
+  // ✅ ajout: à chaque retour sur l'intro, on rafraîchit l'état depuis localStorage
+  useEffect(() => {
+    if (phase === "intro") {
+      setAlreadyWon(hasWonThisWeek());
+      setWeeklyCode(getWeeklyCode());
+    }
+  }, [phase]);
 
   // Handle starting the quiz
   const handleStart = async () => {
@@ -159,6 +174,11 @@ const Quiz = () => {
       }
 
       if (result.prizeWon && result.prizeCode) {
+        // ✅ ajout: marque victoire localement + refresh état pour bloquer et afficher le code à l'intro
+        markWonThisWeek();
+        setAlreadyWon(true);
+        setWeeklyCode(getWeeklyCode());
+
         setWinnerData({
           firstName: result.firstName,
           email: data.email,
@@ -396,6 +416,19 @@ const Quiz = () => {
             </ul>
           </motion.div>
 
+          {/* ✅ ajout: affiche le code si déjà gagné cette semaine */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-4 p-4 rounded-xl bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           {/* Error */}
           {(error || submitError) && (
             <motion.div
@@ -417,7 +450,7 @@ const Quiz = () => {
             <Button
               className="w-full btn-hero text-lg py-6 group"
               onClick={handleStart}
-              disabled={isLoading || !deviceFingerprint}
+              disabled={alreadyWon || isLoading || !deviceFingerprint}
             >
               {isLoading ? (
                 <>
