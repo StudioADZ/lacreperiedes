@@ -731,10 +731,6 @@ export type Database = {
       }
     }
     Functions: {
-      add_loyalty_points: {
-        Args: { p_points: number; p_user_id: string }
-        Returns: number
-      }
       claim_prize: {
         Args: { p_prize_type: string; p_week_start: string }
         Returns: boolean
@@ -781,10 +777,6 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
-        Returns: boolean
-      }
-      unlock_secret_menu_for_user: {
-        Args: { p_secret_code: string; p_user_id: string }
         Returns: boolean
       }
       validate_secret_code: { Args: { p_code: string }; Returns: boolean }

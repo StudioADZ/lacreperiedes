@@ -76,18 +76,12 @@ const Quiz = () => {
 
   // Handle starting the quiz
   const handleStart = async () => {
-    if (alreadyWon) {
-      setSubmitError('Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊');
-      return;
-    }
-
+    setSubmitError(null);
     const result = await startSession();
     if (result?.success) {
       setPhase('playing');
       setTimerKey(prev => prev + 1);
       setTimerActive(true);
-    } else if (result?.error === 'already_won') {
-      setSubmitError('Tu as déjà gagné cette semaine ! Reviens dimanche prochain 😊');
     }
   };
 
@@ -128,6 +122,13 @@ const Quiz = () => {
   // Handle form submission
   const handleFormSubmit = async (data: { firstName: string; email: string; phone: string; rgpdConsent: boolean }) => {
     if (!session || !deviceFingerprint) return;
+
+    // Already won this week → skip submission, show loser screen
+    if (alreadyWon) {
+      setCurrentFirstName(data.firstName);
+      setPhase('loser');
+      return;
+    }
 
     setSubmitLoading(true);
     setSubmitError(null);
@@ -443,18 +444,6 @@ const Quiz = () => {
             </motion.div>
           )}
 
-          {alreadyWon && weeklyCode && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-4 p-4 rounded-xl bg-gradient-to-r from-herb/10 to-butter/20 border border-herb/30 text-center"
-            >
-              <p className="text-sm text-muted-foreground mb-1">Ton code valable cette semaine :</p>
-              <p className="font-display text-2xl font-bold">{weeklyCode}</p>
-              <p className="text-xs text-muted-foreground mt-2">Tu as déjà gagné — le quiz est bloqué jusqu’à dimanche 👌</p>
-            </motion.div>
-          )}
-
           {/* Start Button */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -464,12 +453,17 @@ const Quiz = () => {
             <Button
               className="w-full btn-hero text-lg py-6 group"
               onClick={handleStart}
-              disabled={alreadyWon || isLoading || !deviceFingerprint}
+              disabled={isLoading || !deviceFingerprint}
             >
               {isLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Chargement...
+                </>
+              ) : alreadyWon ? (
+                <>
+                  <span>Rejouer pour le fun</span>
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </>
               ) : (
                 <>

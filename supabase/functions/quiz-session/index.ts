@@ -25,21 +25,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'start') {
-      // Check if device already has a winning participation this week
-      const { data: weekStart } = await supabase.rpc('get_current_week_start')
-      
-      const { data: existingWin } = await supabase
-        .from('quiz_participations')
-        .select('id')
-        .eq('device_fingerprint', deviceFingerprint)
-        .eq('week_start', weekStart)
-        .not('prize_won', 'is', null)
-        .maybeSingle()
-
-      if (existingWin) {
-        return errorResponse('already_won', 'Vous avez déjà gagné cette semaine !')
-      }
-
+      // Allow replay even if already won (prize blocking is in quiz-submit)
       // Check for existing active session
       const { data: existingSession } = await supabase
         .from('quiz_sessions')

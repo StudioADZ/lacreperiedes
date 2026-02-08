@@ -61,14 +61,7 @@ const Admin = () => {
 
   const storedPassword = useRef("");
 
-  // Check stored auth
-  useEffect(() => {
-    const stored = sessionStorage.getItem("admin_auth");
-    if (stored) {
-      storedPassword.current = stored;
-      setIsAuthenticated(true);
-    }
-  }, []);
+  // No session persistence — admin must re-login each browser session (security)
 
   const handleLogin = async () => {
     setAuthError("");
@@ -90,7 +83,6 @@ const Admin = () => {
       }
 
       storedPassword.current = password;
-      sessionStorage.setItem("admin_auth", password);
       setIsAuthenticated(true);
     } catch (error) {
       setAuthError("Erreur de connexion");
