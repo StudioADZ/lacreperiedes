@@ -85,17 +85,19 @@ const SecretMenuAdminPanel = ({ adminPassword }: SecretMenuAdminPanelProps) => {
   const fetchMenu = async () => {
     setIsLoading(true);
     try {
-      await supabase.rpc('ensure_secret_menu');
+      // Fetch via admin-scan edge function (secret_menu table is now blocked for direct reads)
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_secret_menu', adminPassword }),
+      });
 
-      const { data, error } = await supabase
-        .from('secret_menu')
-        .select('*')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (!response.ok) {
+        throw new Error('Failed to fetch menu');
+      }
 
-      if (error) throw error;
+      const result = await response.json();
+      const data = result.menu;
 
       if (data) {
         setMenu(data as SecretMenu);

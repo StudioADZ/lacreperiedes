@@ -39,7 +39,9 @@ const Quiz = () => {
     phone: string;
     prize: string;
     prizeCode: string;
+    secretCode?: string | null;
   } | null>(null);
+  const [resultSecretCode, setResultSecretCode] = useState<string | null>(null);
   const [stockData, setStockData] = useState<{
     formule_complete_remaining: number;
     galette_remaining: number;
@@ -176,6 +178,11 @@ const Quiz = () => {
         });
       }
 
+      // Store secret code from response for winner/loser screens
+      if (result.secretCode) {
+        setResultSecretCode(result.secretCode);
+      }
+
       if (result.prizeWon && result.prizeCode) {
         // ✅ ajout: marque victoire localement + refresh état pour bloquer et afficher le code à l'intro
         markWonThisWeek();
@@ -188,6 +195,7 @@ const Quiz = () => {
           phone: data.phone,
           prize: result.prizeWon,
           prizeCode: result.prizeCode,
+          secretCode: result.secretCode,
         });
         setPhase('winner');
       } else {
@@ -581,6 +589,7 @@ const Quiz = () => {
             phone={winnerData.phone}
             prize={winnerData.prize}
             prizeCode={winnerData.prizeCode}
+            secretCode={winnerData.secretCode || null}
             onPlayAgain={handlePlayAgain}
           />
         </div>
@@ -598,6 +607,7 @@ const Quiz = () => {
             email={userData?.email || ''}
             phone={userData?.phone || ''}
             score={score}
+            secretCode={resultSecretCode}
             stockRemaining={stockData || { formule_complete_remaining: 0, galette_remaining: 0, crepe_remaining: 0 }}
             onPlayAgain={handlePlayAgain}
           />

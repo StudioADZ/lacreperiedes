@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { supabase } from '@/integrations/supabase/client';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -39,8 +38,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
     crepe_special_description: '',
   });
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  // ✅ NEW (comme CartePublicPanel) : toggle + bouton rendu public
   const [showPreviewButton, setShowPreviewButton] = useState(true);
 
   useEffect(() => {
@@ -50,23 +47,17 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
   const fetchMenu = async () => {
     setIsLoading(true);
     try {
-      // (On garde ta logique actuelle, sans “tout casser”)
-      // Si ensure_secret_menu échoue à cause de RLS, on continue quand même
-      try {
-        await supabase.rpc('ensure_secret_menu');
-      } catch (e) {
-        console.warn('ensure_secret_menu failed (maybe RLS):', e);
-      }
+      // Fetch via admin-scan edge function (secret_menu table blocked for direct reads)
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_secret_menu', adminPassword }),
+      });
 
-      const { data, error } = await supabase
-        .from('secret_menu')
-        .select('*')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      if (!response.ok) throw new Error('Failed to fetch menu');
 
-      if (error) throw error;
+      const result = await response.json();
+      const data = result.menu;
 
       if (data) {
         setMenu(data);
@@ -86,13 +77,10 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
     }
   };
 
-  // ✅ NEW : fonction “Voir rendu public”
-  // (adapte l’URL si ton public est ailleurs, ex: "/carte" ou "/menu-secret")
   const handleViewPublic = () => {
     window.open('/carte', '_blank');
   };
 
-  // ✅ UPDATED : handleSave “SAFE” (même style que CartePublicPanel)
   const handleSave = async () => {
     if (!menu) return;
 
@@ -100,7 +88,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
     setSaveMessage(null);
 
     try {
-      // Nettoyage simple (évite espaces)
       const payload = {
         menu_name: formData.menu_name.trim(),
         secret_code: formData.secret_code.trim().toUpperCase(),
@@ -154,11 +141,7 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Header */}
       <div className="card-warm text-center">
         <div className="w-16 h-16 rounded-full bg-caramel/10 flex items-center justify-center mx-auto mb-4">
@@ -170,14 +153,10 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
         </p>
       </div>
 
-      {/* ✅ NEW : Preview toggle + bouton (copié de ta Carte Public dans l’esprit) */}
+      {/* Preview toggle */}
       <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/30 border border-border">
         <div className="flex items-center gap-3">
-          {showPreviewButton ? (
-            <Eye className="w-5 h-5 text-primary" />
-          ) : (
-            <EyeOff className="w-5 h-5 text-muted-foreground" />
-          )}
+          {showPreviewButton ? <Eye className="w-5 h-5 text-primary" /> : <EyeOff className="w-5 h-5 text-muted-foreground" />}
           <div>
             <p className="font-medium text-sm">Bouton "Voir rendu public"</p>
             <p className="text-xs text-muted-foreground">Afficher le lien vers la page publique</p>
@@ -195,7 +174,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
 
       {/* Form */}
       <div className="card-warm space-y-4">
-        {/* Menu Name */}
         <div className="space-y-2">
           <Label htmlFor="menu_name">Nom du menu</Label>
           <Input
@@ -206,7 +184,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           />
         </div>
 
-        {/* Secret Code */}
         <div className="space-y-2">
           <Label htmlFor="secret_code">Code secret</Label>
           <div className="flex gap-2">
@@ -226,7 +203,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           </p>
         </div>
 
-        {/* Galette Special */}
         <div className="p-4 rounded-xl bg-secondary/50 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">🥞</span>
@@ -245,7 +221,6 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           />
         </div>
 
-        {/* Crepe Special */}
         <div className="p-4 rounded-xl bg-secondary/50 space-y-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">🍫</span>
@@ -264,20 +239,16 @@ const SecretMenuPanel = ({ adminPassword }: SecretMenuPanelProps) => {
           />
         </div>
 
-        {/* Save Message */}
         {saveMessage && (
           <div
             className={`p-3 rounded-xl text-sm text-center ${
-              saveMessage.type === 'success'
-                ? 'bg-herb/10 text-herb'
-                : 'bg-destructive/10 text-destructive'
+              saveMessage.type === 'success' ? 'bg-herb/10 text-herb' : 'bg-destructive/10 text-destructive'
             }`}
           >
             {saveMessage.text}
           </div>
         )}
 
-        {/* Save Button */}
         <Button onClick={handleSave} className="w-full btn-hero" disabled={isSaving}>
           {isSaving ? (
             <Loader2 className="w-5 h-5 animate-spin" />
