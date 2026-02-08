@@ -17,6 +17,8 @@ import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { markWonThisWeek } from "@/features/quiz/services/localCodes";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const QUESTION_TIME_LIMIT = 30;
 
@@ -159,6 +161,9 @@ const Quiz = () => {
       }
 
       if (result.prizeWon && result.prizeCode) {
+        // Marque la victoire localement (1 fois par semaine)
+        markWonThisWeek();
+
         setWinnerData({
           firstName: result.firstName,
           email: data.email,
