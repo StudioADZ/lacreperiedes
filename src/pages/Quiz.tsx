@@ -177,10 +177,10 @@ const Quiz = () => {
       }
 
       if (result.prizeWon && result.prizeCode) {
-        // ✅ ajout: marque victoire localement + refresh état pour bloquer et afficher le code à l'intro
-        markWonThisWeek();
+        // ✅ ajout: marque victoire localement avec le code pour l'afficher à l'intro
+        markWonThisWeek(result.prizeCode);
         setAlreadyWon(true);
-        setWeeklyCode(getWeeklyCode());
+        setWeeklyCode(result.prizeCode);
 
         setWinnerData({
           firstName: result.firstName,
