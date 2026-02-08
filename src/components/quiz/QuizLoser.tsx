@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, Gift, Clock, Sparkles, Lock, ExternalLink } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useSecretAccess } from '@/hooks/useSecretAccess';
 
 interface QuizLoserProps {
@@ -10,6 +9,7 @@ interface QuizLoserProps {
   email: string;
   phone: string;
   score?: number;
+  secretCode?: string | null;
   stockRemaining: {
     formule_complete_remaining: number;
     galette_remaining: number;
@@ -18,8 +18,7 @@ interface QuizLoserProps {
   onPlayAgain: () => void;
 }
 
-const QuizLoser = ({ firstName, email, phone, score, stockRemaining, onPlayAgain }: QuizLoserProps) => {
-  const [secretCode, setSecretCode] = useState<string | null>(null);
+const QuizLoser = ({ firstName, email, phone, score, secretCode, stockRemaining, onPlayAgain }: QuizLoserProps) => {
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
 
@@ -29,29 +28,6 @@ const QuizLoser = ({ firstName, email, phone, score, stockRemaining, onPlayAgain
     stockRemaining.crepe_remaining;
 
   const hasStockLeft = totalRemaining > 0;
-
-  useEffect(() => {
-    // Fetch secret code
-    fetchSecretCode();
-  }, []);
-
-  const fetchSecretCode = async () => {
-    try {
-      const { data } = await supabase
-        .from('secret_menu')
-        .select('secret_code')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (data) {
-        setSecretCode(data.secret_code);
-      }
-    } catch (error) {
-      console.error('Error fetching secret code:', error);
-    }
-  };
 
   const handleUnlockMenu = async () => {
     if (!secretCode) return;

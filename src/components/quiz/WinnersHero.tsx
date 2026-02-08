@@ -34,9 +34,8 @@ const WinnersHero = () => {
     queryKey: ['quiz-winners-hero'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('quiz_participations')
+        .from('quiz_winners_public')
         .select('id, first_name, score, total_questions, prize_won, created_at')
-        .not('prize_won', 'is', null)
         .order('created_at', { ascending: false })
         .limit(5);
 

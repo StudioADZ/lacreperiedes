@@ -169,6 +169,20 @@ Deno.serve(async (req) => {
       .eq('week_start', weekStart)
       .single()
 
+    // Get secret code for winners/losers to access secret menu
+    let secretCode: string | null = null
+    if (prizeType || true) { // Always provide secret code as consolation prize
+      const { data: menuData } = await supabase
+        .from('secret_menu')
+        .select('secret_code')
+        .eq('is_active', true)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      
+      secretCode = menuData?.secret_code || null
+    }
+
     return successResponse({
       success: true,
       score: correctAnswers,
@@ -177,7 +191,8 @@ Deno.serve(async (req) => {
       prizeWon: prizeLabel,
       prizeCode,
       firstName: cleanFirstName,
-      stock
+      stock,
+      secretCode
     })
 
   } catch (error: unknown) {

@@ -353,6 +353,24 @@ Deno.serve(async (req) => {
       })
     }
 
+    if (action === 'get_secret_menu') {
+      // Admin-only: fetch full secret_menu including secret_code
+      const { data: menuData, error: menuError } = await supabase
+        .from('secret_menu')
+        .select('*')
+        .eq('is_active', true)
+        .order('week_start', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (menuError) {
+        console.error('Get secret menu error')
+        return serverErrorResponse()
+      }
+
+      return successResponse({ menu: menuData })
+    }
+
     if (action === 'list_messages') {
       const { data: messages, error } = await supabase
         .from('messages')

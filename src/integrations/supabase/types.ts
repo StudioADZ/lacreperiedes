@@ -660,6 +660,39 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_winners_public: {
+        Row: {
+          created_at: string | null
+          first_name: string | null
+          id: string | null
+          prize_won: string | null
+          score: number | null
+          status: string | null
+          total_questions: number | null
+          week_start: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          prize_won?: string | null
+          score?: number | null
+          status?: string | null
+          total_questions?: number | null
+          week_start?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          first_name?: string | null
+          id?: string | null
+          prize_won?: string | null
+          score?: number | null
+          status?: string | null
+          total_questions?: number | null
+          week_start?: string | null
+        }
+        Relationships: []
+      }
       secret_menu_public: {
         Row: {
           created_at: string | null

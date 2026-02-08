@@ -19,14 +19,13 @@ import {
   EyeOff
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { supabase } from '@/integrations/supabase/client';
 import { useSecretAccess } from '@/hooks/useSecretAccess';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface SecretMenu {
   secret_code: string;
-  menu_name: string;
+  menu_name: string | null;
   galette_special: string | null;
   galette_special_description: string | null;
   crepe_special: string | null;
@@ -39,6 +38,7 @@ interface QuizWinnerPremiumProps {
   phone: string;
   prize: string;
   prizeCode: string;
+  secretCode?: string | null;
   onPlayAgain: () => void;
 }
 
@@ -54,16 +54,26 @@ const QuizWinnerPremium = ({
   email,
   phone,
   prize, 
-  prizeCode, 
+  prizeCode,
+  secretCode,
   onPlayAgain 
 }: QuizWinnerPremiumProps) => {
   const confettiRef = useRef(false);
-  const [secretMenu, setSecretMenu] = useState<SecretMenu | null>(null);
   const [showSecretMenu, setShowSecretMenu] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
+
+  // Build secretMenu object from the secretCode prop
+  const secretMenu: SecretMenu | null = secretCode ? {
+    secret_code: secretCode,
+    menu_name: null,
+    galette_special: null,
+    galette_special_description: null,
+    crepe_special: null,
+    crepe_special_description: null,
+  } : null;
   
   // Anti-fraud: Security token that changes every 10 seconds
   const [currentToken, setCurrentToken] = useState(generateSecurityToken());
@@ -123,28 +133,7 @@ const QuizWinnerPremium = ({
         });
       }, 800);
     }
-
-    // Fetch secret menu
-    fetchSecretMenu();
   }, []);
-
-  const fetchSecretMenu = async () => {
-    try {
-      const { data } = await supabase
-        .from('secret_menu')
-        .select('secret_code, menu_name, galette_special, galette_special_description, crepe_special, crepe_special_description')
-        .eq('is_active', true)
-        .order('week_start', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      
-      if (data) {
-        setSecretMenu(data);
-      }
-    } catch (error) {
-      console.error('Error fetching secret menu:', error);
-    }
-  };
 
   // Updated verify URL with query param format
   const verifyUrl = `${window.location.origin}/verify?code=${prizeCode}`;
