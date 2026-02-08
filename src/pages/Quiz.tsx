@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowRight, Trophy, Gift, Loader2, AlertCircle, Star, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuizSession } from "@/hooks/useQuizSession";
+import { useQuizSession } from "../features/quiz/hooks/useQuizSession";
 import { useWeeklyStock } from "@/hooks/useWeeklyStock";
 import { useUserMemory } from "@/hooks/useUserMemory";
 import { useRGPDConsent } from "@/hooks/useRGPDConsent";

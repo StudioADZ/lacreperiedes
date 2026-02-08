@@ -1,4 +1,4 @@
-import { edgePost } from "./edgeClient";
+import { edgePost } from "@/services/edge/edgeClient";
 
 export interface QuizQuestion {
   id: string;

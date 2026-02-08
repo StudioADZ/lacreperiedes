@@ -1,7 +1,6 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useDeviceFingerprint } from './useDeviceFingerprint';
-import { quizStart, quizAnswer, quizReset } from '../services/edge/quizSession';
-
+import { useState, useCallback, useEffect } from "react";
+import { useDeviceFingerprint } from "../../../hooks/useDeviceFingerprint";
+import { quizStart, quizAnswer, quizReset } from "../services/quizSession";
 interface Question {
   id: string;
   question: string;

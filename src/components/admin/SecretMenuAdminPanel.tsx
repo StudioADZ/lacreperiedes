@@ -24,7 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
-import { updateSecretMenu } from "@/services/edge/secretMenuAdmin";
+import { updateSecretMenu } from "@/services/edge/adminScan";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
