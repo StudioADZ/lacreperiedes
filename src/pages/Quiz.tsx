@@ -16,6 +16,7 @@ import RealtimeWins from "@/components/quiz/RealtimeWins";
 import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import { motion, AnimatePresence } from "framer-motion";
+import { markWonThisWeek, getWeeklyCode, hasWonThisWeek } from "@/features/quiz/services/localCodes";
 
 import { markWonThisWeek } from "@/features/quiz/services/localCodes";
 
@@ -25,6 +26,8 @@ const QUESTION_TIME_LIMIT = 30;
 type QuizPhase = 'intro' | 'playing' | 'form' | 'processing' | 'winner' | 'loser';
 
 const Quiz = () => {
+  const [alreadyWon, setAlreadyWon] = useState(hasWonThisWeek());
+  const [weeklyCode, setWeeklyCode] = useState<string | null>(getWeeklyCode());
   const [phase, setPhase] = useState<QuizPhase>('intro');
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -200,6 +203,18 @@ const Quiz = () => {
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
           {/* Header */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -229,6 +244,18 @@ const Quiz = () => {
       <div className="min-h-screen pt-20 pb-24 px-4">
         <div className="max-w-lg mx-auto">
           {/* Header */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -246,6 +273,18 @@ const Quiz = () => {
           </motion.div>
 
           {/* Weekly Countdown */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,6 +295,18 @@ const Quiz = () => {
           </motion.div>
 
           {/* Realtime Wins - Preuve sociale en temps réel */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -266,6 +317,18 @@ const Quiz = () => {
           </motion.div>
 
           {/* Winners Hero Section */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -276,6 +339,18 @@ const Quiz = () => {
           </motion.div>
 
           {/* Stock */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -375,6 +450,18 @@ const Quiz = () => {
           </motion.div>
 
           {/* Rules */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -414,6 +501,18 @@ const Quiz = () => {
           )}
 
           {/* Start Button */}
+          {alreadyWon && weeklyCode && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="card-warm mb-4 bg-secondary/40 border border-border/60"
+            >
+              <p className="text-sm text-muted-foreground text-center">✅ Tu as déjà gagné cette semaine</p>
+              <p className="text-center mt-2 font-mono text-2xl font-bold">{weeklyCode}</p>
+              <p className="text-xs text-muted-foreground text-center mt-2">Code valable cette semaine</p>
+            </motion.div>
+          )}
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -422,7 +521,7 @@ const Quiz = () => {
             <Button
               className="w-full btn-hero text-lg py-6 group"
               onClick={handleStart}
-              disabled={isLoading || !deviceFingerprint}
+              disabled={alreadyWon || isLoading || !deviceFingerprint}
             >
               {isLoading ? (
                 <>
