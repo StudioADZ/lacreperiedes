@@ -24,8 +24,9 @@ import logoUrl from "@/assets/logo.png";
     img.src = logoUrl;
 
     // decode si dispo (Chrome / Android OK)
-    // @ts-expect-error
-    img.decode?.().catch(() => {});
+    if (typeof img.decode === 'function') {
+      img.decode().catch(() => {});
+    }
   } catch {
     // no-op
   }

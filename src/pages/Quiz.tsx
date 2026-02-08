@@ -1,5 +1,22 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Trophy, ArrowRight, AlertCircle, Star, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { getWeeklyCode, hasWonThisWeek, markWonThisWeek } from "@/features/quiz/services/localCodes";
+import { useWeeklyStock } from "@/hooks/useWeeklyStock";
+import { useUserMemory } from "@/hooks/useUserMemory";
+import { useRGPDConsent } from "@/hooks/useRGPDConsent";
+import { useQuizSession } from "@/hooks/useQuizSession";
+import RGPDConsentBanner from "@/components/RGPDConsentBanner";
+import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
+import RealtimeWins from "@/components/quiz/RealtimeWins";
+import WinnersHero from "@/components/quiz/WinnersHero";
+import QuizTimer from "@/components/quiz/QuizTimer";
+import QuizQuestion from "@/components/quiz/QuizQuestion";
+import QuizPreForm from "@/components/quiz/QuizPreForm";
+import QuizWinnerPremium from "@/components/quiz/QuizWinnerPremium";
+import QuizLoser from "@/components/quiz/QuizLoser";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const QUESTION_TIME_LIMIT = 30;
 
