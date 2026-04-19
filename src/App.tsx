@@ -1,4 +1,4 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,9 +6,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
+import ProtectedRoute from "./components/guards/ProtectedRoute";
 import Index from "./pages/Index";
 
-// Lazy-load des routes secondaires existantes → home plus rapide, bundle initial allégé
+// Lazy-load des routes secondaires → home plus rapide, bundle initial allégé
 const Quiz = lazy(() => import("./pages/Quiz"));
 const Carte = lazy(() => import("./pages/Carte"));
 const Reserver = lazy(() => import("./pages/Reserver"));
@@ -21,32 +22,33 @@ const Verify = lazy(() => import("./pages/Verify"));
 const Client = lazy(() => import("./pages/Client"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// QueryClient professionnalisé : cache raisonnable, pas de refetch agressif
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
       gcTime: 5 * 60_000,
       refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
       retry: 1,
+      retryDelay: 1000,
     },
-    mutations: { retry: 0 },
+    mutations: {
+      retry: 0,
+    },
   },
 });
 
 const RouteFallback = () => (
-  <div className="min-h-[40vh] flex items-center justify-center">
+  <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
     <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+    <p className="text-sm text-muted-foreground">Chargement...</p>
   </div>
 );
 
 const App = () => {
-  const [showSplash, setShowSplash] = useState(true);
-
-  useEffect(() => {
-    const splashShown = sessionStorage.getItem("splashShown");
-    if (splashShown) setShowSplash(false);
-  }, []);
+  const [showSplash, setShowSplash] = useState(
+    () => sessionStorage.getItem("splashShown") !== "true",
+  );
 
   const handleSplashComplete = () => {
     sessionStorage.setItem("splashShown", "true");
@@ -59,7 +61,6 @@ const App = () => {
         <Toaster />
         <Sonner />
 
-        {/* APP TOUJOURS RENDUE → le hero existe derrière la porte */}
         <BrowserRouter>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
@@ -77,21 +78,40 @@ const App = () => {
                 <Route path="/reserver" element={<Reserver />} />
                 <Route path="/verify/:code" element={<Verify />} />
 
-                {/* Espace client */}
-                <Route path="/client" element={<Client />} />
-                <Route path="/mon-compte" element={<Client />} />
+                {/* Espace client (auth requis) */}
+                <Route
+                  path="/client"
+                  element={
+                    <ProtectedRoute requireAuth>
+                      <Client />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/mon-compte"
+                  element={
+                    <ProtectedRoute requireAuth>
+                      <Client />
+                    </ProtectedRoute>
+                  }
+                />
 
-                {/* Admin */}
-                <Route path="/admin" element={<Admin />} />
+                {/* Admin (rôle admin requis via user_roles + has_role RPC) */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <Admin />
+                    </ProtectedRoute>
+                  }
+                />
               </Route>
 
-              {/* Catch-all hors layout */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
 
-        {/* Splash = overlay non bloquant (inchangé) */}
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       </TooltipProvider>
     </QueryClientProvider>
