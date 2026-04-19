@@ -8,7 +8,7 @@ import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
 
-// Lazy-load des routes secondaires → home plus rapide, prêt pour la croissance produit
+// Lazy-load des routes secondaires existantes → home plus rapide, bundle initial allégé
 const Quiz = lazy(() => import("./pages/Quiz"));
 const Carte = lazy(() => import("./pages/Carte"));
 const Reserver = lazy(() => import("./pages/Reserver"));
@@ -21,7 +21,7 @@ const Verify = lazy(() => import("./pages/Verify"));
 const Client = lazy(() => import("./pages/Client"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// QueryClient légèrement professionnalisé (cache + retry raisonnables)
+// QueryClient professionnalisé : cache raisonnable, pas de refetch agressif
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -73,7 +73,7 @@ const App = () => {
                 <Route path="/about" element={<About />} />
                 <Route path="/legal" element={<Legal />} />
 
-                {/* Parcours métier (réservation / commande / QR — extensible) */}
+                {/* Parcours métier */}
                 <Route path="/reserver" element={<Reserver />} />
                 <Route path="/verify/:code" element={<Verify />} />
 
@@ -91,7 +91,7 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
 
-        {/* Splash = overlay non bloquant */}
+        {/* Splash = overlay non bloquant (inchangé) */}
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       </TooltipProvider>
     </QueryClientProvider>
