@@ -1,3 +1,4 @@
+import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
@@ -7,7 +8,6 @@ import logoUrl from "@/assets/logo.png";
 
 (function preloadLogoEarly() {
   try {
-    // hint navigateur
     const existing = document.querySelector(
       `link[rel="preload"][as="image"][href="${logoUrl}"]`
     );
@@ -22,14 +22,24 @@ import logoUrl from "@/assets/logo.png";
     // warm cache + decode (critique pour background-image en prod)
     const img = new Image();
     img.src = logoUrl;
-
-    // decode si dispo (Chrome / Android OK)
-    if (typeof img.decode === 'function') {
+    if (typeof img.decode === "function") {
       img.decode().catch(() => {});
     }
   } catch {
-    // no-op
+    /* no-op */
   }
 })();
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Garde-fou global silencieux (évite les écrans blancs sur erreurs async non catchées)
+if (typeof window !== "undefined") {
+  window.addEventListener("unhandledrejection", (e) => {
+    // On n'interrompt pas l'app, on log seulement pour diagnostic
+    console.warn("[unhandledrejection]", e.reason);
+  });
+}
+
+createRoot(document.getElementById("root")!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);

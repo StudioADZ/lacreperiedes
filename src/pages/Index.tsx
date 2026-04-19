@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Clock, Phone, ExternalLink } from "lucide-react";
+import { ArrowRight, MapPin, Clock, Phone, Sparkles, Lock, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
 import logo from "@/assets/logo.png";
@@ -7,6 +7,34 @@ import SocialFooter from "@/components/SocialFooter";
 import GoogleMap from "@/components/home/GoogleMap";
 import BookingCTA from "@/components/home/BookingCTA";
 import SocialWall from "@/components/home/SocialWall";
+
+// Formules — prêt pour fiches produit / commande à emporter
+const FORMULES = [
+  {
+    name: "Formule Classique",
+    price: "14,90 €",
+    desc: "1 galette classique + 1 crêpe classique",
+    badge: null as string | null,
+  },
+  {
+    name: "Formule Gourmande",
+    price: "17,90 €",
+    desc: "Galette & crêpe gourmandes de la semaine",
+    badge: "Menu secret",
+  },
+  {
+    name: "Formule Mineur",
+    price: "8 €",
+    desc: "1 galette d'inspiration hebdo + 1 crêpe sucre",
+    badge: null,
+  },
+  {
+    name: "Formule Mineur+",
+    price: "9 €",
+    desc: "Galette hebdo + crêpe sucre/Nutella + boisson",
+    badge: null,
+  },
+];
 
 const Index = () => {
   return (
