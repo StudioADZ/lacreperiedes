@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,29 +7,45 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
 import Index from "./pages/Index";
-import Quiz from "./pages/Quiz";
-import Carte from "./pages/Carte";
-import Reserver from "./pages/Reserver";
-import Avis from "./pages/Avis";
-import Social from "./pages/Social";
-import Legal from "./pages/Legal";
-import About from "./pages/About";
-import Admin from "./pages/Admin";
-import Verify from "./pages/Verify";
-import Client from "./pages/Client";
-import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+// Lazy-load des routes secondaires → home plus rapide, prêt pour la croissance produit
+const Quiz = lazy(() => import("./pages/Quiz"));
+const Carte = lazy(() => import("./pages/Carte"));
+const Reserver = lazy(() => import("./pages/Reserver"));
+const Avis = lazy(() => import("./pages/Avis"));
+const Social = lazy(() => import("./pages/Social"));
+const Legal = lazy(() => import("./pages/Legal"));
+const About = lazy(() => import("./pages/About"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Verify = lazy(() => import("./pages/Verify"));
+const Client = lazy(() => import("./pages/Client"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// QueryClient légèrement professionnalisé (cache + retry raisonnables)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+    mutations: { retry: 0 },
+  },
+});
+
+const RouteFallback = () => (
+  <div className="min-h-[40vh] flex items-center justify-center">
+    <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+  </div>
+);
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
 
-  // Check if splash was already shown this session
   useEffect(() => {
     const splashShown = sessionStorage.getItem("splashShown");
-    if (splashShown) {
-      setShowSplash(false);
-    }
+    if (splashShown) setShowSplash(false);
   }, []);
 
   const handleSplashComplete = () => {
@@ -45,28 +61,37 @@ const App = () => {
 
         {/* APP TOUJOURS RENDUE → le hero existe derrière la porte */}
         <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/quiz" element={<Quiz />} />
-              <Route path="/carte" element={<Carte />} />
-              <Route path="/reserver" element={<Reserver />} />
-              <Route path="/avis" element={<Avis />} />
-              <Route path="/social" element={<Social />} />
-              <Route path="/legal" element={<Legal />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/verify/:code" element={<Verify />} />
-              <Route path="/client" element={<Client />} />
-              <Route path="/mon-compte" element={<Client />} />
-            </Route>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
+              <Route element={<Layout />}>
+                {/* Public */}
+                <Route path="/" element={<Index />} />
+                <Route path="/carte" element={<Carte />} />
+                <Route path="/quiz" element={<Quiz />} />
+                <Route path="/avis" element={<Avis />} />
+                <Route path="/social" element={<Social />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/legal" element={<Legal />} />
 
-            {/* Catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+                {/* Parcours métier (réservation / commande / QR — extensible) */}
+                <Route path="/reserver" element={<Reserver />} />
+                <Route path="/verify/:code" element={<Verify />} />
+
+                {/* Espace client */}
+                <Route path="/client" element={<Client />} />
+                <Route path="/mon-compte" element={<Client />} />
+
+                {/* Admin */}
+                <Route path="/admin" element={<Admin />} />
+              </Route>
+
+              {/* Catch-all hors layout */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
         </BrowserRouter>
 
-        {/* Splash = overlay uniquement */}
+        {/* Splash = overlay non bloquant */}
         {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
       </TooltipProvider>
     </QueryClientProvider>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Clock, Phone, ExternalLink } from "lucide-react";
+import { ArrowRight, MapPin, Clock, Phone, Sparkles, Lock, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
 import logo from "@/assets/logo.png";
@@ -7,6 +7,34 @@ import SocialFooter from "@/components/SocialFooter";
 import GoogleMap from "@/components/home/GoogleMap";
 import BookingCTA from "@/components/home/BookingCTA";
 import SocialWall from "@/components/home/SocialWall";
+
+// Formules — prêt pour fiches produit / commande à emporter
+const FORMULES = [
+  {
+    name: "Formule Classique",
+    price: "14,90 €",
+    desc: "1 galette classique + 1 crêpe classique",
+    badge: null as string | null,
+  },
+  {
+    name: "Formule Gourmande",
+    price: "17,90 €",
+    desc: "Galette & crêpe gourmandes de la semaine",
+    badge: "Menu secret",
+  },
+  {
+    name: "Formule Mineur",
+    price: "8 €",
+    desc: "1 galette d'inspiration hebdo + 1 crêpe sucre",
+    badge: null,
+  },
+  {
+    name: "Formule Mineur+",
+    price: "9 €",
+    desc: "Galette hebdo + crêpe sucre/Nutella + boisson",
+    badge: null,
+  },
+];
 
 const Index = () => {
   return (
@@ -159,7 +187,7 @@ const Index = () => {
             Crêpes & Galettes artisanales à Mamers
           </p>
 
-          {/* CTA (garde la même structure, mais on remet l'animation) */}
+          {/* CTA principaux — orientés bénéfice client */}
           <div className="mt-8 w-full max-w-xl flex flex-col gap-4">
             <Link to="/quiz">
               <Button
@@ -169,15 +197,11 @@ const Index = () => {
                     "linear-gradient(90deg, hsl(43 85% 65%), hsl(38 70% 55%), hsl(20 75% 55%), hsl(43 85% 65%))",
                 }}
               >
-                Jouez au Quiz <ArrowRight className="ml-2" />
+                Jouez & débloquez le menu secret <Sparkles className="ml-2 w-5 h-5" />
               </Button>
             </Link>
 
-            <a
-              href="https://calendar.app.google/hjhLsTjEpA5dyrEy9"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link to="/reserver">
               <Button
                 className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
                 style={{
@@ -185,11 +209,10 @@ const Index = () => {
                     "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
                 }}
               >
-                Réserver <ExternalLink className="ml-2" />
+                Réserver ma table <ArrowRight className="ml-2" />
               </Button>
-            </a>
+            </Link>
 
-            {/* ✅ CTA 3 = même animation/bordure/opacité/padding que les 3 cartes */}
             <Link
               to="/carte"
               className="glow-card glow-card-shadow rounded-2xl p-5 flex items-center justify-center transition text-center"
@@ -216,7 +239,7 @@ const Index = () => {
               icon: <Clock className="w-6 h-6 text-accent" />,
               title: "Horaires",
               text: ["Samedi & Dimanche uniquement", "12h00 – 14h00 • 19h00 – 21h00"],
-              href: "https://calendar.app.google/nZShjcjWUyTcGLR97",
+              href: "/reserver",
             },
             {
               icon: <Phone className="w-6 h-6 text-terracotta" />,
@@ -245,6 +268,69 @@ const Index = () => {
               </div>
             </a>
           ))}
+        </div>
+      </section>
+
+      {/* FORMULES — teaser commercial premium */}
+      <section className="px-4 mt-12">
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-5">
+            <h2 className="font-display text-2xl font-bold glow-title inline-block">
+              Nos Formules
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Pensées pour tous, du gourmet au plus jeune
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {FORMULES.map((f) => (
+              <div
+                key={f.name}
+                className="glow-card glow-card-shadow rounded-2xl p-4 flex items-center gap-4"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-semibold text-base">
+                      {f.name}
+                    </h3>
+                    {f.badge && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                        <Lock className="w-3 h-3" /> {f.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {f.desc}
+                  </p>
+                </div>
+                <div className="font-display font-bold text-lg text-primary whitespace-nowrap">
+                  {f.price}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Commande à emporter — point d'entrée prêt pour parcours métier */}
+          <Link
+            to="/carte"
+            className="mt-5 block glow-card glow-card-shadow rounded-2xl p-5"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-semibold text-lg glow-title">
+                  Commander à emporter
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choisissez votre formule, on prépare pour vous
+                </p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-primary" />
+            </div>
+          </Link>
         </div>
       </section>
 
