@@ -30,15 +30,26 @@ import logoUrl from "@/assets/logo.png";
   }
 })();
 
-// Garde-fou global silencieux (évite les écrans blancs sur erreurs async non catchées)
+// Garde-fous globaux silencieux (évitent les écrans blancs sur erreurs non catchées)
 if (typeof window !== "undefined") {
-  window.addEventListener("unhandledrejection", (e) => {
-    // On n'interrompt pas l'app, on log seulement pour diagnostic
-    console.warn("[unhandledrejection]", e.reason);
+  window.addEventListener("unhandledrejection", (event) => {
+    // Non bloquant : on log proprement pour diagnostic
+    console.warn("[unhandledrejection]", event.reason ?? "(no reason)");
+  });
+
+  window.addEventListener("error", (event) => {
+    // Erreurs JS synchrones non catchées
+    console.error("[global error]", event.error ?? event.message);
   });
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+
+if (!rootElement) {
+  throw new Error("Root element not found");
+}
+
+createRoot(rootElement).render(
   <StrictMode>
     <App />
   </StrictMode>
