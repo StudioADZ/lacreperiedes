@@ -271,6 +271,69 @@ const Index = () => {
         </div>
       </section>
 
+      {/* FORMULES — teaser commercial premium */}
+      <section className="px-4 mt-12">
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-5">
+            <h2 className="font-display text-2xl font-bold glow-title inline-block">
+              Nos Formules
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Pensées pour tous, du gourmet au plus jeune
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {FORMULES.map((f) => (
+              <div
+                key={f.name}
+                className="glow-card glow-card-shadow rounded-2xl p-4 flex items-center gap-4"
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-display font-semibold text-base">
+                      {f.name}
+                    </h3>
+                    {f.badge && (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                        <Lock className="w-3 h-3" /> {f.badge}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {f.desc}
+                  </p>
+                </div>
+                <div className="font-display font-bold text-lg text-primary whitespace-nowrap">
+                  {f.price}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA Commande à emporter — point d'entrée prêt pour parcours métier */}
+          <Link
+            to="/carte"
+            className="mt-5 block glow-card glow-card-shadow rounded-2xl p-5"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
+                <ShoppingBag className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display font-semibold text-lg glow-title">
+                  Commander à emporter
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Choisissez votre formule, on prépare pour vous
+                </p>
+              </div>
+              <ArrowRight className="w-5 h-5 text-primary" />
+            </div>
+          </Link>
+        </div>
+      </section>
+
       <BookingCTA />
       <GoogleMap />
       <SocialWall />
