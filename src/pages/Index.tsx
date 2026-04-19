@@ -244,7 +244,7 @@ const Index = () => {
               icon: <Clock className="w-6 h-6 text-accent" />,
               title: "Horaires",
               text: ["Samedi & Dimanche uniquement", "12h00 – 14h00 • 19h00 – 21h00"],
-              href: "https://calendar.app.google/nZShjcjWUyTcGLR97",
+              href: "/reserver",
             },
             {
               icon: <Phone className="w-6 h-6 text-terracotta" />,
