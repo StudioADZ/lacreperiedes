@@ -187,7 +187,7 @@ const Index = () => {
             Crêpes & Galettes artisanales à Mamers
           </p>
 
-          {/* CTA (garde la même structure, mais on remet l'animation) */}
+          {/* CTA principaux — orientés bénéfice client */}
           <div className="mt-8 w-full max-w-xl flex flex-col gap-4">
             <Link to="/quiz">
               <Button
@@ -197,15 +197,11 @@ const Index = () => {
                     "linear-gradient(90deg, hsl(43 85% 65%), hsl(38 70% 55%), hsl(20 75% 55%), hsl(43 85% 65%))",
                 }}
               >
-                Jouez au Quiz <ArrowRight className="ml-2" />
+                Jouez & débloquez le menu secret <Sparkles className="ml-2 w-5 h-5" />
               </Button>
             </Link>
 
-            <a
-              href="https://calendar.app.google/hjhLsTjEpA5dyrEy9"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <Link to="/reserver">
               <Button
                 className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
                 style={{
@@ -213,11 +209,10 @@ const Index = () => {
                     "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
                 }}
               >
-                Réserver <ExternalLink className="ml-2" />
+                Réserver ma table <ArrowRight className="ml-2" />
               </Button>
-            </a>
+            </Link>
 
-            {/* ✅ CTA 3 = même animation/bordure/opacité/padding que les 3 cartes */}
             <Link
               to="/carte"
               className="glow-card glow-card-shadow rounded-2xl p-5 flex items-center justify-center transition text-center"
