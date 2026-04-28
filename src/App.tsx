@@ -114,8 +114,9 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
 
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      </TooltipProvider>
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
