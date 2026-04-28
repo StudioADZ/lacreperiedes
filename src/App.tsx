@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/services/auth/AuthProvider";
 import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/guards/ProtectedRoute";
@@ -57,11 +58,12 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
 
-        <BrowserRouter>
+          <BrowserRouter>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
               <Route element={<Layout />}>
@@ -112,8 +114,9 @@ const App = () => {
           </Suspense>
         </BrowserRouter>
 
-        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
-      </TooltipProvider>
+          {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
