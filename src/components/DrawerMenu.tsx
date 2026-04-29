@@ -34,8 +34,7 @@ const menuItems = [
 ];
 
 const adminItem = { path: "/admin", label: "Administration", icon: Settings };
-const mapsUrl =
-  "https://www.google.com/maps/search/?api=1&query=17%20Place%20Carnot%20Galerie%20des%20Halles%2072600%20Mamers";
+const mapsUrl = "https://maps.app.goo.gl/ShXSrr3XBsQTEYZ87?g_st=ac";
 
 const isActiveRoute = (
   pathname: string,
@@ -123,7 +122,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
                 className="flex items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/45 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <MapPin className="h-4 w-4" />
-                Itinéraire
+                Nous trouver
               </a>
               <a
                 href="tel:+33259660176"
