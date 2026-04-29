@@ -1,5 +1,18 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, MapPin, Clock, Phone, Sparkles, Lock, ShoppingBag } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Clock,
+  Gift,
+  Lock,
+  MapPin,
+  Phone,
+  ShoppingBag,
+  Sparkles,
+  Star,
+  Trophy,
+  UtensilsCrossed,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import storefront from "@/assets/storefront.jpg";
 import logo from "@/assets/logo.png";
@@ -8,7 +21,10 @@ import GoogleMap from "@/components/home/GoogleMap";
 import BookingCTA from "@/components/home/BookingCTA";
 import SocialWall from "@/components/home/SocialWall";
 
-// Formules — prêt pour fiches produit / commande à emporter
+const MAPS_LINK =
+  "https://www.google.com/maps/search/?api=1&query=La%20cr%C3%AAperie%20des%20saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers";
+const PHONE_LINK = "tel:+33259660176";
+
 const FORMULES = [
   {
     name: "Formule Classique",
@@ -36,11 +52,52 @@ const FORMULES = [
   },
 ];
 
+const INFO_CARDS = [
+  {
+    icon: MapPin,
+    title: "Nous trouver",
+    text: ["17 Place Carnot – Galerie des Halles", "72600 Mamers"],
+    href: MAPS_LINK,
+    external: true,
+  },
+  {
+    icon: Clock,
+    title: "Horaires",
+    text: ["Samedi & dimanche", "12h00 – 14h00 • 19h00 – 21h00"],
+    href: "/reserver",
+    external: false,
+  },
+  {
+    icon: Phone,
+    title: "Appelez-nous",
+    text: ["02 59 66 01 76"],
+    href: PHONE_LINK,
+    external: false,
+  },
+];
+
+const HIGHLIGHTS = [
+  {
+    icon: Trophy,
+    title: "Quiz hebdomadaire",
+    text: "10 questions, 30 secondes par question, et des récompenses selon votre score.",
+  },
+  {
+    icon: Gift,
+    title: "Avantages client",
+    text: "Compte client, fidélité, historique des gains et accès au menu secret.",
+  },
+  {
+    icon: UtensilsCrossed,
+    title: "Cuisine artisanale",
+    text: "Crêpes et galettes préparées avec soin, dans l’esprit d’une crêperie locale.",
+  },
+];
+
 const Index = () => {
   return (
-    <div className="min-h-screen pb-20 bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)]">
+    <div className="min-h-screen overflow-hidden bg-gradient-to-b from-[hsl(35_45%_92%)] via-[hsl(40_40%_94%)] to-[hsl(42_50%_96%)] pb-24">
       <style>{`
-        /* ===== Glow border animé (palette logo) ===== */
         @keyframes borderFlow {
           0% { background-position: 0% 50%; }
           50% { background-position: 100% 50%; }
@@ -51,8 +108,6 @@ const Index = () => {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-
-        /* ===== CTA dégradé animé (pour les 2 CTA colorés) ===== */
         @keyframes ctaFlow {
           0% { background-position: 0% 50%; transform: translateY(0); }
           50% { background-position: 100% 50%; transform: translateY(-1px); }
@@ -76,11 +131,9 @@ const Index = () => {
             0 24px 70px rgba(218,165,32,0.30),
             0 0 0 1px rgba(255,255,255,0.22);
         }
-
-        /* ===== Cards glow (utilisé sous le hero + CTA "Découvrir la carte") ===== */
         .glow-card {
           position: relative;
-          border-radius: 1rem; /* matches rounded-2xl */
+          border-radius: 1rem;
           isolation: isolate;
         }
         .glow-card::before {
@@ -96,7 +149,7 @@ const Index = () => {
           );
           background-size: 260% 260%;
           animation: borderFlow 6.5s ease-in-out infinite;
-          opacity: 0.85;
+          opacity: 0.78;
           z-index: -2;
         }
         .glow-card::after {
@@ -104,7 +157,7 @@ const Index = () => {
           position: absolute;
           inset: 1px;
           border-radius: inherit;
-          background: rgba(255,255,255,0.62);
+          background: rgba(255,255,255,0.66);
           backdrop-filter: blur(18px);
           -webkit-backdrop-filter: blur(18px);
           z-index: -1;
@@ -113,7 +166,7 @@ const Index = () => {
           box-shadow:
             0 12px 30px rgba(0,0,0,0.12),
             0 0 0 1px rgba(255,255,255,0.25),
-            0 18px 55px rgba(212,160,83,0.20);
+            0 18px 55px rgba(212,160,83,0.18);
           transition: transform .25s ease, box-shadow .25s ease;
         }
         .glow-card:hover.glow-card-shadow {
@@ -121,7 +174,7 @@ const Index = () => {
           box-shadow:
             0 18px 46px rgba(0,0,0,0.14),
             0 0 0 1px rgba(255,255,255,0.32),
-            0 26px 80px rgba(212,160,83,0.28);
+            0 26px 80px rgba(212,160,83,0.25);
         }
         .glow-title {
           background: linear-gradient(90deg,
@@ -135,200 +188,224 @@ const Index = () => {
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
-          filter: drop-shadow(0 6px 16px rgba(0,0,0,0.16));
+          filter: drop-shadow(0 6px 16px rgba(0,0,0,0.14));
         }
       `}</style>
 
-      {/* HERO — VERSION ORIGINALE (on ne touche pas) */}
-      <section className="relative min-h-[85vh] overflow-hidden">
+      <section className="relative min-h-[88svh] overflow-hidden" aria-label="Accueil">
         <div className="absolute inset-0">
           <img
             src={storefront}
-            alt="La Crêperie des Saveurs"
-            className="w-full h-full object-cover scale-110 blur-[1.5px]"
+            alt="Devanture de La Crêperie des Saveurs à Mamers"
+            className="h-full w-full scale-110 object-cover blur-[1.5px]"
+            fetchPriority="high"
           />
-          <div className="absolute inset-0 bg-espresso/55" />
-          <div className="absolute inset-0 bg-gradient-to-b from-caramel/25 via-transparent to-ivory/10" />
+          <div className="absolute inset-0 bg-espresso/60" />
+          <div className="absolute inset-0 bg-gradient-to-b from-caramel/25 via-transparent to-ivory/15" />
           <div
             className="absolute inset-0"
             style={{
               background:
-                "radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%)",
+                "radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.58) 100%)",
             }}
           />
         </div>
 
-        <div className="relative flex flex-col items-center justify-center px-6 pt-24 pb-16 text-center">
-          {/* Logo */}
+        <div className="relative mx-auto flex max-w-3xl flex-col items-center justify-center px-5 pb-16 pt-24 text-center sm:px-6">
           <div className="relative mb-6">
             <div
-              className="absolute -inset-6 rounded-full blur-2xl opacity-60"
+              className="absolute -inset-6 rounded-full opacity-60 blur-2xl"
               style={{
                 background:
                   "radial-gradient(circle, hsl(38 70% 55% / 0.55) 0%, transparent 70%)",
               }}
             />
-            <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-full overflow-hidden border-[5px] border-ivory/40 shadow-elevated">
-              <img src={logo} alt="Logo" className="w-full h-full object-cover" />
+            <div className="relative h-36 w-36 overflow-hidden rounded-full border-[5px] border-ivory/40 shadow-elevated md:h-44 md:w-44">
+              <img
+                src={logo}
+                alt="Logo La Crêperie des Saveurs"
+                className="h-full w-full object-cover"
+                width={176}
+                height={176}
+              />
             </div>
           </div>
 
-          {/* Title */}
-          <h1 className="font-display font-bold text-white leading-[0.95] drop-shadow-[0_12px_35px_rgba(0,0,0,0.55)]">
-            <span className="block text-4xl md:text-5xl lg:text-6xl">
-              La Crêperie
-            </span>
-            <span className="block text-5xl md:text-6xl lg:text-7xl mt-2 bg-gradient-to-r from-[hsl(43_85%_65%)] via-[hsl(38_70%_55%)] to-[hsl(20_75%_55%)] bg-clip-text text-transparent">
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-white/90 backdrop-blur-md">
+            <Star className="h-3.5 w-3.5 text-[hsl(43_85%_65%)]" />
+            Crêperie artisanale à Mamers
+          </p>
+
+          <h1 className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_12px_35px_rgba(0,0,0,0.55)]">
+            <span className="block text-4xl md:text-5xl lg:text-6xl">La Crêperie</span>
+            <span className="mt-2 block bg-gradient-to-r from-[hsl(43_85%_65%)] via-[hsl(38_70%_55%)] to-[hsl(20_75%_55%)] bg-clip-text text-5xl text-transparent md:text-6xl lg:text-7xl">
               des Saveurs
             </span>
           </h1>
 
-          <p className="mt-5 text-lg md:text-xl text-white/95 font-serif max-w-md">
-            Crêpes & Galettes artisanales à Mamers
+          <p className="mt-5 max-w-xl font-serif text-lg text-white/95 md:text-xl">
+            Crêpes, galettes, quiz gourmand et récompenses client dans une adresse locale au cœur de Mamers.
           </p>
 
-          {/* CTA principaux — orientés bénéfice client */}
-          <div className="mt-8 w-full max-w-xl flex flex-col gap-4">
-            <Link to="/quiz">
+          <div className="mt-8 grid w-full max-w-xl gap-4">
+            <Link to="/quiz" className="block">
               <Button
-                className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
+                className="cta-anim cta-glow h-14 w-full rounded-2xl text-base font-semibold text-white md:h-16 md:text-xl"
                 style={{
                   backgroundImage:
                     "linear-gradient(90deg, hsl(43 85% 65%), hsl(38 70% 55%), hsl(20 75% 55%), hsl(43 85% 65%))",
                 }}
               >
-                Jouez & débloquez le menu secret <Sparkles className="ml-2 w-5 h-5" />
+                Jouer au quiz & débloquer des avantages
+                <Sparkles className="ml-2 h-5 w-5" />
               </Button>
             </Link>
 
-            <Link to="/reserver">
-              <Button
-                className="w-full h-14 md:h-16 text-lg md:text-xl rounded-2xl font-semibold text-white cta-anim cta-glow"
-                style={{
-                  backgroundImage:
-                    "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
-                }}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <Link to="/reserver" className="block">
+                <Button
+                  className="cta-anim cta-glow h-14 w-full rounded-2xl text-base font-semibold text-white"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
+                  }}
+                >
+                  Réserver
+                  <Calendar className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+
+              <Link
+                to="/carte"
+                className="glow-card glow-card-shadow flex min-h-14 items-center justify-center rounded-2xl px-5 text-center"
               >
-                Réserver ma table <ArrowRight className="ml-2" />
-              </Button>
-            </Link>
-
-            <Link
-              to="/carte"
-              className="glow-card glow-card-shadow rounded-2xl p-5 flex items-center justify-center transition text-center"
-            >
-              <h3 className="font-display font-semibold text-lg glow-title">
-                Découvrir la carte
-              </h3>
-            </Link>
+                <span className="font-display text-lg font-semibold glow-title">Voir la carte</span>
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* INFO CARDS — glow */}
-      <section className="px-4 -mt-10 relative z-20">
-        <div className="max-w-lg mx-auto grid gap-4">
-          {[
-            {
-              icon: <MapPin className="w-6 h-6 text-primary" />,
-              title: "Nous trouver",
-              text: ["17 Place Carnot – Galerie des Halles", "72600 Mamers"],
-              href: "https://maps.app.goo.gl/6KdHfHSUs1MbzakLA",
-            },
-            {
-              icon: <Clock className="w-6 h-6 text-accent" />,
-              title: "Horaires",
-              text: ["Samedi & Dimanche uniquement", "12h00 – 14h00 • 19h00 – 21h00"],
-              href: "/reserver",
-            },
-            {
-              icon: <Phone className="w-6 h-6 text-terracotta" />,
-              title: "Appelez-nous",
-              text: ["02 59 66 01 76"],
-              href: "tel:0259660176",
-            },
-          ].map((item, i) => (
-            <a
-              key={i}
-              href={item.href}
-              className="glow-card glow-card-shadow rounded-2xl p-5 flex gap-4 items-start transition"
-            >
-              <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
-                {item.icon}
-              </div>
-              <div>
-                <h3 className="font-display font-semibold text-lg glow-title">
-                  {item.title}
-                </h3>
-                {item.text.map((t, idx) => (
-                  <p key={idx} className="text-sm text-muted-foreground">
-                    {t}
-                  </p>
-                ))}
-              </div>
-            </a>
-          ))}
+      <section className="relative z-20 -mt-10 px-4" aria-label="Informations pratiques">
+        <div className="mx-auto grid max-w-lg gap-4">
+          {INFO_CARDS.map((item) => {
+            const Icon = item.icon;
+            const content = (
+              <>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/70">
+                  <Icon className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-semibold glow-title">{item.title}</h2>
+                  {item.text.map((line) => (
+                    <p key={line} className="text-sm text-muted-foreground">
+                      {line}
+                    </p>
+                  ))}
+                </div>
+              </>
+            );
+
+            return item.external ? (
+              <a
+                key={item.title}
+                href={item.href}
+                target="_blank"
+                rel="noreferrer"
+                className="glow-card glow-card-shadow flex items-start gap-4 rounded-2xl p-5"
+              >
+                {content}
+              </a>
+            ) : (
+              <a
+                key={item.title}
+                href={item.href}
+                className="glow-card glow-card-shadow flex items-start gap-4 rounded-2xl p-5"
+              >
+                {content}
+              </a>
+            );
+          })}
         </div>
       </section>
 
-      {/* FORMULES — teaser commercial premium */}
-      <section className="px-4 mt-12">
-        <div className="max-w-lg mx-auto">
-          <div className="text-center mb-5">
-            <h2 className="font-display text-2xl font-bold glow-title inline-block">
-              Nos Formules
+      <section className="px-4 pt-12" aria-label="Pourquoi venir">
+        <div className="mx-auto max-w-lg">
+          <div className="mb-5 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-caramel">Expérience client</p>
+            <h2 className="mt-1 inline-block font-display text-2xl font-bold glow-title">
+              Plus qu’une crêperie
             </h2>
-            <p className="text-sm text-muted-foreground mt-1">
+          </div>
+
+          <div className="grid gap-3">
+            {HIGHLIGHTS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.title} className="rounded-2xl border border-caramel/15 bg-white/55 p-4 shadow-sm backdrop-blur-md">
+                  <div className="flex gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-caramel/10 text-caramel">
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-display text-base font-semibold text-foreground">{item.title}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{item.text}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 pt-12" aria-label="Formules">
+        <div className="mx-auto max-w-lg">
+          <div className="mb-5 text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-caramel">À table</p>
+            <h2 className="inline-block font-display text-2xl font-bold glow-title">Nos Formules</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
               Pensées pour tous, du gourmet au plus jeune
             </p>
           </div>
 
           <div className="grid gap-3">
-            {FORMULES.map((f) => (
+            {FORMULES.map((formule) => (
               <div
-                key={f.name}
-                className="glow-card glow-card-shadow rounded-2xl p-4 flex items-center gap-4"
+                key={formule.name}
+                className="glow-card glow-card-shadow flex items-center gap-4 rounded-2xl p-4"
               >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-display font-semibold text-base">
-                      {f.name}
-                    </h3>
-                    {f.badge && (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary">
-                        <Lock className="w-3 h-3" /> {f.badge}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="font-display text-base font-semibold">{formule.name}</h3>
+                    {formule.badge && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                        <Lock className="h-3 w-3" />
+                        {formule.badge}
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {f.desc}
-                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{formule.desc}</p>
                 </div>
-                <div className="font-display font-bold text-lg text-primary whitespace-nowrap">
-                  {f.price}
+                <div className="whitespace-nowrap font-display text-lg font-bold text-primary">
+                  {formule.price}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* CTA Commande à emporter — point d'entrée prêt pour parcours métier */}
-          <Link
-            to="/carte"
-            className="mt-5 block glow-card glow-card-shadow rounded-2xl p-5"
-          >
+          <Link to="/carte" className="glow-card glow-card-shadow mt-5 block rounded-2xl p-5">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-white/70 flex items-center justify-center">
-                <ShoppingBag className="w-6 h-6 text-primary" />
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/70">
+                <ShoppingBag className="h-6 w-6 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-display font-semibold text-lg glow-title">
-                  Commander à emporter
-                </h3>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <h3 className="font-display text-lg font-semibold glow-title">Commander à emporter</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">
                   Choisissez votre formule, on prépare pour vous
                 </p>
               </div>
-              <ArrowRight className="w-5 h-5 text-primary" />
+              <ArrowRight className="h-5 w-5 text-primary" />
             </div>
           </Link>
         </div>
@@ -343,5 +420,3 @@ const Index = () => {
 };
 
 export default Index;
-
-/* rebuild */
