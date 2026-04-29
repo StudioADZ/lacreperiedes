@@ -38,8 +38,8 @@ const FORMULES = [
     name: "Formule Salade",
     price: "12,90 €",
     desc: "1 salade + 1 crêpe classique + 1 boisson",
-    badge: null,
-    note: "Fraîcheur & douceur",
+    badge: "Dès juin",
+    note: "Fraîcheur & douceur — disponible à partir de juin",
   },
   {
     name: "Formule Classique",
