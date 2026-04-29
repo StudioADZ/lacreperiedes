@@ -87,23 +87,9 @@ const App = () => {
                   <Route path="/reserver" element={<Reserver />} />
                   <Route path="/verify/:code" element={<Verify />} />
 
-                  {/* Espace client */}
-                  <Route
-                    path="/client"
-                    element={
-                      <ProtectedRoute requireAuth>
-                        <Client />
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/mon-compte"
-                    element={
-                      <ProtectedRoute requireAuth>
-                        <Client />
-                      </ProtectedRoute>
-                    }
-                  />
+                  {/* Espace client : public landing, puis tableau de bord si connecté */}
+                  <Route path="/client" element={<Client />} />
+                  <Route path="/mon-compte" element={<Client />} />
 
                   {/* Administration */}
                   <Route
