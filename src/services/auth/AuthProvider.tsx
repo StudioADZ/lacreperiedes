@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   useRef,
   type ReactNode,
 } from "react";
@@ -52,6 +53,14 @@ const INITIAL_STATE: AuthState = {
   isAuthenticated: false,
 };
 
+const SIGNED_OUT_STATE: AuthState = {
+  user: null,
+  session: null,
+  profile: null,
+  isLoading: false,
+  isAuthenticated: false,
+};
+
 async function fetchProfileById(userId: string): Promise<Profile | null> {
   try {
     const { data, error } = await supabase
@@ -71,6 +80,42 @@ async function fetchProfileById(userId: string): Promise<Profile | null> {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<AuthState>(INITIAL_STATE);
   const mountedRef = useRef(true);
+  const authRequestRef = useRef(0);
+
+  const applySession = useCallback(async (session: Session | null) => {
+    const requestId = ++authRequestRef.current;
+    const user = session?.user ?? null;
+
+    if (!user) {
+      if (!mountedRef.current || requestId !== authRequestRef.current) return;
+      setState(SIGNED_OUT_STATE);
+      return;
+    }
+
+    setState((prev) => {
+      const sameUser = prev.user?.id === user.id;
+      const profile = sameUser ? prev.profile : null;
+
+      return {
+        user,
+        session,
+        profile,
+        isAuthenticated: true,
+        isLoading: !profile,
+      };
+    });
+
+    const profile = await fetchProfileById(user.id);
+    if (!mountedRef.current || requestId !== authRequestRef.current) return;
+
+    setState({
+      user,
+      session,
+      profile,
+      isLoading: false,
+      isAuthenticated: true,
+    });
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -78,64 +123,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mountedRef.current) return;
-      const user = session?.user ?? null;
-
-      // Sync session/user immédiatement, mais ne jamais flipper isLoading=false
-      // tant que le profil (si user) n'est pas chargé → évite tout flicker.
-      setState((prev) => ({
-        ...prev,
-        user,
-        session,
-        isAuthenticated: !!user,
-        profile: user ? prev.profile : null,
-      }));
-
-      if (user) {
-        void (async () => {
-          const profile = await fetchProfileById(user.id);
-          if (!mountedRef.current) return;
-          setState((prev) => ({ ...prev, profile, isLoading: false }));
-        })();
-      } else {
-        setState((prev) => ({ ...prev, isLoading: false }));
-      }
+      void applySession(session);
     });
 
     void (async () => {
       const {
         data: { session },
+        error,
       } = await supabase.auth.getSession();
-      const user = session?.user ?? null;
 
-      if (!user) {
-        if (!mountedRef.current) return;
-        setState({
-          user: null,
-          session: null,
-          profile: null,
-          isLoading: false,
-          isAuthenticated: false,
-        });
+      if (error) {
+        console.error("[auth] getSession error:", error);
+        if (mountedRef.current) setState(SIGNED_OUT_STATE);
         return;
       }
 
-      const profile = await fetchProfileById(user.id);
-      if (!mountedRef.current) return;
-      setState({
-        user,
-        session,
-        profile,
-        isLoading: false,
-        isAuthenticated: true,
-      });
+      await applySession(session);
     })();
 
     return () => {
       mountedRef.current = false;
+      authRequestRef.current += 1;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [applySession]);
 
   const signUp = useCallback(
     async (email: string, password: string, firstName: string) => {
@@ -172,15 +183,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = useCallback(async () => {
+    authRequestRef.current += 1;
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    setState({
-      user: null,
-      session: null,
-      profile: null,
-      isLoading: false,
-      isAuthenticated: false,
-    });
+    if (mountedRef.current) setState(SIGNED_OUT_STATE);
   }, []);
 
   const updateProfile = useCallback(
@@ -202,20 +208,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const refreshProfile = useCallback(async () => {
     if (!state.user) return;
+    const requestId = authRequestRef.current;
     const profile = await fetchProfileById(state.user.id);
-    if (!mountedRef.current) return;
+    if (!mountedRef.current || requestId !== authRequestRef.current) return;
     setState((prev) => ({ ...prev, profile }));
   }, [state.user]);
 
-  const value: AuthContextValue = {
-    ...state,
-    signUp,
-    signIn,
-    signInWithGoogle,
-    signOut,
-    updateProfile,
-    refreshProfile,
-  };
+  const value: AuthContextValue = useMemo(
+    () => ({
+      ...state,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      signOut,
+      updateProfile,
+      refreshProfile,
+    }),
+    [state, signUp, signIn, signInWithGoogle, signOut, updateProfile, refreshProfile],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
