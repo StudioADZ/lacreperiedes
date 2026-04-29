@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ProtectedRouteProps {
-  children: React.ReactNode;
+  children: ReactNode;
   requireAuth?: boolean;
   requireAdmin?: boolean;
   redirectTo?: string;
@@ -34,51 +34,70 @@ const ProtectedRoute = ({
   redirectTo = "/",
 }: ProtectedRouteProps) => {
   const { user, isLoading, isAuthenticated } = useAuth();
+  const location = useLocation();
   const [adminState, setAdminState] = useState<AdminCheckState>("idle");
+  const adminRequestRef = useRef(0);
 
   useEffect(() => {
-    if (!requireAdmin) return;
+    if (!requireAdmin) {
+      setAdminState("idle");
+      return;
+    }
+
     if (isLoading) return;
-    if (!user) {
+
+    const userId = user?.id;
+    if (!userId) {
+      adminRequestRef.current += 1;
       setAdminState("denied");
       return;
     }
 
-    let cancelled = false;
+    const requestId = ++adminRequestRef.current;
     setAdminState("checking");
 
-    supabase
-      .rpc("has_role", { _user_id: user.id, _role: "admin" })
-      .then(({ data, error }) => {
-        if (cancelled) return;
+    void (async () => {
+      try {
+        const { data, error } = await supabase.rpc("has_role", {
+          _user_id: userId,
+          _role: "admin",
+        });
+
+        if (requestId !== adminRequestRef.current) return;
+
         if (error) {
           console.error("[ProtectedRoute] has_role error:", error);
           setAdminState("denied");
           return;
         }
+
         setAdminState(data === true ? "granted" : "denied");
-      });
+      } catch (error) {
+        if (requestId !== adminRequestRef.current) return;
+        console.error("[ProtectedRoute] admin check failed:", error);
+        setAdminState("denied");
+      }
+    })();
+  }, [requireAdmin, isLoading, user?.id]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [requireAdmin, isLoading, user]);
-
-  // Auth still resolving
   if (isLoading) return <FullScreenLoader />;
 
-  // Auth-only routes
   if (requireAuth && !isAuthenticated) {
-    return <Navigate to={redirectTo} replace />;
+    return <Navigate to={redirectTo} replace state={{ from: location }} />;
   }
 
-  // Admin routes
   if (requireAdmin) {
-    if (!isAuthenticated) return <Navigate to={redirectTo} replace />;
+    if (!isAuthenticated) {
+      return <Navigate to={redirectTo} replace state={{ from: location }} />;
+    }
+
     if (adminState === "idle" || adminState === "checking") {
       return <FullScreenLoader />;
     }
-    if (adminState === "denied") return <Navigate to={redirectTo} replace />;
+
+    if (adminState === "denied") {
+      return <Navigate to={redirectTo} replace state={{ from: location, reason: "admin_denied" }} />;
+    }
   }
 
   return <>{children}</>;
