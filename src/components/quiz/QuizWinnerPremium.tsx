@@ -1,22 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
-import { 
-  ExternalLink, 
-  Star, 
-  MessageCircle, 
-  Calendar, 
-  Gift, 
-  Mail, 
+import {
+  ExternalLink,
+  Star,
+  MessageCircle,
+  Calendar,
+  Gift,
+  Mail,
   Loader2,
   ChefHat,
   Sparkles,
   Lock,
-  Shield,
-  RefreshCw,
-  Eye,
-  EyeOff
+  ShieldCheck,
+  Copy,
+  CheckCircle2,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { useSecretAccess } from '@/hooks/useSecretAccess';
@@ -42,64 +40,44 @@ interface QuizWinnerPremiumProps {
   onPlayAgain: () => void;
 }
 
-// Generate security token that changes every 10 seconds (must match server)
-const generateSecurityToken = (): string => {
-  const now = Math.floor(Date.now() / 10000);
-  const hash = ((now * 9301 + 49297) % 233280).toString();
-  return hash.padStart(4, '0').slice(-4);
+const maskPhone = (phone: string) => {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 4) return phone;
+  return `•••• ${digits.slice(-4)}`;
 };
 
-const QuizWinnerPremium = ({ 
-  firstName, 
+const QuizWinnerPremium = ({
+  firstName,
   email,
   phone,
-  prize, 
+  prize,
   prizeCode,
   secretCode,
-  onPlayAgain 
+  onPlayAgain,
 }: QuizWinnerPremiumProps) => {
   const confettiRef = useRef(false);
   const [showSecretMenu, setShowSecretMenu] = useState(false);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [copyOk, setCopyOk] = useState(false);
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
 
-  // Build secretMenu object from the secretCode prop
-  const secretMenu: SecretMenu | null = secretCode ? {
-    secret_code: secretCode,
-    menu_name: null,
-    galette_special: null,
-    galette_special_description: null,
-    crepe_special: null,
-    crepe_special_description: null,
-  } : null;
-  
-  // Anti-fraud: Security token that changes every 10 seconds
-  const [currentToken, setCurrentToken] = useState(generateSecurityToken());
-  const [tokenCountdown, setTokenCountdown] = useState(10);
-  const [showCode, setShowCode] = useState(false);
-
-  // Update token every second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newToken = generateSecurityToken();
-      if (newToken !== currentToken) {
-        setCurrentToken(newToken);
-        setTokenCountdown(10);
-      } else {
-        setTokenCountdown(prev => Math.max(0, prev - 1));
+  const secretMenu: SecretMenu | null = secretCode
+    ? {
+        secret_code: secretCode,
+        menu_name: null,
+        galette_special: null,
+        galette_special_description: null,
+        crepe_special: null,
+        crepe_special_description: null,
       }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [currentToken]);
+    : null;
 
   useEffect(() => {
     if (!confettiRef.current) {
       confettiRef.current = true;
 
-      // Epic celebration
       confetti({
         particleCount: 150,
         spread: 100,
@@ -123,21 +101,20 @@ const QuizWinnerPremium = ({
           colors: ['#b8860b', '#daa520', '#ffd700'],
         });
       }, 400);
-
-      setTimeout(() => {
-        confetti({
-          particleCount: 50,
-          spread: 120,
-          origin: { y: 0.3 },
-          colors: ['#228b22', '#32cd32', '#90ee90'],
-        });
-      }, 800);
     }
   }, []);
 
-  // Updated verify URL with query param format
-  const verifyUrl = `${window.location.origin}/verify?code=${prizeCode}`;
   const isFormuleComplete = prize.toLowerCase().includes('formule');
+
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(prizeCode);
+      setCopyOk(true);
+      setTimeout(() => setCopyOk(false), 1800);
+    } catch {
+      setCopyOk(false);
+    }
+  };
 
   const handleSendEmail = async () => {
     setSendingEmail(true);
@@ -148,9 +125,9 @@ const QuizWinnerPremium = ({
         body: JSON.stringify({
           firstName,
           email,
+          phone,
           prize,
           prizeCode,
-          verifyUrl,
           secretCode: secretMenu?.secret_code,
         }),
       });
@@ -167,18 +144,19 @@ const QuizWinnerPremium = ({
 
   const handleSendWhatsApp = () => {
     const message = encodeURIComponent(
-      `🎉 J'ai gagné au Quiz de la Crêperie !\n\n` +
-      `Mon lot : ${prize}\n` +
-      `Mon code : ${prizeCode}\n\n` +
-      `${secretMenu?.secret_code ? `Code secret du menu : ${secretMenu.secret_code}\n\n` : ''}` +
-      `Je viens récupérer mon gain ! 🥞`
+      `🎉 J'ai gagné au Quiz de La Crêperie des Saveurs !\n\n` +
+        `Mon lot : ${prize}\n` +
+        `Mon code caisse : ${prizeCode}\n` +
+        `Téléphone associé : ${phone}\n\n` +
+        `${secretMenu?.secret_code ? `Code secret du menu : ${secretMenu.secret_code}\n\n` : ''}` +
+        `À présenter à la caisse pour récupérer mon gain 🥞`,
     );
     window.open(`https://wa.me/33781246918?text=${message}`, '_blank');
   };
 
   const handleUnlockMenu = async () => {
     if (!secretMenu?.secret_code) return;
-    
+
     const token = await grantAccessFromQuiz(email, phone, firstName, secretMenu.secret_code);
     if (token) {
       setAccessGranted(true);
@@ -191,14 +169,12 @@ const QuizWinnerPremium = ({
       animate={{ opacity: 1, scale: 1 }}
       className="space-y-6"
     >
-      {/* Winner Card Premium */}
       <motion.div
         initial={{ y: 20 }}
         animate={{ y: 0 }}
         transition={{ delay: 0.2 }}
         className="card-glow card-quiz-hero text-center py-8 border-2 border-caramel/50"
       >
-        {/* Logo placeholder */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -208,7 +184,6 @@ const QuizWinnerPremium = ({
           <ChefHat className="w-10 h-10 text-white" />
         </motion.div>
 
-        {/* Badge Gagné */}
         <motion.div
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
@@ -231,95 +206,48 @@ const QuizWinnerPremium = ({
           className="inline-flex items-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-caramel/20 to-caramel/10 border-2 border-caramel/30"
         >
           <Gift className="w-6 h-6 text-caramel" />
-          <span className="font-display text-2xl font-bold text-primary">
-            {prize}
-          </span>
+          <span className="font-display text-2xl font-bold text-primary">{prize}</span>
         </motion.div>
       </motion.div>
 
-      {/* QR Code & Coupon with Security */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="card-warm text-center"
+        className="card-warm text-center border-2 border-primary/25"
       >
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <ShieldCheck className="w-5 h-5 text-primary" />
+          <p className="font-display font-bold text-lg">Code gagnant à présenter en caisse</p>
+        </div>
+
         <p className="text-sm text-muted-foreground mb-4">
-          Présente ce QR code au restaurant
+          Ce gain est associé au téléphone <strong>{maskPhone(phone)}</strong>. Présente ce code au restaurant à la caisse pour récupérer ton lot.
         </p>
 
-        <div className="inline-block p-4 bg-white rounded-2xl shadow-lg border-2 border-caramel/20">
-          <QRCodeSVG
-            value={verifyUrl}
-            size={180}
-            level="H"
-            includeMargin={false}
-          />
-        </div>
-
-        {/* Security Token - Anti-fraud */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8 }}
-          className="mt-4 p-4 rounded-xl bg-primary/5 border border-primary/20"
-        >
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Shield className="w-4 h-4 text-primary" />
-            <span className="text-xs font-medium text-primary">Jeton de sécurité</span>
-          </div>
-          <div className="flex items-center justify-center gap-3">
-            <span className="font-mono text-3xl font-bold tracking-widest text-primary">
-              {currentToken}
-            </span>
-            <div className="flex flex-col items-center">
-              <RefreshCw className={`w-4 h-4 text-muted-foreground ${tokenCountdown <= 3 ? 'animate-spin' : ''}`} />
-              <span className="text-xs text-muted-foreground">{tokenCountdown}s</span>
-            </div>
-          </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            Ce jeton change toutes les 10 secondes
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-primary/10 to-caramel/10 border-2 border-primary/25 shadow-inner">
+          <p className="text-xs text-muted-foreground mb-2 uppercase tracking-[0.18em]">Ton code caisse</p>
+          <p className="font-mono text-4xl font-black tracking-[0.18em] text-primary break-all">
+            {prizeCode}
           </p>
-        </motion.div>
-
-        {/* Code - Hidden by default */}
-        <div className="mt-4 p-4 rounded-xl bg-secondary/50 border border-border">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs text-muted-foreground">Ton code unique</p>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowCode(!showCode)}
-              className="h-6 px-2"
-            >
-              {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              <span className="ml-1 text-xs">{showCode ? 'Masquer' : 'Afficher'}</span>
-            </Button>
-          </div>
-          {showCode ? (
-            <p className="font-mono text-2xl font-bold tracking-wider text-primary">
-              {prizeCode}
-            </p>
-          ) : (
-            <p className="font-mono text-2xl font-bold tracking-wider text-muted-foreground">
-              ••••••••
-            </p>
-          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopyCode}
+            className="mt-4 gap-2"
+          >
+            {copyOk ? <CheckCircle2 className="w-4 h-4 text-herb" /> : <Copy className="w-4 h-4" />}
+            {copyOk ? 'Code copié' : 'Copier le code'}
+          </Button>
         </div>
 
-        {/* Warning */}
-        <div className="mt-3 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
+        <div className="mt-4 p-3 rounded-xl bg-destructive/5 border border-destructive/20">
           <p className="text-xs text-destructive">
-            ⚠️ Ne partage pas ce coupon. Il est nominatif et vérifié par le staff.
+            ⚠️ Code nominatif, valable 7 jours. 1 gain maximum par personne et par semaine.
           </p>
         </div>
-
-        <p className="text-xs text-muted-foreground mt-3">
-          ⏰ Valable 7 jours – 1 gain max par semaine
-        </p>
       </motion.div>
 
-      {/* Secret Menu Unlock */}
       {secretMenu && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -332,12 +260,11 @@ const QuizWinnerPremium = ({
               <Sparkles className="w-5 h-5 text-caramel" />
               <span className="font-display font-bold">Bonus Gagnant</span>
             </div>
-            
+
             <p className="text-sm text-muted-foreground mb-4">
               Tu débloques aussi l'accès au Menu Secret de la semaine !
             </p>
 
-            {/* Secret Code Display */}
             <div className="p-4 rounded-xl bg-caramel/10 mb-4">
               <p className="text-xs text-muted-foreground mb-1">Ton code secret</p>
               <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
@@ -346,11 +273,7 @@ const QuizWinnerPremium = ({
             </div>
 
             {!accessGranted ? (
-              <Button 
-                onClick={handleUnlockMenu}
-                className="w-full"
-                variant="outline"
-              >
+              <Button onClick={handleUnlockMenu} className="w-full" variant="outline">
                 <Lock className="w-5 h-5 mr-2" />
                 Débloquer le Menu Secret
               </Button>
@@ -370,7 +293,6 @@ const QuizWinnerPremium = ({
               </>
             )}
 
-            {/* Preview menu specials */}
             {showSecretMenu && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
@@ -380,7 +302,7 @@ const QuizWinnerPremium = ({
                 <h4 className="font-display font-bold text-lg text-center">
                   {secretMenu.menu_name}
                 </h4>
-                
+
                 {secretMenu.galette_special && (
                   <div className="p-3 rounded-lg bg-secondary/50">
                     <p className="font-semibold text-sm">🥞 Galette spéciale</p>
@@ -392,7 +314,7 @@ const QuizWinnerPremium = ({
                     )}
                   </div>
                 )}
-                
+
                 {secretMenu.crepe_special && (
                   <div className="p-3 rounded-lg bg-secondary/50">
                     <p className="font-semibold text-sm">🍫 Crêpe spéciale</p>
@@ -408,12 +330,7 @@ const QuizWinnerPremium = ({
             )}
 
             {!showSecretMenu && accessGranted && (
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={() => setShowSecretMenu(true)}
-                className="mt-2"
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowSecretMenu(true)} className="mt-2">
                 🔮 Aperçu rapide
               </Button>
             )}
@@ -421,7 +338,6 @@ const QuizWinnerPremium = ({
         </motion.div>
       )}
 
-      {/* Send Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -429,10 +345,9 @@ const QuizWinnerPremium = ({
         className="space-y-3"
       >
         <p className="text-sm text-center text-muted-foreground mb-2">
-          Recevoir mon coupon par :
+          Garder mon code sous la main :
         </p>
 
-        {/* Email */}
         <Button
           variant="outline"
           className="w-full flex items-center justify-center gap-2 py-5 border-2 border-primary/30 hover:bg-primary/5"
@@ -446,12 +361,11 @@ const QuizWinnerPremium = ({
           ) : (
             <>
               <Mail className="w-5 h-5 text-primary" />
-              <span>Recevoir par Email</span>
+              <span>Recevoir par email</span>
             </>
           )}
         </Button>
 
-        {/* WhatsApp */}
         <Button
           variant="outline"
           className="w-full flex items-center justify-center gap-2 py-5 border-2 border-herb/30 hover:bg-herb/5"
@@ -463,14 +377,12 @@ const QuizWinnerPremium = ({
         </Button>
       </motion.div>
 
-      {/* Additional Actions */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 1.3 }}
         className="space-y-3"
       >
-        {/* Google Review */}
         <a
           href="https://g.page/r/CVTqauGmET0TEAE/preview"
           target="_blank"
@@ -490,7 +402,6 @@ const QuizWinnerPremium = ({
           Merci, ça aide énormément une petite crêperie locale. 💛
         </p>
 
-        {/* Book (only for Formule Complete) */}
         {isFormuleComplete && (
           <a
             href="https://calendar.app.google/u5ibf9hWCsxUHDB68"
@@ -506,21 +417,15 @@ const QuizWinnerPremium = ({
           </a>
         )}
 
-        {/* Rejouer */}
-        <Button
-          variant="ghost"
-          className="w-full"
-          onClick={onPlayAgain}
-        >
-          🎮 Rejouer
+        <Button variant="ghost" className="w-full" onClick={onPlayAgain}>
+          🎮 Rejouer pour le fun
         </Button>
       </motion.div>
 
-      {/* Info */}
       <p className="text-xs text-center text-muted-foreground">
         Lot valable pendant 7 jours.
         <br />
-        Présente ton QR code au restaurant pour récupérer ton gain.
+        Présente ton code gagnant à la caisse pour récupérer ton gain.
       </p>
     </motion.div>
   );
