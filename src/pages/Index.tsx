@@ -28,28 +28,39 @@ const PHONE_LINK = "tel:+33259660176";
 
 const FORMULES = [
   {
+    name: "Formule Petite Faim",
+    price: "7,90 €",
+    desc: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool",
+    badge: null as string | null,
+    note: "Simple, rapide, efficace",
+  },
+  {
+    name: "Formule Salade",
+    price: "12,90 €",
+    desc: "1 salade + 1 crêpe classique + 1 boisson",
+    badge: null,
+    note: "Fraîcheur & douceur",
+  },
+  {
     name: "Formule Classique",
     price: "14,90 €",
-    desc: "1 galette classique + 1 crêpe classique",
-    badge: null as string | null,
+    desc: "1 boisson + 1 galette classique + 1 crêpe classique",
+    badge: null,
+    note: "Le trio valeur sûre",
   },
   {
     name: "Formule Gourmande",
     price: "17,90 €",
-    desc: "Galette & crêpe gourmandes de la semaine",
+    desc: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé",
     badge: "Menu secret",
+    note: "Réservée aux initiés",
   },
   {
-    name: "Formule Mineur",
-    price: "8 €",
-    desc: "1 galette d'inspiration hebdo + 1 crêpe sucre",
-    badge: null,
-  },
-  {
-    name: "Formule Mineur+",
-    price: "9 €",
-    desc: "Galette hebdo + crêpe sucre/Nutella + boisson",
-    badge: null,
+    name: "Formule Goûter",
+    price: "Juillet",
+    desc: "Crêpe gourmande de la semaine + 1 boisson sans alcool",
+    badge: "Bientôt",
+    note: "Disponible à partir de juillet",
   },
 ];
 
@@ -366,7 +377,7 @@ const Index = () => {
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-caramel">À table</p>
             <h2 className="inline-block font-display text-2xl font-bold glow-title">Nos Formules</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Pensées pour tous, du gourmet au plus jeune
+              Des formules classées du petit prix au menu secret, avec boissons incluses.
             </p>
           </div>
 
@@ -374,22 +385,32 @@ const Index = () => {
             {FORMULES.map((formule) => (
               <div
                 key={formule.name}
-                className="glow-card glow-card-shadow flex items-center gap-4 rounded-2xl p-4"
+                className="glow-card glow-card-shadow rounded-2xl p-4"
               >
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-display text-base font-semibold">{formule.name}</h3>
-                    {formule.badge && (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-                        <Lock className="h-3 w-3" />
-                        {formule.badge}
-                      </span>
-                    )}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-display text-base font-semibold text-foreground">{formule.name}</h3>
+                      {formule.badge && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                          <Lock className="h-3 w-3" />
+                          {formule.badge}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 text-xs font-semibold uppercase tracking-[0.16em] text-caramel/80">
+                      {formule.note}
+                    </p>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{formule.desc}</p>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{formule.desc}</p>
-                </div>
-                <div className="whitespace-nowrap font-display text-lg font-bold text-primary">
-                  {formule.price}
+                  <div className="shrink-0 rounded-2xl border border-caramel/20 bg-white/70 px-3 py-2 text-right shadow-sm">
+                    <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      {formule.price === "Juillet" ? "Arrive" : "Prix"}
+                    </p>
+                    <p className="whitespace-nowrap font-display text-lg font-bold text-primary">
+                      {formule.price}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
