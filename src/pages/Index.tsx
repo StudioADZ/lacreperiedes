@@ -57,9 +57,9 @@ const FORMULES = [
   },
   {
     name: "Formule Goûter",
-    price: "Juillet",
+    price: "6,90 €",
     desc: "Crêpe gourmande de la semaine + 1 boisson sans alcool",
-    badge: "Bientôt",
+    badge: "Dès juillet",
     note: "Disponible à partir de juillet",
   },
 ];
@@ -417,7 +417,7 @@ const Index = () => {
                   </div>
                   <div className="shrink-0 rounded-2xl border border-caramel/20 bg-white/70 px-3 py-2 text-right shadow-sm">
                     <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-                      {formule.price === "Juillet" ? "Arrive" : "Prix"}
+                      Prix
                     </p>
                     <p className="whitespace-nowrap font-display text-lg font-bold text-primary">
                       {formule.price}
