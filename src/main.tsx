@@ -2,15 +2,14 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-
-// IMPORTANT: précharge le logo le plus tôt possible (prod / Lovable)
 import logoUrl from "@/assets/logo.png";
 
-(function preloadLogoEarly() {
+function preloadLogoEarly() {
   try {
-    const existing = document.querySelector(
-      `link[rel="preload"][as="image"][href="${logoUrl}"]`
+    const existing = document.querySelector<HTMLLinkElement>(
+      `link[rel="preload"][as="image"][href="${logoUrl}"]`,
     );
+
     if (!existing) {
       const link = document.createElement("link");
       link.rel = "preload";
@@ -19,29 +18,28 @@ import logoUrl from "@/assets/logo.png";
       document.head.appendChild(link);
     }
 
-    // warm cache + decode (critique pour background-image en prod)
     const img = new Image();
     img.src = logoUrl;
-    if (typeof img.decode === "function") {
-      img.decode().catch(() => {});
-    }
+    void img.decode?.().catch(() => {
+      // Non-critical: preload is only a performance hint.
+    });
   } catch {
-    /* no-op */
+    // Non-critical: the app must still boot if preload fails.
   }
-})();
+}
 
-// Garde-fous globaux silencieux (évitent les écrans blancs sur erreurs non catchées)
-if (typeof window !== "undefined") {
+function registerGlobalDiagnostics() {
   window.addEventListener("unhandledrejection", (event) => {
-    // Non bloquant : on log proprement pour diagnostic
     console.warn("[unhandledrejection]", event.reason ?? "(no reason)");
   });
 
   window.addEventListener("error", (event) => {
-    // Erreurs JS synchrones non catchées
     console.error("[global error]", event.error ?? event.message);
   });
 }
+
+preloadLogoEarly();
+registerGlobalDiagnostics();
 
 const rootElement = document.getElementById("root");
 
@@ -52,5 +50,5 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <App />
-  </StrictMode>
+  </StrictMode>,
 );
