@@ -81,13 +81,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!mountedRef.current) return;
       const user = session?.user ?? null;
 
+      // Sync session/user immédiatement, mais ne jamais flipper isLoading=false
+      // tant que le profil (si user) n'est pas chargé → évite tout flicker.
       setState((prev) => ({
         ...prev,
         user,
         session,
         isAuthenticated: !!user,
         profile: user ? prev.profile : null,
-        isLoading: prev.isLoading && !user ? false : prev.isLoading,
       }));
 
       if (user) {
