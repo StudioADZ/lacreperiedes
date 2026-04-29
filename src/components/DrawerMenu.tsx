@@ -57,11 +57,11 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="h-dvh max-h-dvh w-[min(22rem,calc(100vw-2rem))] overflow-hidden border-r-0 bg-ivory p-0"
+        className="h-dvh max-h-dvh w-[min(22rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain border-r-0 bg-ivory p-0 [-webkit-overflow-scrolling:touch]"
         aria-label="Menu de navigation"
       >
-        <div className="flex h-full min-h-0 flex-col">
-          <div className="shrink-0 border-b border-border/50 bg-butter/30 px-6 pb-5 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
+        <div className="flex min-h-dvh flex-col">
+          <div className="border-b border-border/50 bg-butter/30 px-6 pb-5 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
             <Link
               to="/"
               onClick={closeMenu}
@@ -83,7 +83,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
             </Link>
           </div>
 
-          <nav className="min-h-0 flex-1 overflow-y-auto p-4" aria-label="Navigation principale">
+          <nav className="p-4" aria-label="Navigation principale">
             <ul className="space-y-1.5">
               {menuItems.map((item) => {
                 const isActive = isActiveRoute(pathname, item);
@@ -114,7 +114,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
             </ul>
           </nav>
 
-          <div className="shrink-0 border-t border-border/50 bg-butter/20 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
+          <div className="mt-auto border-t border-border/50 bg-butter/20 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
             <div className="mb-3 grid grid-cols-2 gap-2">
               <a
                 href={mapsUrl}
