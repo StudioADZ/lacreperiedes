@@ -7,6 +7,37 @@ import {
   serverErrorResponse
 } from '../_shared/validation.ts'
 
+const QUIZ_SIZE = 10
+
+const shuffle = <T>(items: T[]): T[] => {
+  const copy = [...items]
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[copy[i], copy[j]] = [copy[j], copy[i]]
+  }
+  return copy
+}
+
+const uniqueByQuestionText = <T extends { id: string; question?: string | null }>(items: T[]): T[] => {
+  const seen = new Set<string>()
+  const unique: T[] = []
+
+  for (const item of items) {
+    const key = (item.question || item.id)
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+
+    if (seen.has(key)) continue
+    seen.add(key)
+    unique.push(item)
+  }
+
+  return unique
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -19,14 +50,11 @@ Deno.serve(async (req) => {
 
     const { action, deviceFingerprint, sessionId, answer, questionIndex } = await req.json()
 
-    // Validate device fingerprint for all actions
     if (!isValidFingerprint(deviceFingerprint)) {
       return errorResponse('invalid_fingerprint', 'Session invalide')
     }
 
     if (action === 'start') {
-      // Allow replay even if already won (prize blocking is in quiz-submit)
-      // Check for existing active session
       const { data: existingSession } = await supabase
         .from('quiz_sessions')
         .select('*')
@@ -36,42 +64,49 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (existingSession) {
-        // Get questions for existing session
         const { data: questions } = await supabase
           .from('quiz_questions')
           .select('id, question, option_a, option_b, option_c, option_d')
           .in('id', existingSession.question_ids)
 
-        return successResponse({ session: existingSession, questions })
+        const orderedQuestions = existingSession.question_ids
+          .map((id: string) => questions?.find((q) => q.id === id))
+          .filter(Boolean)
+
+        return successResponse({ session: existingSession, questions: orderedQuestions })
       }
 
-      // Get 10 random active questions (80% local, 20% food)
+      // Premium mix: more variety, no duplicated question wording inside a session.
       const { data: localQuestions } = await supabase
         .from('quiz_questions')
-        .select('id')
+        .select('id, question')
         .eq('is_active', true)
         .eq('category', 'local')
-        .limit(100)
+        .limit(150)
 
       const { data: foodQuestions } = await supabase
         .from('quiz_questions')
-        .select('id')
+        .select('id, question')
         .eq('is_active', true)
         .eq('category', 'food')
-        .limit(50)
+        .limit(100)
 
-      // Shuffle and pick
-      const shuffledLocal = (localQuestions || []).sort(() => Math.random() - 0.5).slice(0, 8)
-      const shuffledFood = (foodQuestions || []).sort(() => Math.random() - 0.5).slice(0, 2)
-      const selectedIds = [...shuffledLocal, ...shuffledFood]
-        .sort(() => Math.random() - 0.5)
-        .map(q => q.id)
+      const uniqueLocal = shuffle(uniqueByQuestionText(localQuestions || []))
+      const uniqueFood = shuffle(uniqueByQuestionText(foodQuestions || []))
 
-      if (selectedIds.length < 10) {
+      const selected = uniqueByQuestionText([
+        ...uniqueLocal.slice(0, 7),
+        ...uniqueFood.slice(0, 3),
+        ...uniqueLocal.slice(7),
+        ...uniqueFood.slice(3),
+      ]).slice(0, QUIZ_SIZE)
+
+      if (selected.length < QUIZ_SIZE) {
         return errorResponse('not_enough_questions', 'Pas assez de questions disponibles')
       }
 
-      // Create session
+      const selectedIds = shuffle(selected).map((q) => q.id)
+
       const { data: session, error: sessionError } = await supabase
         .from('quiz_sessions')
         .insert({
@@ -86,37 +121,31 @@ Deno.serve(async (req) => {
         return serverErrorResponse()
       }
 
-      // Get full questions (without correct_answer for security)
       const { data: questions } = await supabase
         .from('quiz_questions')
         .select('id, question, option_a, option_b, option_c, option_d')
         .in('id', selectedIds)
 
-      // Order questions according to session order
-      const orderedQuestions = selectedIds.map(id => 
-        questions?.find(q => q.id === id)
-      ).filter(Boolean)
+      const orderedQuestions = selectedIds
+        .map((id) => questions?.find((q) => q.id === id))
+        .filter(Boolean)
 
       return successResponse({ session, questions: orderedQuestions })
     }
 
     if (action === 'answer') {
-      // Validate session ID format
       if (!sessionId || typeof sessionId !== 'string') {
         return errorResponse('invalid_session', 'Session invalide')
       }
 
-      // Validate answer
       if (!answer || !['A', 'B', 'C', 'D'].includes(answer)) {
         return errorResponse('invalid_answer', 'Réponse invalide')
       }
 
-      // Validate question index
       if (typeof questionIndex !== 'number' || questionIndex < 0 || questionIndex > 9) {
         return errorResponse('invalid_question', 'Question invalide')
       }
 
-      // Get session
       const { data: session, error: sessionError } = await supabase
         .from('quiz_sessions')
         .select('*')
@@ -128,12 +157,10 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_session', 'Session invalide')
       }
 
-      // Check if session expired
       if (new Date(session.expires_at) < new Date()) {
         return errorResponse('session_expired', 'Session expirée, veuillez recommencer')
       }
 
-      // Get the question to verify answer
       const questionId = session.question_ids[questionIndex]
       const { data: question } = await supabase
         .from('quiz_questions')
@@ -142,8 +169,6 @@ Deno.serve(async (req) => {
         .single()
 
       const isCorrect = question?.correct_answer === answer
-
-      // Update session
       const newAnswers = [...(session.answers || []), { questionIndex, answer, isCorrect }]
       
       const { error: updateError } = await supabase
@@ -152,7 +177,6 @@ Deno.serve(async (req) => {
           answers: newAnswers,
           current_question: questionIndex + 1,
           last_activity: new Date().toISOString(),
-          // Extend expiry by 5 min on each answer
           expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
         })
         .eq('id', sessionId)
@@ -166,7 +190,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'reset') {
-      // Invalidate current session (for tab switch / inactivity)
       await supabase
         .from('quiz_sessions')
         .update({ completed: true })
