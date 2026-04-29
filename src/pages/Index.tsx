@@ -28,10 +28,17 @@ const PHONE_LINK = "tel:+33259660176";
 
 const FORMULES = [
   {
+    name: "Formule Goûter",
+    price: "6,90 €",
+    desc: "Crêpe gourmande de la semaine + 1 boisson sans alcool",
+    badge: "Dès juillet" as string | null,
+    note: "Disponible à partir de juillet",
+  },
+  {
     name: "Formule Petite Faim",
     price: "7,90 €",
     desc: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool",
-    badge: null as string | null,
+    badge: null,
     note: "Simple, rapide, efficace",
   },
   {
@@ -54,13 +61,6 @@ const FORMULES = [
     desc: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé",
     badge: "Menu secret",
     note: "Réservée aux initiés",
-  },
-  {
-    name: "Formule Goûter",
-    price: "6,90 €",
-    desc: "Crêpe gourmande de la semaine + 1 boisson sans alcool",
-    badge: "Dès juillet",
-    note: "Disponible à partir de juillet",
   },
 ];
 
@@ -382,10 +382,7 @@ const Index = () => {
           </div>
 
           <div className="mb-4 rounded-3xl border-2 border-primary/35 bg-gradient-to-r from-primary/15 via-[hsl(43_85%_65%/0.22)] to-primary/10 px-4 py-4 text-center shadow-[0_16px_45px_rgba(218,165,32,0.20)]">
-            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-primary">
-              Important
-            </p>
-            <p className="mt-1 font-display text-xl font-black leading-tight text-espresso">
+            <p className="font-display text-xl font-black leading-tight text-espresso">
               Toutes nos formules sont disponibles midi & soir
             </p>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">
