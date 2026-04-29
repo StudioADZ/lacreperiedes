@@ -38,6 +38,7 @@ interface AuthContextValue extends AuthState {
   signUp: (email: string, password: string, firstName: string) => Promise<unknown>;
   signIn: (email: string, password: string) => Promise<unknown>;
   signInWithGoogle: () => Promise<unknown>;
+  signInWithApple: () => Promise<unknown>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<Profile>;
   refreshProfile: () => Promise<void>;
@@ -59,6 +60,11 @@ const SIGNED_OUT_STATE: AuthState = {
   profile: null,
   isLoading: false,
   isAuthenticated: false,
+};
+
+const getAuthRedirectUrl = () => {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/client`;
 };
 
 async function fetchProfileById(userId: string): Promise<Profile | null> {
@@ -154,7 +160,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email,
         password,
         options: {
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: getAuthRedirectUrl(),
           data: { first_name: firstName },
         },
       });
@@ -176,7 +182,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signInWithGoogle = useCallback(async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: getAuthRedirectUrl(),
+        queryParams: {
+          prompt: "select_account",
+        },
+      },
+    });
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const signInWithApple = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: {
+        redirectTo: getAuthRedirectUrl(),
+      },
     });
     if (error) throw error;
     return data;
@@ -220,11 +242,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signUp,
       signIn,
       signInWithGoogle,
+      signInWithApple,
       signOut,
       updateProfile,
       refreshProfile,
     }),
-    [state, signUp, signIn, signInWithGoogle, signOut, updateProfile, refreshProfile],
+    [
+      state,
+      signUp,
+      signIn,
+      signInWithGoogle,
+      signInWithApple,
+      signOut,
+      updateProfile,
+      refreshProfile,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
