@@ -1,365 +1,404 @@
-import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
-import { Bot, X, Send, MapPin, Calendar, Star, Phone, HelpCircle, UtensilsCrossed, FileText, MessageCircle } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  Bot,
+  Calendar,
+  FileText,
+  HelpCircle,
+  MapPin,
+  MessageCircle,
+  Phone,
+  Send,
+  Star,
+  UtensilsCrossed,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GOOGLE_REVIEW_LINK } from "@/components/common/GoogleReviewCTA";
 
-// Lien de réservation CORRIGÉ
 const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
+const MAPS_LINK =
+  "https://www.google.com/maps/search/?api=1&query=La%20cr%C3%AAperie%20des%20saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers";
+const WHATSAPP_LINK = "https://wa.me/message/QVZO5N4ZDR64M1";
+const PHONE_LINK = "tel:+33259660176";
 
 interface Message {
   id: string;
-  type: 'user' | 'bot';
+  type: "user" | "bot";
   text: string;
-  buttons?: QuickButton[];
 }
 
-interface QuickButton {
-  emoji: string;
+type QuickActionKey =
+  | "quiz"
+  | "reserver"
+  | "avis"
+  | "trouver"
+  | "legal"
+  | "carte"
+  | "appeler"
+  | "whatsapp";
+
+type QuickAction = {
+  key: QuickActionKey;
   label: string;
-  action: () => void;
-}
+  icon: LucideIcon;
+};
 
-// Forbidden routes - never mention or link to these
-const FORBIDDEN_ROUTES = ['/admin'];
+const quickActions: QuickAction[] = [
+  { key: "quiz", label: "Quiz", icon: HelpCircle },
+  { key: "reserver", label: "Réserver", icon: Calendar },
+  { key: "avis", label: "Avis", icon: Star },
+  { key: "trouver", label: "Nous trouver", icon: MapPin },
+  { key: "carte", label: "Carte", icon: UtensilsCrossed },
+  { key: "appeler", label: "Appeler", icon: Phone },
+  { key: "legal", label: "Infos légales", icon: FileText },
+];
+
+const openExternal = (url: string) => {
+  window.open(url, "_blank", "noopener,noreferrer");
+};
+
+const normalizeText = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 
 const AssistantChat = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState('');
+  const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageCounterRef = useRef(0);
   const navigate = useNavigate();
-  const location = useLocation();
+  const { pathname } = useLocation();
 
-  // Don't show on admin page
-  if (location.pathname.startsWith('/admin')) {
-    return null;
-  }
+  const isHiddenRoute = pathname.startsWith("/admin") || pathname.startsWith("/verify");
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const createMessageId = () => {
+    messageCounterRef.current += 1;
+    return `${Date.now()}-${messageCounterRef.current}`;
+  };
+
+  const addBotMessage = (text: string) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: createMessageId(),
+        type: "bot",
+        text,
+      },
+    ]);
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!isOpen || messages.length > 0) return;
 
-  // Initialize with welcome message
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      setMessages([{
-        id: '1',
-        type: 'bot',
-        text: "Bonjour ! 👋 Je suis l'assistant de La Crêperie des Saveurs. Comment puis-je vous aider aujourd'hui ?",
-      }]);
-    }
+    setMessages([
+      {
+        id: createMessageId(),
+        type: "bot",
+        text: "Bonjour ! Je suis l’assistant de La Crêperie des Saveurs. Je peux vous aider à réserver, trouver l’adresse, voir la carte, jouer au quiz ou nous contacter.",
+      },
+    ]);
   }, [isOpen, messages.length]);
 
-  const handleQuickAction = (action: string) => {
+  useEffect(() => {
+    if (!isOpen) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [isOpen, messages]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsOpen(false);
+    };
+
+    window.addEventListener("keydown", handleEscape);
+    return () => window.removeEventListener("keydown", handleEscape);
+  }, [isOpen]);
+
+  const handleQuickAction = (action: QuickActionKey) => {
     switch (action) {
-      case 'quiz':
-        addBotMessage("🎯 C'est parti ! Je vous emmène au quiz...");
-        setTimeout(() => {
+      case "quiz":
+        addBotMessage("Je vous emmène au quiz. Bonne chance !");
+        window.setTimeout(() => {
           setIsOpen(false);
-          navigate('/quiz');
-        }, 500);
+          navigate("/quiz");
+        }, 450);
         break;
-      case 'reserver':
-        addBotMessage("📅 Super ! Vous pouvez réserver via notre calendrier en ligne. Je vous y emmène !");
-        setTimeout(() => {
-          window.open(BOOKING_LINK, '_blank');
-        }, 1000);
+      case "reserver":
+        addBotMessage("Je vous ouvre notre calendrier de réservation.");
+        window.setTimeout(() => openExternal(BOOKING_LINK), 650);
         break;
-      case 'avis':
-        addBotMessage("⭐ Merci de vouloir nous laisser un avis ! Votre feedback nous aide à nous améliorer. Ça aide énormément une petite crêperie locale. 💛");
-        setTimeout(() => {
-          window.open(GOOGLE_REVIEW_LINK, '_blank');
-        }, 1000);
+      case "avis":
+        addBotMessage("Merci ! Votre avis aide beaucoup notre crêperie locale.");
+        window.setTimeout(() => openExternal(GOOGLE_REVIEW_LINK), 650);
         break;
-      case 'trouver':
-        addBotMessage("📍 Nous sommes situés au :\n\n**17 Place Carnot**\nGalerie des Halles\n**72600 Mamers**\n\nJe vous ouvre Google Maps !");
-        setTimeout(() => {
-          window.open('https://maps.app.goo.gl/6KdHfHSUs1MbzakLA', '_blank');
-        }, 1500);
+      case "trouver":
+        addBotMessage("Nous sommes au 17 Place Carnot, Galerie des Halles, 72600 Mamers. Je vous ouvre Google Maps.");
+        window.setTimeout(() => openExternal(MAPS_LINK), 650);
         break;
-      case 'legal':
-        addBotMessage("📜 Vous trouverez notre règlement, politique de confidentialité et conditions d'utilisation sur la page dédiée.");
-        setTimeout(() => navigate('/legal'), 1000);
+      case "legal":
+        addBotMessage("Je vous ouvre la page des mentions légales et informations utiles.");
+        window.setTimeout(() => navigate("/legal"), 450);
         break;
-      case 'carte':
-        addBotMessage("🍽️ Notre carte secrète vous réserve des surprises ! Participez au quiz pour débloquer l'accès.");
-        setTimeout(() => navigate('/carte'), 1000);
+      case "carte":
+        addBotMessage("Je vous emmène vers la carte de la crêperie.");
+        window.setTimeout(() => navigate("/carte"), 450);
         break;
-      case 'appeler':
-        addBotMessage("📞 Vous pouvez nous appeler au **02 59 66 01 76**. Je lance l'appel !");
-        setTimeout(() => {
-          window.location.href = 'tel:0259660176';
-        }, 1000);
+      case "appeler":
+        addBotMessage("Vous pouvez nous appeler au 02 59 66 01 76. Je lance l’appel.");
+        window.setTimeout(() => {
+          window.location.href = PHONE_LINK;
+        }, 450);
         break;
-      case 'whatsapp':
-        addBotMessage("💬 Je vous redirige vers WhatsApp pour continuer la conversation !");
-        setTimeout(() => {
-          window.open('https://wa.me/message/QVZO5N4ZDR64M1', '_blank');
-        }, 1000);
+      case "whatsapp":
+        addBotMessage("Je vous ouvre WhatsApp pour continuer la conversation.");
+        window.setTimeout(() => openExternal(WHATSAPP_LINK), 650);
         break;
       default:
         break;
     }
   };
 
-  const addBotMessage = (text: string, buttons?: QuickButton[]) => {
-    setMessages(prev => [...prev, {
-      id: Date.now().toString(),
-      type: 'bot',
-      text,
-      buttons
-    }]);
-  };
-
   const handleUserMessage = (text: string) => {
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: 'user',
-      text
-    };
-    setMessages(prev => [...prev, userMessage]);
-    setInputValue('');
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: createMessageId(),
+        type: "user",
+        text,
+      },
+    ]);
+    setInputValue("");
 
-    // Process user message
-    const lowerText = text.toLowerCase();
+    const lowerText = normalizeText(text);
 
-    // Check for forbidden content (admin access attempts)
-    if (lowerText.includes('admin') || lowerText.includes('scanner') || 
-        lowerText.includes('backoffice') || lowerText.includes('gestion') ||
-        lowerText.includes('qr code') || lowerText.includes('valider lot')) {
-      setTimeout(() => {
-        addBotMessage("🔒 Zone staff uniquement.");
-      }, 500);
+    if (
+      lowerText.includes("admin") ||
+      lowerText.includes("backoffice") ||
+      lowerText.includes("gestion") ||
+      lowerText.includes("qr code") ||
+      lowerText.includes("staff")
+    ) {
+      window.setTimeout(() => addBotMessage("Cette zone est réservée à l’équipe."), 450);
       return;
     }
 
-    // Horaires
-    if (lowerText.includes('horaire') || lowerText.includes('heure') || lowerText.includes('ouvert')) {
-      setTimeout(() => {
-        addBotMessage("🕐 Nos horaires d'ouverture :\n\n**Samedi & Dimanche**\n• 12h00 - 14h00\n• 19h00 - 21h00\n\nFermé du lundi au vendredi.");
-      }, 500);
+    if (lowerText.includes("horaire") || lowerText.includes("heure") || lowerText.includes("ouvert")) {
+      window.setTimeout(
+        () =>
+          addBotMessage(
+            "Nos horaires : samedi et dimanche, de 12h00 à 14h00 puis de 19h00 à 21h00. Fermé du lundi au vendredi.",
+          ),
+        450,
+      );
       return;
     }
 
-    // Adresse / Localisation
-    if (lowerText.includes('adresse') || lowerText.includes('où') || lowerText.includes('trouver') || lowerText.includes('lieu') || lowerText.includes('localisation')) {
-      handleQuickAction('trouver');
+    if (lowerText.includes("adresse") || lowerText.includes("trouver") || lowerText.includes("lieu") || lowerText.includes("localisation")) {
+      handleQuickAction("trouver");
       return;
     }
 
-    // Réservation
-    if (lowerText.includes('réserv') || lowerText.includes('table') || lowerText.includes('booking')) {
-      handleQuickAction('reserver');
+    if (lowerText.includes("reserv") || lowerText.includes("table") || lowerText.includes("booking")) {
+      handleQuickAction("reserver");
       return;
     }
 
-    // Quiz
-    if (lowerText.includes('quiz') || lowerText.includes('jeu') || lowerText.includes('gagner') || lowerText.includes('jouer')) {
-      handleQuickAction('quiz');
+    if (lowerText.includes("quiz") || lowerText.includes("jeu") || lowerText.includes("gagner") || lowerText.includes("jouer")) {
+      handleQuickAction("quiz");
       return;
     }
 
-    // Avis
-    if (lowerText.includes('avis') || lowerText.includes('note') || lowerText.includes('étoile') || lowerText.includes('review')) {
-      handleQuickAction('avis');
+    if (lowerText.includes("avis") || lowerText.includes("note") || lowerText.includes("etoile") || lowerText.includes("review")) {
+      handleQuickAction("avis");
       return;
     }
 
-    // Carte / Menu
-    if (lowerText.includes('carte') || lowerText.includes('menu') || lowerText.includes('manger') || lowerText.includes('crêpe') || lowerText.includes('galette')) {
-      handleQuickAction('carte');
+    if (lowerText.includes("carte") || lowerText.includes("menu") || lowerText.includes("manger") || lowerText.includes("crepe") || lowerText.includes("galette")) {
+      handleQuickAction("carte");
       return;
     }
 
-    // Contact / Téléphone
-    if (lowerText.includes('téléphone') || lowerText.includes('appel') || lowerText.includes('contact') || lowerText.includes('numéro')) {
-      handleQuickAction('appeler');
+    if (lowerText.includes("telephone") || lowerText.includes("appel") || lowerText.includes("contact") || lowerText.includes("numero")) {
+      handleQuickAction("appeler");
       return;
     }
 
-    // WhatsApp
-    if (lowerText.includes('whatsapp') || lowerText.includes('message')) {
-      handleQuickAction('whatsapp');
+    if (lowerText.includes("whatsapp") || lowerText.includes("message")) {
+      handleQuickAction("whatsapp");
       return;
     }
 
-    // Règlement / RGPD
-    if (lowerText.includes('règlement') || lowerText.includes('rgpd') || lowerText.includes('confidentialité') || lowerText.includes('condition') || lowerText.includes('légal')) {
-      handleQuickAction('legal');
+    if (lowerText.includes("reglement") || lowerText.includes("rgpd") || lowerText.includes("confidentialite") || lowerText.includes("condition") || lowerText.includes("legal")) {
+      handleQuickAction("legal");
       return;
     }
 
-    // Prix / Tarif
-    if (lowerText.includes('prix') || lowerText.includes('tarif') || lowerText.includes('combien') || lowerText.includes('coût')) {
-      setTimeout(() => {
-        addBotMessage("💰 Nos prix sont doux ! Consultez notre carte pour découvrir nos formules. Pour les offres spéciales, participez au quiz et gagnez des crêpes gratuites ! 🎁");
-      }, 500);
+    if (lowerText.includes("prix") || lowerText.includes("tarif") || lowerText.includes("combien") || lowerText.includes("cout")) {
+      window.setTimeout(
+        () => addBotMessage("Vous pouvez consulter nos prix sur la carte. Et pour les surprises, le quiz peut débloquer des offres."),
+        450,
+      );
       return;
     }
 
-    // Merci
-    if (lowerText.includes('merci') || lowerText.includes('super') || lowerText.includes('génial')) {
-      setTimeout(() => {
-        addBotMessage("🥰 Avec plaisir ! N'hésitez pas si vous avez d'autres questions. À bientôt à La Crêperie des Saveurs ! 🥞");
-      }, 500);
+    if (lowerText.includes("merci") || lowerText.includes("super") || lowerText.includes("genial")) {
+      window.setTimeout(() => addBotMessage("Avec plaisir ! À bientôt à La Crêperie des Saveurs."), 450);
       return;
     }
 
-    // Default response
-    setTimeout(() => {
-      addBotMessage("Je ne suis pas sûr de comprendre votre demande. Voici ce que je peux faire pour vous :\n\n• 🎯 Vous guider vers le quiz\n• 📅 Vous aider à réserver\n• 📍 Vous indiquer comment nous trouver\n• ⭐ Recueillir votre avis\n\nVous pouvez aussi continuer sur WhatsApp si vous préférez parler à un humain ! 💬");
-    }, 500);
+    window.setTimeout(
+      () =>
+        addBotMessage(
+          "Je peux vous aider à réserver, trouver l’adresse, consulter la carte, jouer au quiz, laisser un avis ou nous contacter sur WhatsApp.",
+        ),
+      450,
+    );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputValue.trim()) {
-      handleUserMessage(inputValue.trim());
-    }
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const nextValue = inputValue.trim();
+    if (nextValue) handleUserMessage(nextValue);
   };
 
-  const quickButtons = [
-    { emoji: "🎯", label: "Jouer au quiz", action: () => handleQuickAction('quiz') },
-    { emoji: "📅", label: "Réserver", action: () => handleQuickAction('reserver') },
-    { emoji: "⭐", label: "Laisser un avis", action: () => handleQuickAction('avis') },
-    { emoji: "🗺️", label: "Nous trouver", action: () => handleQuickAction('trouver') },
-    { emoji: "📜", label: "Règlement / RGPD", action: () => handleQuickAction('legal') },
-    { emoji: "🍽️", label: "Carte", action: () => handleQuickAction('carte') },
-    { emoji: "📞", label: "Appeler", action: () => handleQuickAction('appeler') },
-  ];
+  if (isHiddenRoute) return null;
 
   return (
     <>
-      {/* Floating Button */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
+            type="button"
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-[#25D366] text-white shadow-lg hover:shadow-xl transition-shadow flex items-center justify-center"
-            style={{
-              boxShadow: "0 4px 20px rgba(37, 211, 102, 0.4)"
-            }}
-            aria-label="Ouvrir l'assistant"
+            className="fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_4px_20px_rgba(37,211,102,0.4)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-95"
+            aria-label="Ouvrir l’assistant"
           >
-            <Bot className="w-7 h-7" />
+            <Bot className="h-7 w-7" />
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Chat Panel */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.95 }}
+          <motion.section
+            initial={{ opacity: 0, y: 100, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 100, scale: 0.95 }}
+            exit={{ opacity: 0, y: 100, scale: 0.96 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 max-h-[85vh] flex flex-col bg-gradient-to-b from-[hsl(35_45%_96%)] to-[hsl(40_40%_92%)] rounded-t-3xl shadow-2xl border-t border-caramel/20"
-            style={{
-              boxShadow: "0 -10px 40px rgba(0,0,0,0.15)"
-            }}
+            className="fixed inset-x-0 bottom-0 z-50 flex max-h-[88dvh] flex-col rounded-t-3xl border-t border-caramel/20 bg-gradient-to-b from-[hsl(35_45%_96%)] to-[hsl(40_40%_92%)] shadow-2xl sm:bottom-6 sm:left-auto sm:right-4 sm:w-[24rem] sm:rounded-3xl sm:border"
+            style={{ boxShadow: "0 -10px 40px rgba(0,0,0,0.15)" }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Assistant Crêperie"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-caramel/10 bg-gradient-to-r from-caramel/10 to-butter/20 rounded-t-3xl">
+            <div className="flex items-center justify-between rounded-t-3xl border-b border-caramel/10 bg-gradient-to-r from-caramel/10 to-butter/20 px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#25D366] flex items-center justify-center">
-                  <Bot className="w-5 h-5 text-white" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
+                  <Bot className="h-5 w-5 text-white" />
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-espresso">Assistant Crêperie</h3>
-                  <p className="text-xs text-muted-foreground">En ligne • Répond instantanément</p>
+                  <p className="text-xs text-muted-foreground">Réservation, adresse, carte et contact</p>
                 </div>
               </div>
               <Button
+                type="button"
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsOpen(false)}
                 className="rounded-full hover:bg-caramel/10"
+                aria-label="Fermer l’assistant"
               >
-                <X className="w-5 h-5" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
 
-            {/* Quick Actions */}
-            <div className="px-4 py-3 border-b border-caramel/10 overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {quickButtons.map((btn) => (
-                  <button
-                    key={btn.label}
-                    onClick={btn.action}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-white/80 border border-caramel/20 text-sm font-medium hover:bg-caramel/10 transition-colors whitespace-nowrap shadow-sm"
-                  >
-                    <span>{btn.emoji}</span>
-                    <span className="text-espresso">{btn.label}</span>
-                  </button>
-                ))}
+            <div className="border-b border-caramel/10 px-4 py-3">
+              <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <button
+                      key={action.key}
+                      type="button"
+                      onClick={() => handleQuickAction(action.key)}
+                      className="flex shrink-0 items-center gap-1.5 rounded-full border border-caramel/20 bg-white/80 px-3 py-2 text-sm font-medium text-espresso shadow-sm transition-colors hover:bg-caramel/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <Icon className="h-4 w-4 text-caramel" />
+                      {action.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4 min-h-[200px] max-h-[40vh]">
-              {messages.map((msg) => (
+            <div className="min-h-[13rem] flex-1 space-y-4 overflow-y-auto px-4 py-4 [-webkit-overflow-scrolling:touch]">
+              {messages.map((message) => (
                 <motion.div
-                  key={msg.id}
+                  key={message.id}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
+                  className={`flex ${message.type === "user" ? "justify-end" : "justify-start"}`}
                 >
                   <div
-                    className={`max-w-[85%] px-4 py-3 rounded-2xl ${
-                      msg.type === 'user'
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-white border border-caramel/20 text-espresso rounded-bl-md shadow-sm'
+                    className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+                      message.type === "user"
+                        ? "rounded-br-md bg-primary text-primary-foreground"
+                        : "rounded-bl-md border border-caramel/20 bg-white text-espresso shadow-sm"
                     }`}
                   >
-                    <p className="text-sm whitespace-pre-line">{msg.text}</p>
+                    <p className="whitespace-pre-line text-sm">{message.text}</p>
                   </div>
                 </motion.div>
               ))}
               <div ref={messagesEndRef} />
             </div>
 
-            {/* WhatsApp CTA */}
-            <div className="px-4 py-2 border-t border-caramel/10">
+            <div className="border-t border-caramel/10 px-4 py-2">
               <button
-                onClick={() => handleQuickAction('whatsapp')}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 transition-colors text-sm font-medium"
+                type="button"
+                onClick={() => handleQuickAction("whatsapp")}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366]/10 px-4 py-2.5 text-sm font-medium text-[#25D366] transition-colors hover:bg-[#25D366]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
               >
-                <MessageCircle className="w-4 h-4" />
-                💬 Continuer sur WhatsApp
+                <MessageCircle className="h-4 w-4" />
+                Continuer sur WhatsApp
               </button>
             </div>
 
-            {/* Input */}
-            <form onSubmit={handleSubmit} className="px-4 py-3 border-t border-caramel/10 bg-white/50">
+            <form
+              onSubmit={handleSubmit}
+              className="border-t border-caramel/10 bg-white/50 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 sm:pb-3"
+            >
               <div className="flex items-center gap-2">
                 <input
                   type="text"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(event) => setInputValue(event.target.value)}
                   placeholder="Posez votre question..."
-                  className="flex-1 px-4 py-2.5 rounded-full border border-caramel/20 bg-white text-espresso placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm"
+                  className="min-h-11 flex-1 rounded-full border border-caramel/20 bg-white px-4 py-2.5 text-base text-espresso placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
                 <Button
                   type="submit"
                   size="icon"
-                  className="rounded-full bg-primary hover:bg-primary/90"
+                  className="h-11 w-11 rounded-full bg-primary hover:bg-primary/90"
                   disabled={!inputValue.trim()}
+                  aria-label="Envoyer le message"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="h-4 w-4" />
                 </Button>
               </div>
             </form>
-          </motion.div>
+          </motion.section>
         )}
       </AnimatePresence>
     </>
