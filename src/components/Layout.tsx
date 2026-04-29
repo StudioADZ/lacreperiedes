@@ -1,35 +1,15 @@
-import { useState, useEffect, useLayoutEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import Header from "./Header";
 import DrawerMenu from "./DrawerMenu";
 import StickyBar from "./StickyBar";
 import AssistantChat from "./AssistantChat";
 
-/**
- * Layout global de l'application.
- * - Conserve Header / DrawerMenu / StickyBar / AssistantChat / Outlet
- * - Pilote l'affichage des éléments globaux (sticky bar, assistant) via une
- *   configuration centralisée et extensible par préfixe de route.
- * - Ferme automatiquement le drawer et restaure le scroll à chaque navigation.
- */
-
-// ---------------------------------------------------------------------------
-// Configuration des routes
-// ---------------------------------------------------------------------------
-// Pour ajouter un nouveau type de page (admin, verify, espace client, etc.),
-// il suffit d'ajouter le préfixe dans la liste correspondante ci-dessous.
-
 type RouteFlags = {
-  /** Cache la barre sticky (CTA bas de page) */
   hideSticky?: boolean;
-  /** Cache l'assistant flottant (chat) */
   hideAssistant?: boolean;
 };
 
-/**
- * Map préfixe → flags. L'ordre n'a pas d'importance : on prend le préfixe
- * le plus spécifique (le plus long) qui matche l'URL courante.
- */
 const ROUTE_CONFIG: Record<string, RouteFlags> = {
   "/admin": { hideSticky: true, hideAssistant: true },
   "/verify": { hideSticky: true, hideAssistant: true },
@@ -40,7 +20,6 @@ const ROUTE_CONFIG: Record<string, RouteFlags> = {
 const isPrefixMatch = (pathname: string, prefix: string) =>
   pathname === prefix || pathname.startsWith(`${prefix}/`);
 
-/** Résout les flags pour la route courante en prenant le préfixe le plus spécifique. */
 const resolveRouteFlags = (pathname: string): RouteFlags => {
   let matched: RouteFlags = {};
   let bestLength = -1;
@@ -55,26 +34,18 @@ const resolveRouteFlags = (pathname: string): RouteFlags => {
   return matched;
 };
 
-// ---------------------------------------------------------------------------
-// Composant
-// ---------------------------------------------------------------------------
-
 const Layout = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { pathname } = useLocation();
 
-  // Ferme le menu à chaque navigation
   useEffect(() => {
     setMenuOpen(false);
   }, [pathname]);
 
-  // Retour en haut à chaque changement de route (avant peinture pour éviter le flash)
   useLayoutEffect(() => {
     window.scrollTo({ top: 0, behavior: "auto" });
   }, [pathname]);
 
-  // Verrouille le scroll du body quand le drawer est ouvert (mobile-friendly).
-  // Restaure proprement l'état initial à la fermeture / au démontage.
   useEffect(() => {
     if (!menuOpen) return;
 
@@ -86,14 +57,24 @@ const Layout = () => {
     };
   }, [menuOpen]);
 
-  const { hideSticky, hideAssistant } = resolveRouteFlags(pathname);
+  const { hideSticky, hideAssistant } = useMemo(
+    () => resolveRouteFlags(pathname),
+    [pathname],
+  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-background focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-foreground focus:shadow-lg"
+      >
+        Aller au contenu
+      </a>
+
       <Header onMenuClick={() => setMenuOpen(true)} />
       <DrawerMenu open={menuOpen} onOpenChange={setMenuOpen} />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
         <Outlet />
       </main>
 
