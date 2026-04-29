@@ -34,7 +34,10 @@ const menuItems = [
 ];
 
 const adminItem = { path: "/admin", label: "Administration", icon: Settings };
-const mapsUrl = "https://maps.app.goo.gl/ShXSrr3XBsQTEYZ87?g_st=ac";
+const businessMapsUrl =
+  "https://www.google.com/maps/search/?api=1&query=La%20cr%C3%AAperie%20des%20saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers";
+const directionsMapsUrl =
+  "https://www.google.com/maps/dir/?api=1&destination=La%20cr%C3%AAperie%20des%20saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers&travelmode=driving";
 
 const isActiveRoute = (
   pathname: string,
@@ -116,7 +119,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
           <div className="mt-auto border-t border-border/50 bg-butter/20 px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
             <div className="mb-3 grid grid-cols-2 gap-2">
               <a
-                href={mapsUrl}
+                href={businessMapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/45 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -135,13 +138,13 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
 
             <address className="space-y-1 text-center not-italic">
               <a
-                href={mapsUrl}
+                href={directionsMapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="block text-[11px] leading-relaxed text-muted-foreground transition-colors hover:text-foreground"
               >
-                17 Place Carnot · Galerie des Halles<br />
-                72600 Mamers
+                Itinéraire vers La crêperie des saveurs<br />
+                17 Place Carnot · 72600 Mamers
               </a>
             </address>
 
