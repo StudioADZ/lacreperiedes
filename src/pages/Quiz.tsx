@@ -10,7 +10,6 @@ import { useQuizSession } from "@/hooks/useQuizSession";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RealtimeWins from "@/components/quiz/RealtimeWins";
-import WinnersHero from "@/components/quiz/WinnersHero";
 import QuizTimer from "@/components/quiz/QuizTimer";
 import QuizQuestion from "@/components/quiz/QuizQuestion";
 import QuizPreForm from "@/components/quiz/QuizPreForm";
@@ -409,15 +408,6 @@ const Quiz = () => {
             className="card-warm mt-6 bg-gradient-to-br from-herb/5 to-butter/30 border-herb/20"
           >
             <RealtimeWins />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.32 }}
-            className="card-warm mt-6"
-          >
-            <WinnersHero />
           </motion.div>
         </div>
       </div>
