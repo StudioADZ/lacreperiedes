@@ -23,6 +23,7 @@ import SocialWall from "@/components/home/SocialWall";
 
 const MAPS_LINK =
   "https://www.google.com/maps/search/?api=1&query=La%20cr%C3%AAperie%20des%20saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers";
+const HOURS_LINK = "https://share.google/cW8qE77w5olblnodu";
 const PHONE_LINK = "tel:+33259660176";
 
 const FORMULES = [
@@ -63,9 +64,9 @@ const INFO_CARDS = [
   {
     icon: Clock,
     title: "Horaires",
-    text: ["Samedi & dimanche", "12h00 – 14h00 • 19h00 – 21h00"],
-    href: "/reserver",
-    external: false,
+    text: ["Midi : lundi au dimanche", "12h00 – 14h00", "Soir : vendredi & samedi", "19h00 – 22h00"],
+    href: HOURS_LINK,
+    external: true,
   },
   {
     icon: Phone,
@@ -247,39 +248,39 @@ const Index = () => {
             Crêpes, galettes, quiz gourmand et récompenses client dans une adresse locale au cœur de Mamers.
           </p>
 
-          <div className="mt-8 grid w-full max-w-xl gap-4">
-            <Link to="/quiz" className="block">
+          <div className="mt-8 grid w-full max-w-md gap-3 sm:max-w-lg">
+            <Link to="/quiz" className="mx-auto block w-full max-w-md">
               <Button
-                className="cta-anim cta-glow h-14 w-full rounded-2xl text-base font-semibold text-white md:h-16 md:text-xl"
+                className="cta-anim cta-glow h-13 w-full rounded-2xl px-5 text-sm font-semibold text-white md:h-14 md:text-lg"
                 style={{
                   backgroundImage:
                     "linear-gradient(90deg, hsl(43 85% 65%), hsl(38 70% 55%), hsl(20 75% 55%), hsl(43 85% 65%))",
                 }}
               >
                 Jouer au quiz & débloquer des avantages
-                <Sparkles className="ml-2 h-5 w-5" />
+                <Sparkles className="ml-2 h-4 w-4 shrink-0 md:h-5 md:w-5" />
               </Button>
             </Link>
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <Link to="/reserver" className="block">
+            <div className="mx-auto grid w-full max-w-md grid-cols-2 gap-3">
+              <Link to="/reserver" className="block min-w-0">
                 <Button
-                  className="cta-anim cta-glow h-14 w-full rounded-2xl text-base font-semibold text-white"
+                  className="cta-anim cta-glow h-13 w-full rounded-2xl px-4 text-sm font-semibold text-white md:h-14 md:text-base"
                   style={{
                     backgroundImage:
                       "linear-gradient(90deg, hsl(35 60% 45%), hsl(28 55% 40%), hsl(20 65% 52%), hsl(35 60% 45%))",
                   }}
                 >
                   Réserver
-                  <Calendar className="ml-2 h-5 w-5" />
+                  <Calendar className="ml-2 h-4 w-4 shrink-0 md:h-5 md:w-5" />
                 </Button>
               </Link>
 
               <Link
                 to="/carte"
-                className="glow-card glow-card-shadow flex min-h-14 items-center justify-center rounded-2xl px-5 text-center"
+                className="glow-card glow-card-shadow flex min-h-13 items-center justify-center rounded-2xl px-4 text-center md:min-h-14"
               >
-                <span className="font-display text-lg font-semibold glow-title">Voir la carte</span>
+                <span className="font-display text-base font-semibold glow-title md:text-lg">Voir la carte</span>
               </Link>
             </div>
           </div>
