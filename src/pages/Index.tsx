@@ -381,6 +381,18 @@ const Index = () => {
             </p>
           </div>
 
+          <div className="mb-4 rounded-3xl border-2 border-primary/35 bg-gradient-to-r from-primary/15 via-[hsl(43_85%_65%/0.22)] to-primary/10 px-4 py-4 text-center shadow-[0_16px_45px_rgba(218,165,32,0.20)]">
+            <p className="text-[11px] font-black uppercase tracking-[0.26em] text-primary">
+              Important
+            </p>
+            <p className="mt-1 font-display text-xl font-black leading-tight text-espresso">
+              Toutes nos formules sont disponibles midi & soir
+            </p>
+            <p className="mt-1 text-xs font-semibold text-muted-foreground">
+              Pendant nos services, profitez des formules sur place selon disponibilité.
+            </p>
+          </div>
+
           <div className="grid gap-3">
             {FORMULES.map((formule) => (
               <div
