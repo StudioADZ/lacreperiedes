@@ -180,28 +180,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: getAuthRedirectUrl(),
-        queryParams: {
-          prompt: "select_account",
-        },
-      },
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: getAuthRedirectUrl(),
+      extraParams: { prompt: "select_account" },
     });
-    if (error) throw error;
-    return data;
+    if (result.error) throw result.error;
+    return result;
   }, []);
 
   const signInWithApple = useCallback(async () => {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "apple",
-      options: {
-        redirectTo: getAuthRedirectUrl(),
-      },
+    const result = await lovable.auth.signInWithOAuth("apple", {
+      redirect_uri: getAuthRedirectUrl(),
     });
-    if (error) throw error;
-    return data;
+    if (result.error) throw result.error;
+    return result;
   }, []);
 
   const signOut = useCallback(async () => {
