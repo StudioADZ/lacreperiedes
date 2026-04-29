@@ -10,7 +10,6 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/guards/ProtectedRoute";
 import Index from "./pages/Index";
 
-// Lazy-load des routes secondaires → home plus rapide, bundle initial allégé
 const Quiz = lazy(() => import("./pages/Quiz"));
 const Carte = lazy(() => import("./pages/Carte"));
 const Reserver = lazy(() => import("./pages/Reserver"));
@@ -33,9 +32,7 @@ const queryClient = new QueryClient({
       retry: 1,
       retryDelay: 1000,
     },
-    mutations: {
-      retry: 0,
-    },
+    mutations: { retry: 0 },
   },
 });
 
@@ -46,13 +43,23 @@ const RouteFallback = () => (
   </div>
 );
 
+const shouldShowSplash = () => {
+  try {
+    return sessionStorage.getItem("splashShown") !== "true";
+  } catch {
+    return true;
+  }
+};
+
 const App = () => {
-  const [showSplash, setShowSplash] = useState(
-    () => sessionStorage.getItem("splashShown") !== "true",
-  );
+  const [showSplash, setShowSplash] = useState(shouldShowSplash);
 
   const handleSplashComplete = () => {
-    sessionStorage.setItem("splashShown", "true");
+    try {
+      sessionStorage.setItem("splashShown", "true");
+    } catch {
+      // Non-critical: the splash may show again on the next visit.
+    }
     setShowSplash(false);
   };
 
@@ -64,55 +71,55 @@ const App = () => {
           <Sonner />
 
           <BrowserRouter>
-          <Suspense fallback={<RouteFallback />}>
-            <Routes>
-              <Route element={<Layout />}>
-                {/* Public */}
-                <Route path="/" element={<Index />} />
-                <Route path="/carte" element={<Carte />} />
-                <Route path="/quiz" element={<Quiz />} />
-                <Route path="/avis" element={<Avis />} />
-                <Route path="/social" element={<Social />} />
-                <Route path="/about" element={<About />} />
-                <Route path="/legal" element={<Legal />} />
+            <Suspense fallback={<RouteFallback />}>
+              <Routes>
+                <Route element={<Layout />}>
+                  {/* Public */}
+                  <Route path="/" element={<Index />} />
+                  <Route path="/carte" element={<Carte />} />
+                  <Route path="/quiz" element={<Quiz />} />
+                  <Route path="/avis" element={<Avis />} />
+                  <Route path="/social" element={<Social />} />
+                  <Route path="/about" element={<About />} />
+                  <Route path="/legal" element={<Legal />} />
 
-                {/* Parcours métier */}
-                <Route path="/reserver" element={<Reserver />} />
-                <Route path="/verify/:code" element={<Verify />} />
+                  {/* Parcours métier */}
+                  <Route path="/reserver" element={<Reserver />} />
+                  <Route path="/verify/:code" element={<Verify />} />
 
-                {/* Espace client (auth requis) */}
-                <Route
-                  path="/client"
-                  element={
-                    <ProtectedRoute requireAuth>
-                      <Client />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/mon-compte"
-                  element={
-                    <ProtectedRoute requireAuth>
-                      <Client />
-                    </ProtectedRoute>
-                  }
-                />
+                  {/* Espace client */}
+                  <Route
+                    path="/client"
+                    element={
+                      <ProtectedRoute requireAuth>
+                        <Client />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/mon-compte"
+                    element={
+                      <ProtectedRoute requireAuth>
+                        <Client />
+                      </ProtectedRoute>
+                    }
+                  />
 
-                {/* Admin (rôle admin requis via user_roles + has_role RPC) */}
-                <Route
-                  path="/admin"
-                  element={
-                    <ProtectedRoute requireAdmin>
-                      <Admin />
-                    </ProtectedRoute>
-                  }
-                />
-              </Route>
+                  {/* Administration */}
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute requireAdmin>
+                        <Admin />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Route>
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
 
           {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
         </TooltipProvider>
