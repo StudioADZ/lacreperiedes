@@ -2,12 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Bot,
   Calendar,
   FileText,
   Gift,
-  HelpCircle,
-  Lock,
   MapPin,
   MessageCircle,
   Phone,
@@ -20,6 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GOOGLE_REVIEW_LINK } from "@/components/common/GoogleReviewCTA";
+import logo from "@/assets/logo.png";
 
 const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 const MAPS_LINK =
@@ -82,6 +80,29 @@ const normalizeText = (value: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+
+const AssistantAvatar = ({ compact = false }: { compact?: boolean }) => (
+  <span
+    className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-caramel/25 bg-ivory shadow-warm ${
+      compact ? "h-10 w-10" : "h-14 w-14"
+    }`}
+  >
+    <img
+      src={logo}
+      alt=""
+      width={compact ? 40 : 56}
+      height={compact ? 40 : 56}
+      decoding="async"
+      className="h-full w-full object-cover"
+    />
+    <span
+      className={`absolute rounded-full border-2 border-ivory bg-emerald-400 ${
+        compact ? "bottom-0 right-0 h-2.5 w-2.5" : "bottom-0.5 right-0.5 h-3 w-3"
+      }`}
+      aria-hidden="true"
+    />
+  </span>
+);
 
 const AssistantChat = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -377,10 +398,14 @@ const AssistantChat = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-[0_4px_20px_rgba(37,211,102,0.4)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 active:scale-95"
-            aria-label="Ouvrir l’assistant"
+            className="group fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] right-4 z-50 flex h-16 w-16 items-center justify-center rounded-[1.35rem] border border-caramel/25 bg-ivory/95 text-caramel shadow-[0_10px_30px_rgba(76,48,25,0.22)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-butter/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
+            aria-label="Ouvrir l’assistant de la crêperie"
           >
-            <Bot className="h-7 w-7" />
+            <AssistantAvatar />
+            <span className="absolute -left-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-ivory bg-caramel text-white shadow-md">
+              <MessageCircle className="h-3.5 w-3.5" />
+            </span>
+            <span className="sr-only">Ouvrir l’assistant</span>
           </motion.button>
         )}
       </AnimatePresence>
@@ -400,9 +425,7 @@ const AssistantChat = () => {
           >
             <div className="flex items-center justify-between rounded-t-3xl border-b border-caramel/10 bg-gradient-to-r from-caramel/10 to-butter/20 px-4 py-3">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#25D366]">
-                  <Bot className="h-5 w-5 text-white" />
-                </div>
+                <AssistantAvatar compact />
                 <div>
                   <h3 className="font-display font-bold text-espresso">Assistant Crêperie</h3>
                   <p className="text-xs text-muted-foreground">Quiz, récompenses, carte, compte et contact</p>
@@ -484,7 +507,7 @@ const AssistantChat = () => {
               <button
                 type="button"
                 onClick={() => handleQuickAction("whatsapp")}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#25D366]/10 px-4 py-2.5 text-sm font-medium text-[#25D366] transition-colors hover:bg-[#25D366]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
               >
                 <MessageCircle className="h-4 w-4" />
                 Continuer sur WhatsApp
