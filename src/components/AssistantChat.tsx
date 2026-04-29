@@ -5,12 +5,15 @@ import {
   Bot,
   Calendar,
   FileText,
+  Gift,
   HelpCircle,
+  Lock,
   MapPin,
   MessageCircle,
   Phone,
   Send,
   Star,
+  Trophy,
   UtensilsCrossed,
   X,
   type LucideIcon,
@@ -24,10 +27,22 @@ const MAPS_LINK =
 const WHATSAPP_LINK = "https://wa.me/message/QVZO5N4ZDR64M1";
 const PHONE_LINK = "tel:+33259660176";
 
+type AssistantAction =
+  | { type: "route"; to: string }
+  | { type: "external"; href: string }
+  | { type: "phone"; href: string };
+
+interface MessageButton {
+  label: string;
+  icon?: LucideIcon;
+  action: AssistantAction;
+}
+
 interface Message {
   id: string;
   type: "user" | "bot";
   text: string;
+  buttons?: MessageButton[];
 }
 
 type QuickActionKey =
@@ -38,7 +53,8 @@ type QuickActionKey =
   | "legal"
   | "carte"
   | "appeler"
-  | "whatsapp";
+  | "whatsapp"
+  | "client";
 
 type QuickAction = {
   key: QuickActionKey;
@@ -47,11 +63,12 @@ type QuickAction = {
 };
 
 const quickActions: QuickAction[] = [
-  { key: "quiz", label: "Quiz", icon: HelpCircle },
+  { key: "quiz", label: "Quiz", icon: Trophy },
   { key: "reserver", label: "Réserver", icon: Calendar },
-  { key: "avis", label: "Avis", icon: Star },
-  { key: "trouver", label: "Nous trouver", icon: MapPin },
   { key: "carte", label: "Carte", icon: UtensilsCrossed },
+  { key: "client", label: "Compte", icon: Gift },
+  { key: "trouver", label: "Nous trouver", icon: MapPin },
+  { key: "avis", label: "Avis", icon: Star },
   { key: "appeler", label: "Appeler", icon: Phone },
   { key: "legal", label: "Infos légales", icon: FileText },
 ];
@@ -82,13 +99,29 @@ const AssistantChat = () => {
     return `${Date.now()}-${messageCounterRef.current}`;
   };
 
-  const addBotMessage = (text: string) => {
+  const runAssistantAction = (action: AssistantAction) => {
+    if (action.type === "route") {
+      setIsOpen(false);
+      navigate(action.to);
+      return;
+    }
+
+    if (action.type === "phone") {
+      window.location.href = action.href;
+      return;
+    }
+
+    openExternal(action.href);
+  };
+
+  const addBotMessage = (text: string, buttons?: MessageButton[]) => {
     setMessages((prev) => [
       ...prev,
       {
         id: createMessageId(),
         type: "bot",
         text,
+        buttons,
       },
     ]);
   };
@@ -100,7 +133,12 @@ const AssistantChat = () => {
       {
         id: createMessageId(),
         type: "bot",
-        text: "Bonjour ! Je suis l’assistant de La Crêperie des Saveurs. Je peux vous aider à réserver, trouver l’adresse, voir la carte, jouer au quiz ou nous contacter.",
+        text:
+          "Bonjour ! Je suis l’assistant de La Crêperie des Saveurs. Je peux vous expliquer le quiz, les récompenses, la carte, l’espace client, les horaires, la réservation et comment nous contacter — sans vous balader partout pour rien.",
+        buttons: [
+          { label: "Comment marche le quiz ?", icon: Trophy, action: { type: "route", to: "/quiz" } },
+          { label: "Réserver", icon: Calendar, action: { type: "external", href: BOOKING_LINK } },
+        ],
       },
     ]);
   }, [isOpen, messages.length]);
@@ -124,41 +162,61 @@ const AssistantChat = () => {
   const handleQuickAction = (action: QuickActionKey) => {
     switch (action) {
       case "quiz":
-        addBotMessage("Je vous emmène au quiz. Bonne chance !");
-        window.setTimeout(() => {
-          setIsOpen(false);
-          navigate("/quiz");
-        }, 450);
+        addBotMessage(
+          "Le quiz hebdomadaire se joue en 10 questions. Vous avez 30 secondes par question. Selon votre score, vous pouvez gagner :\n\n• 100% : formule complète\n• 90 à 99% : galette\n• 80 à 89% : crêpe\n\nÀ la fin, si vous gagnez, l’application affiche un code/QR à présenter au restaurant. Une participation gagnante maximum par semaine et par personne.",
+          [{ label: "Ouvrir le quiz", icon: Trophy, action: { type: "route", to: "/quiz" } }],
+        );
         break;
       case "reserver":
-        addBotMessage("Je vous ouvre notre calendrier de réservation.");
-        window.setTimeout(() => openExternal(BOOKING_LINK), 650);
+        addBotMessage(
+          "Pour réserver, utilisez le calendrier en ligne. Vous pouvez aussi nous appeler si vous préférez confirmer directement avec l’équipe.",
+          [
+            { label: "Ouvrir la réservation", icon: Calendar, action: { type: "external", href: BOOKING_LINK } },
+            { label: "Appeler", icon: Phone, action: { type: "phone", href: PHONE_LINK } },
+          ],
+        );
         break;
       case "avis":
-        addBotMessage("Merci ! Votre avis aide beaucoup notre crêperie locale.");
-        window.setTimeout(() => openExternal(GOOGLE_REVIEW_LINK), 650);
+        addBotMessage(
+          "Vous pouvez consulter les avis ou laisser le vôtre sur Google. Pour une petite crêperie locale, chaque avis compte vraiment.",
+          [{ label: "Laisser un avis", icon: Star, action: { type: "external", href: GOOGLE_REVIEW_LINK } }],
+        );
         break;
       case "trouver":
-        addBotMessage("Nous sommes au 17 Place Carnot, Galerie des Halles, 72600 Mamers. Je vous ouvre Google Maps.");
-        window.setTimeout(() => openExternal(MAPS_LINK), 650);
+        addBotMessage(
+          "Nous sommes à La Crêperie des Saveurs, 17 Place Carnot, Galerie des Halles, 72600 Mamers. Le bouton ci-dessous ouvre la fiche Google Maps de l’établissement.",
+          [{ label: "Nous trouver", icon: MapPin, action: { type: "external", href: MAPS_LINK } }],
+        );
         break;
       case "legal":
-        addBotMessage("Je vous ouvre la page des mentions légales et informations utiles.");
-        window.setTimeout(() => navigate("/legal"), 450);
+        addBotMessage(
+          "Les mentions légales, conditions et informations de confidentialité sont disponibles dans la page dédiée de l’application.",
+          [{ label: "Ouvrir les infos légales", icon: FileText, action: { type: "route", to: "/legal" } }],
+        );
         break;
       case "carte":
-        addBotMessage("Je vous emmène vers la carte de la crêperie.");
-        window.setTimeout(() => navigate("/carte"), 450);
+        addBotMessage(
+          "La carte contient les créations publiques de la crêperie. Une partie “menu secret” existe aussi : elle se débloque avec un code obtenu via le quiz ou un accès réservé.",
+          [{ label: "Voir la carte", icon: UtensilsCrossed, action: { type: "route", to: "/carte" } }],
+        );
         break;
       case "appeler":
-        addBotMessage("Vous pouvez nous appeler au 02 59 66 01 76. Je lance l’appel.");
-        window.setTimeout(() => {
-          window.location.href = PHONE_LINK;
-        }, 450);
+        addBotMessage(
+          "Vous pouvez nous appeler au 02 59 66 01 76.",
+          [{ label: "Appeler maintenant", icon: Phone, action: { type: "phone", href: PHONE_LINK } }],
+        );
         break;
       case "whatsapp":
-        addBotMessage("Je vous ouvre WhatsApp pour continuer la conversation.");
-        window.setTimeout(() => openExternal(WHATSAPP_LINK), 650);
+        addBotMessage(
+          "Vous pouvez continuer sur WhatsApp pour poser une question directement à l’équipe.",
+          [{ label: "Ouvrir WhatsApp", icon: MessageCircle, action: { type: "external", href: WHATSAPP_LINK } }],
+        );
+        break;
+      case "client":
+        addBotMessage(
+          "L’espace client permet de se connecter ou créer un compte avec email, Google ou Apple. Une fois connecté, vous retrouvez vos avantages : points fidélité, carte secrète, historique des gains et réservations. La fidélité fonctionne sur le principe : 9 visites = 1 menu offert.",
+          [{ label: "Ouvrir mon compte", icon: Gift, action: { type: "route", to: "/client" } }],
+        );
         break;
       default:
         break;
@@ -185,80 +243,119 @@ const AssistantChat = () => {
       lowerText.includes("qr code") ||
       lowerText.includes("staff")
     ) {
-      window.setTimeout(() => addBotMessage("Cette zone est réservée à l’équipe."), 450);
+      window.setTimeout(() => addBotMessage("Cette zone est réservée à l’équipe."), 350);
       return;
     }
 
-    if (lowerText.includes("horaire") || lowerText.includes("heure") || lowerText.includes("ouvert")) {
+    if (lowerText.includes("comment") && (lowerText.includes("quiz") || lowerText.includes("jouer"))) {
+      window.setTimeout(() => handleQuickAction("quiz"), 350);
+      return;
+    }
+
+    if (
+      lowerText.includes("recompense") ||
+      lowerText.includes("cadeau") ||
+      lowerText.includes("gain") ||
+      lowerText.includes("gagne") ||
+      lowerText.includes("lot") ||
+      lowerText.includes("qr") ||
+      lowerText.includes("code")
+    ) {
       window.setTimeout(
         () =>
           addBotMessage(
-            "Nos horaires : samedi et dimanche, de 12h00 à 14h00 puis de 19h00 à 21h00. Fermé du lundi au vendredi.",
+            "Si vous gagnez au quiz, l’application affiche un code/QR à présenter au restaurant. Le lot dépend du score : 100% pour une formule complète, 90 à 99% pour une galette, 80 à 89% pour une crêpe. Le code est valable pour la semaine en cours.",
+            [{ label: "Ouvrir le quiz", icon: Trophy, action: { type: "route", to: "/quiz" } }],
           ),
-        450,
+        350,
       );
       return;
     }
 
-    if (lowerText.includes("adresse") || lowerText.includes("trouver") || lowerText.includes("lieu") || lowerText.includes("localisation")) {
-      handleQuickAction("trouver");
+    if (lowerText.includes("horaire") || lowerText.includes("heure") || lowerText.includes("ouvert") || lowerText.includes("ferme")) {
+      window.setTimeout(
+        () =>
+          addBotMessage(
+            "Nos horaires indiqués dans l’application : samedi et dimanche, de 12h00 à 14h00 puis de 19h00 à 21h00. Pour une confirmation rapide, vous pouvez appeler la crêperie.",
+            [{ label: "Appeler", icon: Phone, action: { type: "phone", href: PHONE_LINK } }],
+          ),
+        350,
+      );
+      return;
+    }
+
+    if (lowerText.includes("adresse") || lowerText.includes("trouver") || lowerText.includes("lieu") || lowerText.includes("localisation") || lowerText.includes("venir")) {
+      window.setTimeout(() => handleQuickAction("trouver"), 350);
       return;
     }
 
     if (lowerText.includes("reserv") || lowerText.includes("table") || lowerText.includes("booking")) {
-      handleQuickAction("reserver");
+      window.setTimeout(() => handleQuickAction("reserver"), 350);
       return;
     }
 
-    if (lowerText.includes("quiz") || lowerText.includes("jeu") || lowerText.includes("gagner") || lowerText.includes("jouer")) {
-      handleQuickAction("quiz");
+    if (lowerText.includes("quiz") || lowerText.includes("jeu") || lowerText.includes("jouer")) {
+      window.setTimeout(() => handleQuickAction("quiz"), 350);
       return;
     }
 
     if (lowerText.includes("avis") || lowerText.includes("note") || lowerText.includes("etoile") || lowerText.includes("review")) {
-      handleQuickAction("avis");
+      window.setTimeout(() => handleQuickAction("avis"), 350);
       return;
     }
 
     if (lowerText.includes("carte") || lowerText.includes("menu") || lowerText.includes("manger") || lowerText.includes("crepe") || lowerText.includes("galette")) {
-      handleQuickAction("carte");
+      window.setTimeout(() => handleQuickAction("carte"), 350);
+      return;
+    }
+
+    if (lowerText.includes("compte") || lowerText.includes("connexion") || lowerText.includes("inscription") || lowerText.includes("fidelite") || lowerText.includes("point")) {
+      window.setTimeout(() => handleQuickAction("client"), 350);
       return;
     }
 
     if (lowerText.includes("telephone") || lowerText.includes("appel") || lowerText.includes("contact") || lowerText.includes("numero")) {
-      handleQuickAction("appeler");
+      window.setTimeout(() => handleQuickAction("appeler"), 350);
       return;
     }
 
     if (lowerText.includes("whatsapp") || lowerText.includes("message")) {
-      handleQuickAction("whatsapp");
+      window.setTimeout(() => handleQuickAction("whatsapp"), 350);
       return;
     }
 
     if (lowerText.includes("reglement") || lowerText.includes("rgpd") || lowerText.includes("confidentialite") || lowerText.includes("condition") || lowerText.includes("legal")) {
-      handleQuickAction("legal");
+      window.setTimeout(() => handleQuickAction("legal"), 350);
       return;
     }
 
     if (lowerText.includes("prix") || lowerText.includes("tarif") || lowerText.includes("combien") || lowerText.includes("cout")) {
       window.setTimeout(
-        () => addBotMessage("Vous pouvez consulter nos prix sur la carte. Et pour les surprises, le quiz peut débloquer des offres."),
-        450,
+        () =>
+          addBotMessage(
+            "Les prix sont à consulter dans la carte. Le menu secret, lui, se débloque grâce au quiz ou avec un code réservé.",
+            [{ label: "Voir la carte", icon: UtensilsCrossed, action: { type: "route", to: "/carte" } }],
+          ),
+        350,
       );
       return;
     }
 
     if (lowerText.includes("merci") || lowerText.includes("super") || lowerText.includes("genial")) {
-      window.setTimeout(() => addBotMessage("Avec plaisir ! À bientôt à La Crêperie des Saveurs."), 450);
+      window.setTimeout(() => addBotMessage("Avec plaisir ! À bientôt à La Crêperie des Saveurs."), 350);
       return;
     }
 
     window.setTimeout(
       () =>
         addBotMessage(
-          "Je peux vous aider à réserver, trouver l’adresse, consulter la carte, jouer au quiz, laisser un avis ou nous contacter sur WhatsApp.",
+          "Je peux vous expliquer le quiz, les récompenses, la carte, le compte client, les horaires, la réservation, l’adresse, les avis ou le contact WhatsApp. Exemple : “comment recevoir ma récompense ?” ou “comment marche le menu secret ?”.",
+          [
+            { label: "Quiz", icon: Trophy, action: { type: "route", to: "/quiz" } },
+            { label: "Compte client", icon: Gift, action: { type: "route", to: "/client" } },
+          ],
         ),
-      450,
+      350,
     );
   };
 
@@ -308,7 +405,7 @@ const AssistantChat = () => {
                 </div>
                 <div>
                   <h3 className="font-display font-bold text-espresso">Assistant Crêperie</h3>
-                  <p className="text-xs text-muted-foreground">Réservation, adresse, carte et contact</p>
+                  <p className="text-xs text-muted-foreground">Quiz, récompenses, carte, compte et contact</p>
                 </div>
               </div>
               <Button
@@ -358,6 +455,25 @@ const AssistantChat = () => {
                     }`}
                   >
                     <p className="whitespace-pre-line text-sm">{message.text}</p>
+
+                    {message.buttons && message.buttons.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {message.buttons.map((button) => {
+                          const Icon = button.icon;
+                          return (
+                            <button
+                              key={button.label}
+                              type="button"
+                              onClick={() => runAssistantAction(button.action)}
+                              className="inline-flex items-center gap-1.5 rounded-full border border-caramel/20 bg-caramel/10 px-3 py-1.5 text-xs font-semibold text-caramel transition-colors hover:bg-caramel/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                            >
+                              {Icon && <Icon className="h-3.5 w-3.5" />}
+                              {button.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
