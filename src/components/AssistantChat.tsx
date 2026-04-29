@@ -84,22 +84,16 @@ const normalizeText = (value: string) =>
 const AssistantAvatar = ({ compact = false }: { compact?: boolean }) => (
   <span
     className={`relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-caramel/25 bg-ivory shadow-warm ${
-      compact ? "h-10 w-10" : "h-14 w-14"
+      compact ? "h-10 w-10" : "h-12 w-12"
     }`}
   >
     <img
       src={logo}
       alt=""
-      width={compact ? 40 : 56}
-      height={compact ? 40 : 56}
+      width={compact ? 40 : 48}
+      height={compact ? 40 : 48}
       decoding="async"
       className="h-full w-full object-cover"
-    />
-    <span
-      className={`absolute rounded-full border-2 border-ivory bg-emerald-400 ${
-        compact ? "bottom-0 right-0 h-2.5 w-2.5" : "bottom-0.5 right-0.5 h-3 w-3"
-      }`}
-      aria-hidden="true"
     />
   </span>
 );
@@ -398,11 +392,11 @@ const AssistantChat = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsOpen(true)}
-            className="group fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] right-4 z-50 flex h-16 w-16 items-center justify-center rounded-[1.35rem] border border-caramel/25 bg-ivory/95 text-caramel shadow-[0_10px_30px_rgba(76,48,25,0.22)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:bg-butter/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
+            className="group fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] right-4 z-50 flex h-14 w-14 items-center justify-center rounded-2xl border border-caramel/30 bg-gradient-to-br from-ivory via-butter/80 to-white text-caramel shadow-[0_12px_32px_rgba(76,48,25,0.24)] backdrop-blur-md transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_42px_rgba(76,48,25,0.30)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95"
             aria-label="Ouvrir l’assistant de la crêperie"
           >
             <AssistantAvatar />
-            <span className="absolute -left-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-ivory bg-caramel text-white shadow-md">
+            <span className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-ivory bg-caramel text-white shadow-md">
               <MessageCircle className="h-3.5 w-3.5" />
             </span>
             <span className="sr-only">Ouvrir l’assistant</span>
