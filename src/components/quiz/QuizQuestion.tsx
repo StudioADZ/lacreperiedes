@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface QuizQuestionProps {
   question: {
@@ -31,26 +31,26 @@ const QuizQuestion = ({
   correctAnswer,
 }: QuizQuestionProps) => {
   const options = [
-    { key: 'A', value: question.option_a },
-    { key: 'B', value: question.option_b },
-    { key: 'C', value: question.option_c },
-    { key: 'D', value: question.option_d },
+    { key: "A", value: question.option_a },
+    { key: "B", value: question.option_b },
+    { key: "C", value: question.option_c },
+    { key: "D", value: question.option_d },
   ];
 
   const getOptionStyle = (key: string) => {
     if (!showResult) {
       return selectedAnswer === key
-        ? 'border-primary bg-primary/10'
-        : 'border-border hover:border-primary/50 hover:bg-secondary/50';
+        ? "border-primary bg-primary/10"
+        : "border-border hover:border-primary/50 hover:bg-secondary/50";
     }
 
     if (key === correctAnswer) {
-      return 'border-herb bg-herb/10 text-herb';
+      return "border-herb bg-herb/10 text-herb";
     }
     if (selectedAnswer === key && !isCorrect) {
-      return 'border-destructive bg-destructive/10 text-destructive';
+      return "border-destructive bg-destructive/10 text-destructive";
     }
-    return 'border-border opacity-50';
+    return "border-border opacity-50";
   };
 
   return (
@@ -58,7 +58,7 @@ const QuizQuestion = ({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="space-y-6"
+      className="space-y-4 pb-28 [touch-action:pan-y] sm:space-y-6 sm:pb-8"
     >
       {/* Progress */}
       <div className="space-y-2">
@@ -81,35 +81,35 @@ const QuizQuestion = ({
       </div>
 
       {/* Question */}
-      <div className="card-warm text-center py-8">
-        <h2 className="font-display text-xl font-semibold leading-relaxed">
+      <div className="card-warm px-4 py-5 text-center sm:py-8">
+        <h2 className="font-display text-lg font-semibold leading-relaxed sm:text-xl">
           {question.question}
         </h2>
       </div>
 
       {/* Options */}
-      <div className="space-y-3">
+      <div className="space-y-2.5 [touch-action:pan-y] sm:space-y-3">
         {options.map((option) => (
           <motion.button
             key={option.key}
-            whileHover={!showResult && !isLoading ? { scale: 1.02 } : {}}
-            whileTap={!showResult && !isLoading ? { scale: 0.98 } : {}}
+            whileHover={!showResult && !isLoading ? { scale: 1.01 } : {}}
+            whileTap={!showResult && !isLoading ? { scale: 0.99 } : {}}
             disabled={isLoading || showResult}
             onClick={() => onAnswer(option.key)}
-            className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left flex items-center gap-4 ${getOptionStyle(option.key)}`}
+            className={`flex w-full items-center gap-3 rounded-xl border-2 p-3 text-left transition-all duration-200 [touch-action:manipulation] sm:gap-4 sm:p-4 ${getOptionStyle(option.key)}`}
           >
-            <span className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg flex-shrink-0 ${
+            <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-base font-bold sm:h-10 sm:w-10 sm:text-lg ${
               showResult && option.key === correctAnswer
-                ? 'bg-herb text-white'
+                ? "bg-herb text-white"
                 : showResult && selectedAnswer === option.key && !isCorrect
-                  ? 'bg-destructive text-white'
+                  ? "bg-destructive text-white"
                   : selectedAnswer === option.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground'
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground"
             }`}>
               {option.key}
             </span>
-            <span className="flex-1 font-medium">{option.value}</span>
+            <span className="flex-1 text-sm font-medium leading-relaxed sm:text-base">{option.value}</span>
             {showResult && option.key === correctAnswer && (
               <span className="text-xl">✓</span>
             )}
@@ -126,13 +126,13 @@ const QuizQuestion = ({
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className={`text-center py-3 rounded-xl font-medium ${
+            className={`rounded-xl py-3 text-center font-medium ${
               isCorrect
-                ? 'bg-herb/10 text-herb'
-                : 'bg-destructive/10 text-destructive'
+                ? "bg-herb/10 text-herb"
+                : "bg-destructive/10 text-destructive"
             }`}
           >
-            {isCorrect ? '🎉 Bonne réponse !' : '❌ Mauvaise réponse'}
+            {isCorrect ? "🎉 Bonne réponse !" : "❌ Mauvaise réponse"}
           </motion.div>
         )}
       </AnimatePresence>
