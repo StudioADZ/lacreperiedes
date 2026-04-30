@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Flame,
@@ -161,13 +161,21 @@ const getVisibleSections = (activeFilter: SectionId) => {
 
 const CartePublicDisplay = () => {
   const [activeFilter, setActiveFilter] = useState<SectionId>("all");
+  const menuTopRef = useRef<HTMLDivElement | null>(null);
 
   const visibleSections = useMemo(() => getVisibleSections(activeFilter), [activeFilter]);
 
+  const handleFilterChange = (filter: SectionId) => {
+    setActiveFilter(filter);
+    window.requestAnimationFrame(() => {
+      menuTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+    <motion.div ref={menuTopRef} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="scroll-mt-24 space-y-6">
       <MenuHero />
-      <MenuFilters activeFilter={activeFilter} onChange={setActiveFilter} />
+      <MenuFilters activeFilter={activeFilter} onChange={handleFilterChange} />
 
       <div className="space-y-5">
         {visibleSections.map((section, sectionIndex) => (
