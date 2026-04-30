@@ -22,24 +22,33 @@ type MenuSection = {
 const menuSections: MenuSection[] = [
   {
     id: "formules",
-    title: "Formules",
-    subtitle: "Les compositions maison, simples à choisir et pensées pour se faire plaisir sans se perdre dans la carte.",
+    title: "Nos formules",
+    subtitle: "Les mêmes formules que sur la page d’accueil, présentées ici sans prix pour garder une carte lisible et cohérente.",
     icon: Sparkles,
     highlight: "signature",
     items: [
       {
-        name: "La formule P’tite Faim",
-        description: "Base pancake, œufs brouillés et poitrine grillée, gelée de cidre ou miel, boisson chaude café.",
-        badge: "petit appétit",
+        name: "Formule Goûter",
+        description: "Crêpe gourmande de la semaine + 1 boisson sans alcool.",
+        badge: "dès juillet",
       },
       {
-        name: "Formule classique",
-        description: "Votre choix dans les galettes et crêpes classiques + 1 verre de cidre 20cl ou boisson.",
+        name: "Formule Petite Faim",
+        description: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool.",
       },
       {
-        name: "Formule gourmande",
-        description: "Votre choix dans les galettes et crêpes gourmandes + 1 verre de cidre 20cl ou boisson + café ou thé.",
-        badge: "gourmande",
+        name: "Formule Salade",
+        description: "1 salade + 1 crêpe classique + 1 boisson.",
+        badge: "dès juin",
+      },
+      {
+        name: "Formule Classique",
+        description: "1 boisson + 1 galette classique + 1 crêpe classique.",
+      },
+      {
+        name: "Formule Gourmande",
+        description: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
+        badge: "menu secret",
       },
     ],
   },
@@ -178,7 +187,7 @@ const CartePublicDisplay = () => {
         <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
         <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes & salades</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Une présentation premium et volontairement sans prix : l’idée est de donner envie, puis de laisser l’accueil faire le reste.
+          Une présentation premium et volontairement sans prix : on garde les prix sur la page d’accueil pour les formules, et ici la carte reste claire.
         </p>
       </div>
 
