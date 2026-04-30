@@ -16,7 +16,8 @@ type MenuItem = {
   name: string;
   description?: string;
   badge?: string;
-  /** Prix utilisé uniquement pour classer la carte. Il n'est jamais affiché côté client. */
+  price?: string;
+  /** Prix utilisé pour classer la carte. Seules les formules affichent leur prix. */
   sortPrice: number;
 };
 
@@ -44,29 +45,34 @@ const SECTIONS: MenuSection[] = [
         name: "Formule Goûter",
         description: "Crêpe gourmande de la semaine + 1 boisson sans alcool.",
         badge: "dès juillet",
-        sortPrice: 5,
+        price: "6,90 €",
+        sortPrice: 6.9,
       },
       {
         name: "Formule Petite Faim",
-        description: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool.",
-        sortPrice: 7,
+        description: "1 galette complète ou fromagère + 1 boisson sans alcool.",
+        price: "7,90 €",
+        sortPrice: 7.9,
       },
       {
         name: "Formule Salade",
         description: "1 salade + 1 crêpe classique + 1 boisson.",
         badge: "dès juin",
-        sortPrice: 12,
+        price: "12,90 €",
+        sortPrice: 12.9,
       },
       {
         name: "Formule Classique",
         description: "1 boisson + 1 galette classique + 1 crêpe classique.",
-        sortPrice: 13.9,
+        price: "14,90 €",
+        sortPrice: 14.9,
       },
       {
         name: "Formule Gourmande",
         description: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
         badge: "menu secret",
-        sortPrice: 16.9,
+        price: "17,90 €",
+        sortPrice: 17.9,
       },
     ]),
   },
@@ -258,7 +264,7 @@ const MenuHero = () => (
     <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
     <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes & salades</h2>
     <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-      Découvrez les recettes maison, classées naturellement des plus accessibles aux plus généreuses.
+      Découvrez les recettes maison, avec les formules classées par prix croissant.
     </p>
   </div>
 );
@@ -367,15 +373,26 @@ const MenuItemCard = ({ item, itemIndex }: { item: MenuItem; itemIndex: number }
     transition={{ delay: Math.min(itemIndex * 0.035, 0.22) }}
     className="rounded-2xl border border-border/55 bg-background/65 p-4 shadow-sm transition hover:border-caramel/35 hover:bg-background/85"
   >
-    <div className="flex flex-wrap items-center gap-2">
-      <h4 className="font-display text-base font-bold leading-tight text-espresso">{item.name}</h4>
-      {item.badge && (
-        <span className="rounded-full bg-caramel/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-caramel">
-          {item.badge}
-        </span>
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h4 className="font-display text-base font-bold leading-tight text-espresso">{item.name}</h4>
+          {item.badge && (
+            <span className="rounded-full bg-caramel/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-caramel">
+              {item.badge}
+            </span>
+          )}
+        </div>
+        {item.description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
+      </div>
+
+      {item.price && (
+        <div className="shrink-0 rounded-2xl border border-caramel/20 bg-white/80 px-3 py-2 text-right shadow-sm">
+          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Prix</p>
+          <p className="whitespace-nowrap font-display text-lg font-black text-caramel">{item.price}</p>
+        </div>
       )}
     </div>
-    {item.description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
   </motion.article>
 );
 
