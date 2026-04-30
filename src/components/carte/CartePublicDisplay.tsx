@@ -1,8 +1,16 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Flame, Salad, Snowflake, Sparkles, UtensilsCrossed } from "lucide-react";
+import {
+  Flame,
+  Salad,
+  Snowflake,
+  Sparkles,
+  UtensilsCrossed,
+  type LucideIcon,
+} from "lucide-react";
 
-type MenuHighlight = "signature" | "classic" | "fresh" | "sweet";
+type SectionId = "all" | "formules" | "galettes" | "crepes" | "salades";
+type MenuTone = "signature" | "classic" | "sweet" | "fresh";
 
 type MenuItem = {
   name: string;
@@ -11,21 +19,21 @@ type MenuItem = {
 };
 
 type MenuSection = {
-  id: string;
+  id: Exclude<SectionId, "all">;
   title: string;
-  subtitle?: string;
-  icon: typeof UtensilsCrossed;
-  highlight: MenuHighlight;
+  subtitle: string;
+  icon: LucideIcon;
+  tone: MenuTone;
   items: MenuItem[];
 };
 
-const menuSections: MenuSection[] = [
+const SECTIONS: MenuSection[] = [
   {
     id: "formules",
     title: "Nos formules",
-    subtitle: "Les mêmes formules que sur la page d’accueil, présentées ici sans prix pour garder une carte lisible et cohérente.",
+    subtitle: "Les formules affichées ici reprennent exactement l’esprit de la page d’accueil, sans prix sur cette page.",
     icon: Sparkles,
-    highlight: "signature",
+    tone: "signature",
     items: [
       {
         name: "Formule Goûter",
@@ -53,26 +61,30 @@ const menuSections: MenuSection[] = [
     ],
   },
   {
-    id: "galettes-classiques",
+    id: "galettes",
     title: "Galettes classiques",
-    subtitle: "Les incontournables de la maison : lisibles, généreuses, efficaces. La base solide, comme une bonne billig bien chaude.",
+    subtitle: "Les incontournables maison : simples, généreuses, lisibles et prêtes à rassurer les grands appétits.",
     icon: Flame,
-    highlight: "classic",
+    tone: "classic",
     items: [
       { name: "Complète", description: "Œuf, emmental, jambon." },
       { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates." },
       { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates." },
       { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates." },
       { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené." },
-      { name: "Tête du chef", description: "Œuf, emmental, jambon, confit d’oignon, bœuf haché, sauce moutarde.", badge: "chef" },
+      {
+        name: "Tête du chef",
+        description: "Œuf, emmental, jambon, confit d’oignon, bœuf haché, sauce moutarde.",
+        badge: "chef",
+      },
     ],
   },
   {
-    id: "crepes-classiques",
+    id: "crepes",
     title: "Crêpes classiques",
-    subtitle: "Les douceurs simples, celles qui n’ont pas besoin de faire les intéressantes pour être bonnes.",
+    subtitle: "Les douceurs simples et efficaces : le genre de crêpe qui ne négocie pas avec la gourmandise.",
     icon: Snowflake,
-    highlight: "sweet",
+    tone: "sweet",
     items: [
       { name: "Beurre" },
       { name: "Sucre" },
@@ -97,125 +109,152 @@ const menuSections: MenuSection[] = [
   {
     id: "salades",
     title: "Salades",
-    subtitle: "Des assiettes fraîches et complètes pour ceux qui veulent léger… mais pas triste.",
+    subtitle: "Des assiettes fraîches et complètes pour manger plus léger sans tomber dans la feuille triste.",
     icon: Salad,
-    highlight: "fresh",
+    tone: "fresh",
     items: [
       { name: "Salade Fermière", description: "Dés de fromage, dés de jambon, miel, noix." },
       { name: "Salade Gasconne", description: "Gésiers de canard, dés de fromage, pommes de terre, tomates." },
       { name: "Salade Nordique", description: "Saumon fumé, pommes de terre, tomates cerises, dés de fromage." },
       { name: "Salade Campagnarde", description: "Lardons, œuf, pommes de terre, tomates cerises, dés de fromage, oignons rouges." },
-      { name: "Salade du chef", description: "Gésiers de canard, tomates cerises, dés de fromage, œuf, avocat.", badge: "chef" },
+      {
+        name: "Salade du chef",
+        description: "Gésiers de canard, tomates cerises, dés de fromage, œuf, avocat.",
+        badge: "chef",
+      },
     ],
   },
 ];
 
-const highlightStyles: Record<MenuHighlight, string> = {
-  signature: "border-caramel/30 bg-gradient-to-br from-caramel/12 via-white/80 to-butter/35",
-  classic: "border-terracotta/20 bg-gradient-to-br from-white/85 to-terracotta/8",
-  fresh: "border-herb/20 bg-gradient-to-br from-white/85 to-herb/8",
-  sweet: "border-caramel/20 bg-gradient-to-br from-white/85 to-butter/30",
-};
-
-const tabLabels = [
-  { id: "top", label: "Tout" },
+const FILTERS: { id: SectionId; label: string }[] = [
+  { id: "all", label: "Tout" },
   { id: "formules", label: "Formules" },
-  { id: "galettes-classiques", label: "Galettes" },
-  { id: "crepes-classiques", label: "Crêpes" },
+  { id: "galettes", label: "Galettes" },
+  { id: "crepes", label: "Crêpes" },
   { id: "salades", label: "Salades" },
 ];
 
+const TONE_STYLES: Record<MenuTone, string> = {
+  signature: "border-caramel/30 bg-gradient-to-br from-caramel/12 via-white/80 to-butter/35",
+  classic: "border-terracotta/20 bg-gradient-to-br from-white/85 to-terracotta/8",
+  sweet: "border-caramel/20 bg-gradient-to-br from-white/85 to-butter/30",
+  fresh: "border-herb/20 bg-gradient-to-br from-white/85 to-herb/8",
+};
+
+const getVisibleSections = (activeFilter: SectionId) => {
+  if (activeFilter === "all") return SECTIONS;
+  return SECTIONS.filter((section) => section.id === activeFilter);
+};
+
 const CartePublicDisplay = () => {
-  const [activeFilter, setActiveFilter] = useState("top");
+  const [activeFilter, setActiveFilter] = useState<SectionId>("all");
 
-  const visibleSections = useMemo(() => {
-    if (activeFilter === "top") return menuSections;
-    return menuSections.filter((section) => section.id === activeFilter);
-  }, [activeFilter]);
-
-  const renderMenuItem = (item: MenuItem, index: number) => (
-    <motion.article
-      key={`${item.name}-${index}`}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.035, 0.22) }}
-      className="rounded-2xl border border-border/55 bg-background/65 p-4 shadow-sm transition hover:border-caramel/35 hover:bg-background/85"
-    >
-      <div className="flex flex-wrap items-center gap-2">
-        <h4 className="font-display text-base font-bold leading-tight text-espresso">{item.name}</h4>
-        {item.badge && (
-          <span className="rounded-full bg-caramel/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-caramel">
-            {item.badge}
-          </span>
-        )}
-      </div>
-      {item.description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
-    </motion.article>
-  );
-
-  const renderSection = (section: MenuSection, sectionIndex: number) => {
-    const Icon = section.icon;
-    return (
-      <motion.section
-        key={section.id}
-        id={section.id}
-        initial={{ opacity: 0, y: 14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: sectionIndex * 0.05 }}
-        className={`scroll-mt-28 rounded-[2rem] border p-4 shadow-warm ${highlightStyles[section.highlight]}`}
-      >
-        <div className="mb-4 flex items-start gap-3">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-caramel shadow-sm">
-            <Icon className="h-6 w-6" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <h3 className="font-display text-xl font-black leading-tight text-espresso">{section.title}</h3>
-            {section.subtitle && <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{section.subtitle}</p>}
-          </div>
-        </div>
-        <div className="space-y-3">{section.items.map(renderMenuItem)}</div>
-      </motion.section>
-    );
-  };
+  const visibleSections = useMemo(() => getVisibleSections(activeFilter), [activeFilter]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-butter/55 via-background to-caramel/10 p-5 text-center shadow-warm">
-        <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-caramel shadow-sm">
-          <UtensilsCrossed className="h-7 w-7" />
-        </div>
-        <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
-        <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes & salades</h2>
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Une présentation premium et volontairement sans prix : on garde les prix sur la page d’accueil pour les formules, et ici la carte reste claire.
-        </p>
-      </div>
+      <MenuHero />
+      <MenuFilters activeFilter={activeFilter} onChange={setActiveFilter} />
 
-      <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/92 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-        <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
-          {tabLabels.map((tab) => {
-            const active = activeFilter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveFilter(tab.id)}
-                className={`min-w-fit rounded-full border px-4 py-2 text-sm font-bold transition ${
-                  active
-                    ? "border-caramel bg-caramel text-white shadow-sm"
-                    : "border-border/70 bg-white/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
-                }`}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="space-y-5">
+        {visibleSections.map((section, sectionIndex) => (
+          <MenuSectionCard key={section.id} section={section} sectionIndex={sectionIndex} />
+        ))}
       </div>
-
-      <div className="space-y-5">{visibleSections.map(renderSection)}</div>
     </motion.div>
   );
 };
+
+const MenuHero = () => (
+  <div className="rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-butter/55 via-background to-caramel/10 p-5 text-center shadow-warm">
+    <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-caramel shadow-sm">
+      <UtensilsCrossed className="h-7 w-7" />
+    </div>
+    <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
+    <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes & salades</h2>
+    <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
+      Une carte volontairement sans prix ici : elle présente les recettes à découvrir, pendant que les formules restent cohérentes avec l’accueil.
+    </p>
+  </div>
+);
+
+const MenuFilters = ({
+  activeFilter,
+  onChange,
+}: {
+  activeFilter: SectionId;
+  onChange: (filter: SectionId) => void;
+}) => (
+  <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/92 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+      {FILTERS.map((filter) => {
+        const active = activeFilter === filter.id;
+        return (
+          <button
+            key={filter.id}
+            type="button"
+            onClick={() => onChange(filter.id)}
+            className={`rounded-full border px-3 py-2 text-sm font-bold transition ${
+              active
+                ? "border-caramel bg-caramel text-white shadow-sm"
+                : "border-border/70 bg-white/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
+            }`}
+          >
+            {filter.label}
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
+
+const MenuSectionCard = ({ section, sectionIndex }: { section: MenuSection; sectionIndex: number }) => {
+  const Icon = section.icon;
+
+  return (
+    <motion.section
+      id={section.id}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: sectionIndex * 0.05 }}
+      className={`scroll-mt-36 rounded-[2rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
+    >
+      <div className="mb-4 flex items-start gap-3">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-caramel shadow-sm">
+          <Icon className="h-6 w-6" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <h3 className="font-display text-xl font-black leading-tight text-espresso">{section.title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{section.subtitle}</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {section.items.map((item, itemIndex) => (
+          <MenuItemCard key={`${section.id}-${item.name}`} item={item} itemIndex={itemIndex} />
+        ))}
+      </div>
+    </motion.section>
+  );
+};
+
+const MenuItemCard = ({ item, itemIndex }: { item: MenuItem; itemIndex: number }) => (
+  <motion.article
+    initial={{ opacity: 0, y: 8 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: Math.min(itemIndex * 0.035, 0.22) }}
+    className="rounded-2xl border border-border/55 bg-background/65 p-4 shadow-sm transition hover:border-caramel/35 hover:bg-background/85"
+  >
+    <div className="flex flex-wrap items-center gap-2">
+      <h4 className="font-display text-base font-bold leading-tight text-espresso">{item.name}</h4>
+      {item.badge && (
+        <span className="rounded-full bg-caramel/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-caramel">
+          {item.badge}
+        </span>
+      )}
+    </div>
+    {item.description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
+  </motion.article>
+);
 
 export default CartePublicDisplay;
