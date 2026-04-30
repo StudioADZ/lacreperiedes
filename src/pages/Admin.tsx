@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type ReactNode } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
@@ -57,11 +57,11 @@ interface VerifyResult {
 const ADMIN_TABS: { id: AdminTab; group: AdminGroup; label: string; description: string; icon: LucideIcon }[] = [
   { id: "scan", group: "Caisse", label: "Scanner", description: "Valider les gains", icon: Scan },
   { id: "messages", group: "Caisse", label: "Messages", description: "Demandes clients", icon: Mail },
-  { id: "clients", group: "Données", label: "Clients", description: "Base alphabétique", icon: Database },
+  { id: "clients", group: "Données", label: "Clients", description: "Fiches clients", icon: Database },
   { id: "quiz", group: "Données", label: "Quiz", description: "Stats et lots", icon: BarChart3 },
   { id: "carte", group: "Contenu", label: "Carte", description: "Menu et photos", icon: UtensilsCrossed },
   { id: "actus", group: "Contenu", label: "Actus", description: "Infos en direct", icon: Newspaper },
-  { id: "payment", group: "Réglages", label: "Paiement", description: "QR paiement", icon: CreditCard },
+  { id: "payment", group: "Réglages", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
   { id: "splash", group: "Réglages", label: "Splash", description: "Écran d’accueil", icon: Sparkles },
 ];
 
@@ -297,10 +297,10 @@ const ScanPanel = ({ result, manualCode, isLoading, claimLoading, scannerActive,
 const ScannerCard = ({ scannerActive, onScannerToggle, onVerify }: { scannerActive: boolean; onScannerToggle: () => void; onVerify: (code: string) => void }) => (
   <div className="rounded-3xl border border-border/55 bg-background/70 p-4">
     <div className="mb-4 flex items-center justify-between gap-3">
-      <Label className="flex items-center gap-2 font-bold"><Camera className="h-4 w-4 text-caramel" />Scanner QR</Label>
+      <Label className="flex items-center gap-2 font-bold"><Camera className="h-4 w-4 text-caramel" />Scanner un gain</Label>
       <Button variant={scannerActive ? "destructive" : "outline"} size="sm" onClick={onScannerToggle} className="rounded-2xl">{scannerActive ? <><CameraOff className="mr-1 h-4 w-4" />Arrêter</> : <><Camera className="mr-1 h-4 w-4" />Activer</>}</Button>
     </div>
-    {scannerActive ? <QRScanner onScan={onVerify} isActive={scannerActive} /> : <div className="flex aspect-square flex-col items-center justify-center rounded-3xl border border-dashed border-caramel/25 bg-butter/20 text-muted-foreground"><Camera className="mb-3 h-12 w-12 opacity-35" /><p className="text-sm font-semibold">Activez la caméra pour scanner un QR code</p></div>}
+    {scannerActive ? <QRScanner onScan={onVerify} isActive={scannerActive} /> : <div className="flex aspect-square flex-col items-center justify-center rounded-3xl border border-dashed border-caramel/25 bg-butter/20 text-muted-foreground"><Camera className="mb-3 h-12 w-12 opacity-35" /><p className="text-sm font-semibold">Activez la caméra pour valider un coupon</p></div>}
   </div>
 );
 
