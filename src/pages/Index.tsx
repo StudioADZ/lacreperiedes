@@ -37,7 +37,7 @@ const FORMULES = [
   {
     name: "Formule Petite Faim",
     price: "7,90 €",
-    desc: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool",
+    desc: "Galette complète ou fromagère + 1 boisson sans alcool",
     badge: null,
     note: "Simple, rapide, efficace",
   },
