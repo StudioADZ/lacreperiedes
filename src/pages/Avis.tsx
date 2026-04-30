@@ -1,5 +1,4 @@
 import {
-  ArrowRight,
   CheckCircle2,
   ExternalLink,
   HeartHandshake,
@@ -144,13 +143,6 @@ const Avis = () => {
             );
           })}
         </section>
-
-        <a href={GOOGLE_REVIEW_LINK} target="_blank" rel="noopener noreferrer" className="block">
-          <Button variant="outline" className="h-13 w-full rounded-2xl font-bold">
-            Ouvrir la fiche Google
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        </a>
 
         <SocialFooter />
       </div>
