@@ -7,6 +7,7 @@ import { useWeeklyStock } from "@/hooks/useWeeklyStock";
 import { useUserMemory } from "@/hooks/useUserMemory";
 import { useRGPDConsent } from "@/hooks/useRGPDConsent";
 import { useQuizSession } from "@/hooks/useQuizSession";
+import { supabase } from "@/integrations/supabase/client";
 import RGPDConsentBanner from "@/components/RGPDConsentBanner";
 import WeeklyCountdown from "@/components/quiz/WeeklyCountdown";
 import RealtimeWins from "@/components/quiz/RealtimeWins";
@@ -35,6 +36,7 @@ type QuizSubmitPayload = {
   prizeWon?: string | null;
   prizeCode?: string | null;
   firstName?: string;
+  attachedToProfile?: boolean;
 };
 
 const PRIZE_TIERS = [
@@ -62,7 +64,7 @@ const PRIZE_TIERS = [
 ];
 
 function getSubmitErrorMessage(result: QuizSubmitPayload) {
-  if (result.error === "phone_already_won" || result.error === "email_already_won") {
+  if (result.error === "phone_already_won" || result.error === "email_already_won" || result.error === "already_won_this_week") {
     return "Tu as déjà gagné cette semaine 😊 Reviens la semaine prochaine !";
   }
 
@@ -205,9 +207,14 @@ const Quiz = () => {
     setPhase("processing");
 
     try {
+      const { data: authData } = await supabase.auth.getSession();
+      const requestHeaders = new Headers({ "Content-Type": "application/json" });
+      const accessToken = authData.session?.access_token;
+      if (accessToken) requestHeaders.set("Authorization", ["Bearer", accessToken].join(" "));
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-submit`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: requestHeaders,
         body: JSON.stringify({
           sessionId: session.id,
           deviceFingerprint,
