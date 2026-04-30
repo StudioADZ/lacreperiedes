@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Calendar,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   ExternalLink,
   MapPin,
@@ -29,12 +31,20 @@ const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const MIDDAY_SLOTS = ["12h00", "12h30", "13h00", "13h30"];
 const EVENING_SLOTS = ["19h00", "19h30", "20h00", "20h30", "21h00", "21h30"];
 const WEEK_DAYS = ["L", "M", "M", "J", "V", "S", "D"];
+const BOOKING_WINDOW_DAYS = 365;
 
 type ServiceSlot = {
   id: string;
   time: string;
   available: boolean;
   period: "Midi" | "Soir";
+};
+
+type CalendarMonth = {
+  key: string;
+  label: string;
+  start: Date;
+  days: Date[];
 };
 
 const WhatsAppIcon = () => (
@@ -44,24 +54,13 @@ const WhatsAppIcon = () => (
 );
 
 const formatDateLong = (date: Date) =>
-  new Intl.DateTimeFormat("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(date);
-
-const formatMonthLabel = (date: Date) =>
-  new Intl.DateTimeFormat("fr-FR", {
-    month: "long",
-    year: "numeric",
-  }).format(date);
+  new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).format(date);
 
 const formatDateShort = (date: Date) =>
-  new Intl.DateTimeFormat("fr-FR", {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-  }).format(date);
+  new Intl.DateTimeFormat("fr-FR", { weekday: "short", day: "numeric", month: "short" }).format(date);
+
+const formatMonthLabel = (date: Date) =>
+  new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(date);
 
 const toISODate = (date: Date) => {
   const year = date.getFullYear();
@@ -92,55 +91,69 @@ const getAvailableSlots = (date: Date): ServiceSlot[] => {
   const hasEvening = day === 5 || day === 6;
 
   return [
-    ...MIDDAY_SLOTS.map((time) => ({
-      id: `midi-${time}`,
-      time,
-      available: isSlotStillBookable(date, time),
-      period: "Midi" as const,
-    })),
-    ...EVENING_SLOTS.map((time) => ({
-      id: `soir-${time}`,
-      time,
-      available: hasEvening && isSlotStillBookable(date, time),
-      period: "Soir" as const,
-    })),
+    ...MIDDAY_SLOTS.map((time) => ({ id: `midi-${time}`, time, available: isSlotStillBookable(date, time), period: "Midi" as const })),
+    ...EVENING_SLOTS.map((time) => ({ id: `soir-${time}`, time, available: hasEvening && isSlotStillBookable(date, time), period: "Soir" as const })),
   ];
 };
 
 const dateHasAvailableSlot = (date: Date) => getAvailableSlots(date).some((slot) => slot.available);
 
-const buildUpcomingDays = () => {
-  const startDate = new Date();
-  startDate.setHours(0, 0, 0, 0);
+const buildBookableDays = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
-  if (!dateHasAvailableSlot(startDate)) {
-    startDate.setDate(startDate.getDate() + 1);
-  }
+  const startDate = new Date(today);
+  if (!dateHasAvailableSlot(startDate)) startDate.setDate(startDate.getDate() + 1);
 
-  return Array.from({ length: 31 }, (_, index) => {
+  return Array.from({ length: BOOKING_WINDOW_DAYS }, (_, index) => {
     const date = new Date(startDate);
     date.setDate(startDate.getDate() + index);
     return date;
   });
 };
 
+const buildCalendarMonths = (days: Date[]): CalendarMonth[] => {
+  const monthMap = new Map<string, CalendarMonth>();
+
+  days.forEach((date) => {
+    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const key = `${date.getFullYear()}-${date.getMonth()}`;
+
+    if (!monthMap.has(key)) {
+      monthMap.set(key, {
+        key,
+        label: formatMonthLabel(start),
+        start,
+        days: [],
+      });
+    }
+
+    monthMap.get(key)!.days.push(date);
+  });
+
+  return Array.from(monthMap.values());
+};
+
 const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
 
-const buildAgendaCells = (days: Date[]) => {
-  const blanks = Array.from({ length: getMondayFirstDayIndex(days[0]) }, () => null);
-  return [...blanks, ...days];
+const buildMonthCells = (month: CalendarMonth) => {
+  const blanks = Array.from({ length: getMondayFirstDayIndex(month.start) }, () => null);
+  return [...blanks, ...month.days];
 };
 
 const buildWhatsAppText = (date: Date, slot: ServiceSlot, people: number) =>
   `Bonjour ! Je souhaite réserver une table à La Crêperie des Saveurs pour ${people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`}, le ${formatDateLong(date)} à ${slot.time}.`;
 
 const Reserver = () => {
-  const days = useMemo(() => buildUpcomingDays(), []);
-  const agendaCells = useMemo(() => buildAgendaCells(days), [days]);
+  const days = useMemo(() => buildBookableDays(), []);
+  const months = useMemo(() => buildCalendarMonths(days), [days]);
   const [selectedDate, setSelectedDate] = useState(days[0]);
+  const [visibleMonthIndex, setVisibleMonthIndex] = useState(0);
   const [selectedSlotId, setSelectedSlotId] = useState("midi-12h00");
   const [people, setPeople] = useState(2);
 
+  const visibleMonth = months[visibleMonthIndex] ?? months[0];
+  const monthCells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth]);
   const slots = useMemo(() => getAvailableSlots(selectedDate), [selectedDate]);
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && slot.available) ?? slots.find((slot) => slot.available) ?? slots[0];
   const selectedDateISO = toISODate(selectedDate);
@@ -151,9 +164,12 @@ const Reserver = () => {
     setSelectedDate(date);
     const nextSlots = getAvailableSlots(date);
     const stillAvailable = nextSlots.some((slot) => slot.id === selectedSlotId && slot.available);
-    if (!stillAvailable) {
-      setSelectedSlotId(nextSlots.find((slot) => slot.available)?.id ?? "midi-12h00");
-    }
+    if (!stillAvailable) setSelectedSlotId(nextSlots.find((slot) => slot.available)?.id ?? "midi-12h00");
+  };
+
+  const handleMonthChange = (nextIndex: number) => {
+    const safeIndex = Math.min(Math.max(nextIndex, 0), months.length - 1);
+    setVisibleMonthIndex(safeIndex);
   };
 
   return (
@@ -162,11 +178,50 @@ const Reserver = () => {
         <Hero selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} />
 
         <section className="card-warm space-y-5">
-          <SectionTitle eyebrow="1. Choisir le jour" title="Agenda des 31 prochains jours" />
+          <SectionTitle eyebrow="1. Choisir le jour" title="Agenda annuel" />
           <div className="rounded-[1.75rem] border border-caramel/15 bg-white/70 p-3 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
-              <p className="font-display text-lg font-black capitalize text-espresso">{formatMonthLabel(selectedDate)}</p>
-              <span className="rounded-full bg-caramel/10 px-3 py-1 text-xs font-bold text-caramel">31 jours</span>
+              <button
+                type="button"
+                onClick={() => handleMonthChange(visibleMonthIndex - 1)}
+                disabled={visibleMonthIndex === 0}
+                className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35"
+                aria-label="Mois précédent"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+
+              <div className="min-w-0 flex-1 text-center">
+                <p className="font-display text-lg font-black capitalize text-espresso">{visibleMonth.label}</p>
+                <p className="text-[11px] text-muted-foreground">Réservation possible sur 12 mois glissants</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleMonthChange(visibleMonthIndex + 1)}
+                disabled={visibleMonthIndex === months.length - 1}
+                className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35"
+                aria-label="Mois suivant"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mb-3 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
+              {months.map((month, index) => (
+                <button
+                  key={month.key}
+                  type="button"
+                  onClick={() => handleMonthChange(index)}
+                  className={`min-w-fit rounded-full border px-3 py-1.5 text-xs font-bold capitalize transition ${
+                    visibleMonthIndex === index
+                      ? "border-caramel bg-caramel text-white shadow-sm"
+                      : "border-border/70 bg-background/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
+                  }`}
+                >
+                  {month.label.split(" ")[0]}
+                </button>
+              ))}
             </div>
 
             <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground">
@@ -176,7 +231,7 @@ const Reserver = () => {
             </div>
 
             <div className="grid grid-cols-7 gap-1.5">
-              {agendaCells.map((date, index) => {
+              {monthCells.map((date, index) => {
                 if (!date) return <div key={`blank-${index}`} className="h-12" aria-hidden="true" />;
 
                 const active = toISODate(date) === selectedDateISO;
@@ -203,7 +258,7 @@ const Reserver = () => {
             </div>
 
             <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              L’agenda avance automatiquement : lorsqu’une journée n’a plus de créneau disponible, elle sort de la liste.
+              Le point doré indique un service du soir disponible. Les mois avancent sur une année complète.
             </p>
           </div>
         </section>
@@ -232,19 +287,10 @@ const Reserver = () => {
               </button>
             ))}
           </div>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            Pour 9 personnes ou plus, privilégiez l’appel afin de confirmer la disponibilité.
-          </p>
+          <p className="text-xs leading-relaxed text-muted-foreground">Pour 9 personnes ou plus, privilégiez l’appel afin de confirmer la disponibilité.</p>
         </section>
 
-        <ReservationSummary
-          selectedDate={selectedDate}
-          selectedSlot={selectedSlot}
-          people={people}
-          shouldPreferPhone={shouldPreferPhone}
-          whatsappUrl={whatsappUrl}
-        />
-
+        <ReservationSummary selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} shouldPreferPhone={shouldPreferPhone} whatsappUrl={whatsappUrl} />
         <OpeningHours />
         <LocationBlock />
         <GoogleReviewCTA variant="card" className="mb-8" />
@@ -261,7 +307,7 @@ const Hero = ({ selectedDate, selectedSlot, people }: { selectedDate: Date; sele
     </div>
     <h1 className="font-display text-3xl font-black leading-tight">Réservez votre table</h1>
     <p className="mt-2 text-sm leading-relaxed text-white/82">
-      Sélectionnez une date, un horaire et le nombre de couverts. Google gère la réservation finale, l’appel reste recommandé pour les grandes tables.
+      Sélectionnez une date sur l’année, un horaire et le nombre de couverts. Google gère la réservation finale, l’appel reste recommandé pour les grandes tables.
     </p>
 
     <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
@@ -287,17 +333,7 @@ const SectionTitle = ({ eyebrow, title, capitalize = false }: { eyebrow: string;
   </div>
 );
 
-const TimeSlotGroup = ({
-  title,
-  slots,
-  selectedSlot,
-  onSelect,
-}: {
-  title: string;
-  slots: ServiceSlot[];
-  selectedSlot: ServiceSlot;
-  onSelect: (slotId: string) => void;
-}) => (
+const TimeSlotGroup = ({ title, slots, selectedSlot, onSelect }: { title: string; slots: ServiceSlot[]; selectedSlot: ServiceSlot; onSelect: (slotId: string) => void }) => (
   <div>
     <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -320,19 +356,7 @@ const TimeSlotGroup = ({
   </div>
 );
 
-const ReservationSummary = ({
-  selectedDate,
-  selectedSlot,
-  people,
-  shouldPreferPhone,
-  whatsappUrl,
-}: {
-  selectedDate: Date;
-  selectedSlot: ServiceSlot;
-  people: number;
-  shouldPreferPhone: boolean;
-  whatsappUrl: string;
-}) => (
+const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPhone, whatsappUrl }: { selectedDate: Date; selectedSlot: ServiceSlot; people: number; shouldPreferPhone: boolean; whatsappUrl: string }) => (
   <section className="rounded-[2rem] border border-caramel/25 bg-gradient-to-br from-white via-butter/35 to-caramel/10 p-5 shadow-warm">
     <div className="flex items-start gap-3">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-caramel text-white">
@@ -340,9 +364,7 @@ const ReservationSummary = ({
       </div>
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Votre sélection</p>
-        <h2 className="mt-1 font-display text-xl font-black capitalize text-espresso">
-          {formatDateLong(selectedDate)} · {selectedSlot.time}
-        </h2>
+        <h2 className="mt-1 font-display text-xl font-black capitalize text-espresso">{formatDateLong(selectedDate)} · {selectedSlot.time}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}
         </p>
