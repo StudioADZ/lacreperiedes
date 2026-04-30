@@ -1,22 +1,25 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Camera,
-  CheckCircle,
-  XCircle,
-  Loader2,
-  Gift,
-  Calendar,
-  Lock,
-  Scan,
-  BarChart3,
   AlertCircle,
+  BarChart3,
+  Camera,
   CameraOff,
+  CheckCircle,
+  CreditCard,
+  Gift,
+  LayoutDashboard,
+  Loader2,
+  Lock,
+  LogOut,
+  Mail,
   Newspaper,
+  Scan,
+  ShieldCheck,
   Sparkles,
   UtensilsCrossed,
-  Mail,
-  CreditCard,
+  XCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +35,8 @@ import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
+type AdminTab = "scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash";
+
 interface VerifyResult {
   valid: boolean;
   id?: string;
@@ -46,6 +51,16 @@ interface VerifyResult {
   message?: string;
 }
 
+const ADMIN_TABS: { id: AdminTab; label: string; description: string; icon: LucideIcon; tone: string }[] = [
+  { id: "scan", label: "Scanner", description: "Valider un gain client", icon: Scan, tone: "bg-caramel/10 text-caramel" },
+  { id: "quiz", label: "Quiz", description: "Stats & lots", icon: BarChart3, tone: "bg-herb/10 text-herb" },
+  { id: "carte", label: "Carte", description: "Menu & photos", icon: UtensilsCrossed, tone: "bg-terracotta/10 text-terracotta" },
+  { id: "messages", label: "Messages", description: "Demandes clients", icon: Mail, tone: "bg-blue-500/10 text-blue-600" },
+  { id: "payment", label: "Paiement", description: "QR paiement", icon: CreditCard, tone: "bg-violet-500/10 text-violet-600" },
+  { id: "actus", label: "Actus", description: "Infos en direct", icon: Newspaper, tone: "bg-orange-500/10 text-orange-600" },
+  { id: "splash", label: "Splash", description: "Écran d’accueil", icon: Sparkles, tone: "bg-yellow-500/10 text-yellow-600" },
+];
+
 const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
@@ -55,13 +70,11 @@ const Admin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<"scan" | "quiz" | "carte" | "messages" | "payment" | "actus" | "splash">("scan");
+  const [activeTab, setActiveTab] = useState<AdminTab>("scan");
   const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
   const storedPassword = useRef("");
-
-  // No session persistence — admin must re-login each browser session (security)
 
   const handleLogin = async () => {
     setAuthError("");
@@ -91,18 +104,25 @@ const Admin = () => {
     }
   };
 
+  const handleLogout = () => {
+    storedPassword.current = "";
+    setPassword("");
+    setIsAuthenticated(false);
+    setManualCode("");
+    setResult(null);
+    setScannerActive(false);
+    setLastScannedCode(null);
+  };
+
   const handleVerify = useCallback(async (code: string) => {
     if (!code.trim()) return;
 
-    // Prevent duplicate scans
     if (code.toUpperCase() === lastScannedCode) return;
     setLastScannedCode(code.toUpperCase());
 
     setIsLoading(true);
     setResult(null);
     setManualCode(code.toUpperCase());
-
-    // Stop scanner while showing result
     setScannerActive(false);
 
     try {
@@ -119,7 +139,6 @@ const Admin = () => {
       const data = await response.json();
       setResult(data);
 
-      // Celebration for valid unclaimed prize
       if (data.valid && !data.claimed) {
         confetti({
           particleCount: 80,
@@ -155,8 +174,6 @@ const Admin = () => {
 
       if (data.success) {
         setResult((prev) => (prev ? { ...prev, claimed: true, claimedAt: new Date().toISOString() } : null));
-
-        // Success animation
         confetti({
           particleCount: 50,
           spread: 45,
@@ -177,329 +194,367 @@ const Admin = () => {
     setLastScannedCode(null);
   };
 
-  // Login screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen pt-20 pb-24 px-4 flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="card-warm w-full max-w-sm"
-        >
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-primary" />
+      <div className="min-h-screen bg-gradient-to-b from-[hsl(35_45%_92%)] via-background to-[hsl(42_50%_96%)] px-4 pb-24 pt-20 flex items-center justify-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
+          <div className="relative overflow-hidden rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-espresso via-espresso/95 to-caramel/80 p-5 text-white shadow-elevated">
+            <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-white/10 blur-sm" />
+            <div className="relative text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-white/12 text-butter">
+                <Lock className="h-8 w-8" />
+              </div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/70">Accès personnel</p>
+              <h1 className="mt-1 font-display text-3xl font-black">Panel Admin</h1>
+              <p className="mt-2 text-sm leading-relaxed text-white/78">
+                Espace réservé à la gestion de la crêperie : gains, quiz, carte, messages, actus et réglages.
+              </p>
             </div>
-            <h1 className="font-display text-2xl font-bold">Admin</h1>
-            <p className="text-sm text-muted-foreground">Accès réservé au personnel</p>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-                placeholder="••••••••"
-                className={authError ? "border-destructive" : ""}
-              />
-              {authError && <p className="text-xs text-destructive">{authError}</p>}
+          <div className="mt-4 rounded-[2rem] border border-caramel/15 bg-white/75 p-5 shadow-warm backdrop-blur">
+            <div className="mb-4 flex items-start gap-3 rounded-2xl bg-caramel/10 p-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-caramel" />
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                Le mot de passe est vérifié par la fonction Supabase admin. Rien n’est stocké dans le navigateur après la session.
+              </p>
             </div>
 
-            <Button onClick={handleLogin} className="w-full btn-hero" disabled={isLoading || !password}>
-              {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Connexion"}
-            </Button>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="password">Mot de passe admin</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                  placeholder="••••••••"
+                  className={`h-12 rounded-2xl ${authError ? "border-destructive" : ""}`}
+                />
+                {authError && <p className="text-xs font-semibold text-destructive">{authError}</p>}
+              </div>
+
+              <Button onClick={handleLogin} className="h-12 w-full rounded-2xl bg-caramel font-black text-white hover:bg-caramel/90" disabled={isLoading || !password}>
+                {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Connexion admin"}
+              </Button>
+            </div>
           </div>
         </motion.div>
       </div>
     );
   }
 
+  const currentTab = ADMIN_TABS.find((tab) => tab.id === activeTab) ?? ADMIN_TABS[0];
+
   return (
-    <div className="min-h-screen pt-20 pb-24 px-4">
-      <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="font-display text-2xl font-bold">Panel Admin</h1>
-          <p className="text-sm text-muted-foreground">Gestion de la crêperie</p>
-        </div>
-
-        {/* Main Tabs - Simplified */}
-        <div className="grid grid-cols-4 gap-1.5 mb-4">
-          <Button
-            variant={activeTab === "scan" ? "default" : "outline"}
-            onClick={() => setActiveTab("scan")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <Scan className="w-4 h-4" />
-            <span className="text-[10px]">Scanner</span>
-          </Button>
-          <Button
-            variant={activeTab === "quiz" ? "default" : "outline"}
-            onClick={() => setActiveTab("quiz")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <BarChart3 className="w-4 h-4" />
-            <span className="text-[10px]">Quiz & Stats</span>
-          </Button>
-          <Button
-            variant={activeTab === "carte" ? "default" : "outline"}
-            onClick={() => setActiveTab("carte")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <UtensilsCrossed className="w-4 h-4" />
-            <span className="text-[10px]">La Carte</span>
-          </Button>
-          <Button
-            variant={activeTab === "messages" ? "default" : "outline"}
-            onClick={() => setActiveTab("messages")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <Mail className="w-4 h-4" />
-            <span className="text-[10px]">Messages</span>
-          </Button>
-        </div>
-        
-        {/* Secondary Tabs */}
-        <div className="grid grid-cols-3 gap-1.5 mb-6">
-          <Button
-            variant={activeTab === "payment" ? "default" : "outline"}
-            onClick={() => setActiveTab("payment")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <CreditCard className="w-4 h-4" />
-            <span className="text-[10px]">Paiement</span>
-          </Button>
-          <Button
-            variant={activeTab === "actus" ? "default" : "outline"}
-            onClick={() => setActiveTab("actus")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <Newspaper className="w-4 h-4" />
-            <span className="text-[10px]">Actus</span>
-          </Button>
-          <Button
-            variant={activeTab === "splash" ? "default" : "outline"}
-            onClick={() => setActiveTab("splash")}
-            size="sm"
-            className="flex flex-col items-center gap-1 h-auto py-2 px-1"
-          >
-            <Sparkles className="w-4 h-4" />
-            <span className="text-[10px]">Splash</span>
-          </Button>
-        </div>
-
-        {/* Tab Content */}
-        {activeTab === "quiz" && (
-          <QuizStatsPanel adminPassword={storedPassword.current} />
-        )}
-
-        {activeTab === "carte" && (
-          <CarteMenuPanel adminPassword={storedPassword.current} />
-        )}
-
-        {activeTab === "messages" && (
-          <MessagesPanel adminPassword={storedPassword.current} />
-        )}
-
-        {activeTab === "payment" && (
-          <PaymentQRPanel adminPassword={storedPassword.current} />
-        )}
-
-        {activeTab === "scan" && (
-          <div className="space-y-6">
-            {/* QR Scanner */}
-            {!result && (
-              <div className="card-warm">
-                <div className="flex items-center justify-between mb-4">
-                  <Label className="flex items-center gap-2">
-                    <Camera className="w-4 h-4" />
-                    Scanner QR
-                  </Label>
-                  <Button
-                    variant={scannerActive ? "destructive" : "outline"}
-                    size="sm"
-                    onClick={() => setScannerActive(!scannerActive)}
-                  >
-                    {scannerActive ? (
-                      <>
-                        <CameraOff className="w-4 h-4 mr-1" />
-                        Arrêter
-                      </>
-                    ) : (
-                      <>
-                        <Camera className="w-4 h-4 mr-1" />
-                        Activer
-                      </>
-                    )}
-                  </Button>
-                </div>
-                
-                {scannerActive ? (
-                  <QRScanner onScan={handleVerify} isActive={scannerActive} />
-                ) : (
-                  <div className="aspect-square rounded-xl bg-muted/50 flex flex-col items-center justify-center text-muted-foreground">
-                    <Camera className="w-12 h-12 mb-3 opacity-30" />
-                    <p className="text-sm">Appuyez sur Activer pour scanner</p>
-                  </div>
-                )}
+    <div className="min-h-screen bg-gradient-to-b from-[hsl(35_45%_92%)] via-background to-[hsl(42_50%_96%)] px-4 pb-24 pt-20">
+      <div className="mx-auto max-w-lg space-y-5">
+        <section className="relative overflow-hidden rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-espresso via-espresso/95 to-caramel/80 p-5 text-white shadow-elevated">
+          <div className="absolute -right-14 -top-14 h-40 w-40 rounded-full bg-white/10 blur-sm" />
+          <div className="relative flex items-start justify-between gap-4">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+                <LayoutDashboard className="h-3.5 w-3.5 text-butter" />
+                Panel Admin
               </div>
-            )}
-
-            {/* Manual Input */}
-            {!result && (
-              <div className="card-warm">
-                <Label htmlFor="code" className="mb-2 block flex items-center gap-2">
-                  <Scan className="w-4 h-4" />
-                  Ou saisir manuellement
-                </Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="code"
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value.toUpperCase())}
-                    onKeyDown={(e) => e.key === "Enter" && handleVerify(manualCode)}
-                    placeholder="XXXXXXXX"
-                    className="font-mono text-lg tracking-wider"
-                    maxLength={8}
-                  />
-                  <Button onClick={() => handleVerify(manualCode)} disabled={isLoading || !manualCode.trim()}>
-                    {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Vérifier"}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Result */}
-            <AnimatePresence mode="wait">
-              {result && (
-                <motion.div
-                  key={result.valid ? "valid" : "invalid"}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  className={`card-glow text-center py-8 ${
-                    result.valid && !result.claimed
-                      ? "border-2 border-herb shadow-[0_0_30px_-8px_hsl(140_35%_40%_/_0.3)]"
-                      : result.claimed
-                        ? "border-muted"
-                        : "border-destructive/30"
-                  }`}
-                >
-                  {/* Status Icon */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 200 }}
-                    className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 ${
-                      result.valid && !result.claimed
-                        ? "bg-herb/10"
-                        : result.claimed
-                          ? "bg-muted"
-                          : "bg-destructive/10"
-                    }`}
-                  >
-                    {result.valid && !result.claimed ? (
-                      <CheckCircle className="w-10 h-10 text-herb" />
-                    ) : result.claimed ? (
-                      <AlertCircle className="w-10 h-10 text-muted-foreground" />
-                    ) : (
-                      <XCircle className="w-10 h-10 text-destructive" />
-                    )}
-                  </motion.div>
-
-                  {result.valid ? (
-                    <>
-                      {/* Status Badge */}
-                      <div
-                        className={`inline-block px-4 py-2 rounded-full text-sm font-bold mb-4 ${
-                          result.claimed ? "bg-muted text-muted-foreground" : "bg-herb/10 text-herb"
-                        }`}
-                      >
-                        {result.claimed ? "❌ DÉJÀ UTILISÉ" : "✓ VALIDE"}
-                      </div>
-
-                      {/* Winner Info */}
-                      <h2 className="font-display text-2xl font-bold mb-2">{result.firstName}</h2>
-
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground mb-4">
-                        <Calendar className="w-4 h-4" />
-                        <span>Semaine {result.weekNumber}</span>
-                      </div>
-
-                      {/* Prize */}
-                      <div className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl bg-gradient-to-r from-caramel/10 to-caramel/5 border border-caramel/20 mb-6">
-                        <Gift className="w-6 h-6 text-caramel" />
-                        <span className="font-display text-xl font-bold text-primary">{result.prize}</span>
-                      </div>
-
-                      {/* Claim Button */}
-                      {!result.claimed && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                          <Button onClick={handleClaim} className="w-full btn-hero text-lg py-6" disabled={claimLoading}>
-                            {claimLoading ? (
-                              <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                              <>
-                                <CheckCircle className="w-5 h-5 mr-2" />
-                                Marquer comme utilisé
-                              </>
-                            )}
-                          </Button>
-                        </motion.div>
-                      )}
-
-                      {result.claimed && result.claimedAt && (
-                        <p className="text-sm text-muted-foreground">
-                          Utilisé le{" "}
-                          {new Date(result.claimedAt).toLocaleDateString("fr-FR", {
-                            weekday: "long",
-                            day: "numeric",
-                            month: "long",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <h2 className="font-display text-xl font-bold text-destructive mb-2">Code invalide</h2>
-                      <p className="text-muted-foreground">{result.message || "Ce code n'existe pas"}</p>
-                    </>
-                  )}
-
-                  <Button variant="outline" onClick={handleReset} className="mt-6">
-                    Nouveau scan
-                  </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+              <h1 className="font-display text-3xl font-black leading-tight">Gestion de la crêperie</h1>
+              <p className="mt-2 text-sm leading-relaxed text-white/78">Pilotez les gains, la carte, les messages et les réglages depuis un seul espace.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="rounded-2xl border border-white/20 bg-white/10 p-3 text-white/85 transition hover:bg-white/15"
+              aria-label="Déconnexion admin"
+            >
+              <LogOut className="h-5 w-5" />
+            </button>
           </div>
-        )}
+        </section>
 
-        {activeTab === "actus" && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <ActusLivePanel adminPassword={storedPassword.current} />
-          </motion.div>
-        )}
+        <section className="rounded-[2rem] border border-caramel/15 bg-white/75 p-3 shadow-warm backdrop-blur">
+          <div className="mb-3 flex items-center justify-between gap-3 px-1">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Module actif</p>
+              <h2 className="font-display text-xl font-black text-espresso">{currentTab.label}</h2>
+            </div>
+            <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${currentTab.tone}`}>
+              <currentTab.icon className="h-5 w-5" />
+            </div>
+          </div>
 
-        {activeTab === "splash" && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <SplashSettingsPanel adminPassword={storedPassword.current} />
-          </motion.div>
-        )}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {ADMIN_TABS.map((tab) => (
+              <AdminTabButton key={tab.id} tab={tab} active={activeTab === tab.id} onClick={() => setActiveTab(tab.id)} />
+            ))}
+          </div>
+        </section>
+
+        <AdminPanelShell title={currentTab.label} description={currentTab.description} icon={currentTab.icon} tone={currentTab.tone}>
+          {activeTab === "quiz" && <QuizStatsPanel adminPassword={storedPassword.current} />}
+          {activeTab === "carte" && <CarteMenuPanel adminPassword={storedPassword.current} />}
+          {activeTab === "messages" && <MessagesPanel adminPassword={storedPassword.current} />}
+          {activeTab === "payment" && <PaymentQRPanel adminPassword={storedPassword.current} />}
+          {activeTab === "scan" && (
+            <ScanPanel
+              result={result}
+              manualCode={manualCode}
+              isLoading={isLoading}
+              claimLoading={claimLoading}
+              scannerActive={scannerActive}
+              onManualCodeChange={setManualCode}
+              onScannerToggle={() => setScannerActive((value) => !value)}
+              onVerify={handleVerify}
+              onClaim={handleClaim}
+              onReset={handleReset}
+            />
+          )}
+          {activeTab === "actus" && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <ActusLivePanel adminPassword={storedPassword.current} />
+            </motion.div>
+          )}
+          {activeTab === "splash" && (
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+              <SplashSettingsPanel adminPassword={storedPassword.current} />
+            </motion.div>
+          )}
+        </AdminPanelShell>
       </div>
     </div>
+  );
+};
+
+const AdminTabButton = ({
+  tab,
+  active,
+  onClick,
+}: {
+  tab: { id: AdminTab; label: string; description: string; icon: LucideIcon; tone: string };
+  active: boolean;
+  onClick: () => void;
+}) => {
+  const Icon = tab.icon;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-2xl border p-3 text-left transition ${
+        active
+          ? "border-caramel bg-caramel text-white shadow-sm"
+          : "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"
+      }`}
+    >
+      <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-white/18 text-white" : tab.tone}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <p className="font-display text-sm font-black">{tab.label}</p>
+      <p className={`mt-0.5 text-[10px] leading-tight ${active ? "text-white/72" : "text-muted-foreground"}`}>{tab.description}</p>
+    </button>
+  );
+};
+
+const AdminPanelShell = ({
+  title,
+  description,
+  icon: Icon,
+  tone,
+  children,
+}: {
+  title: string;
+  description: string;
+  icon: LucideIcon;
+  tone: string;
+  children: ReactNode;
+}) => (
+  <section className="rounded-[2rem] border border-caramel/15 bg-white/75 p-4 shadow-warm backdrop-blur">
+    <div className="mb-4 flex items-start gap-3">
+      <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${tone}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <h2 className="font-display text-xl font-black text-espresso">{title}</h2>
+        <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+      </div>
+    </div>
+    {children}
+  </section>
+);
+
+const ScanPanel = ({
+  result,
+  manualCode,
+  isLoading,
+  claimLoading,
+  scannerActive,
+  onManualCodeChange,
+  onScannerToggle,
+  onVerify,
+  onClaim,
+  onReset,
+}: {
+  result: VerifyResult | null;
+  manualCode: string;
+  isLoading: boolean;
+  claimLoading: boolean;
+  scannerActive: boolean;
+  onManualCodeChange: (code: string) => void;
+  onScannerToggle: () => void;
+  onVerify: (code: string) => void;
+  onClaim: () => void;
+  onReset: () => void;
+}) => (
+  <div className="space-y-5">
+    {!result && (
+      <div className="rounded-3xl border border-border/55 bg-background/70 p-4">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Label className="flex items-center gap-2 font-bold">
+            <Camera className="h-4 w-4 text-caramel" />
+            Scanner QR
+          </Label>
+          <Button variant={scannerActive ? "destructive" : "outline"} size="sm" onClick={onScannerToggle} className="rounded-2xl">
+            {scannerActive ? (
+              <>
+                <CameraOff className="mr-1 h-4 w-4" />
+                Arrêter
+              </>
+            ) : (
+              <>
+                <Camera className="mr-1 h-4 w-4" />
+                Activer
+              </>
+            )}
+          </Button>
+        </div>
+
+        {scannerActive ? (
+          <QRScanner onScan={onVerify} isActive={scannerActive} />
+        ) : (
+          <div className="flex aspect-square flex-col items-center justify-center rounded-3xl border border-dashed border-caramel/25 bg-butter/20 text-muted-foreground">
+            <Camera className="mb-3 h-12 w-12 opacity-35" />
+            <p className="text-sm font-semibold">Activez la caméra pour scanner un QR code</p>
+          </div>
+        )}
+      </div>
+    )}
+
+    {!result && (
+      <div className="rounded-3xl border border-border/55 bg-background/70 p-4">
+        <Label htmlFor="code" className="mb-2 flex items-center gap-2 font-bold">
+          <Scan className="h-4 w-4 text-caramel" />
+          Saisie manuelle
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="code"
+            value={manualCode}
+            onChange={(e) => onManualCodeChange(e.target.value.toUpperCase())}
+            onKeyDown={(e) => e.key === "Enter" && onVerify(manualCode)}
+            placeholder="XXXXXXXX"
+            className="h-12 rounded-2xl font-mono text-lg tracking-wider"
+            maxLength={8}
+          />
+          <Button onClick={() => onVerify(manualCode)} disabled={isLoading || !manualCode.trim()} className="h-12 rounded-2xl bg-caramel font-bold text-white hover:bg-caramel/90">
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Vérifier"}
+          </Button>
+        </div>
+      </div>
+    )}
+
+    <AnimatePresence mode="wait">
+      {result && <ScanResult result={result} claimLoading={claimLoading} onClaim={onClaim} onReset={onReset} />}
+    </AnimatePresence>
+  </div>
+);
+
+const ScanResult = ({
+  result,
+  claimLoading,
+  onClaim,
+  onReset,
+}: {
+  result: VerifyResult;
+  claimLoading: boolean;
+  onClaim: () => void;
+  onReset: () => void;
+}) => {
+  const isValidUnused = result.valid && !result.claimed;
+  const isClaimed = result.valid && result.claimed;
+
+  return (
+    <motion.div
+      key={result.valid ? "valid" : "invalid"}
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      className={`rounded-[2rem] border p-6 text-center shadow-sm ${
+        isValidUnused
+          ? "border-herb/35 bg-herb/10"
+          : isClaimed
+            ? "border-border/70 bg-muted/35"
+            : "border-destructive/25 bg-destructive/10"
+      }`}
+    >
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200 }}
+        className={`mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full ${
+          isValidUnused ? "bg-herb/10" : isClaimed ? "bg-background" : "bg-destructive/10"
+        }`}
+      >
+        {isValidUnused ? (
+          <CheckCircle className="h-10 w-10 text-herb" />
+        ) : isClaimed ? (
+          <AlertCircle className="h-10 w-10 text-muted-foreground" />
+        ) : (
+          <XCircle className="h-10 w-10 text-destructive" />
+        )}
+      </motion.div>
+
+      {result.valid ? (
+        <>
+          <div className={`mb-4 inline-block rounded-full px-4 py-2 text-sm font-black ${result.claimed ? "bg-muted text-muted-foreground" : "bg-herb/10 text-herb"}`}>
+            {result.claimed ? "Déjà utilisé" : "Gain valide"}
+          </div>
+          <h2 className="font-display text-2xl font-black text-espresso">{result.firstName}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Semaine {result.weekNumber}</p>
+
+          <div className="my-5 inline-flex items-center gap-3 rounded-2xl border border-caramel/20 bg-white/70 px-5 py-4">
+            <Gift className="h-6 w-6 text-caramel" />
+            <span className="font-display text-xl font-black text-primary">{result.prize}</span>
+          </div>
+
+          {!result.claimed && (
+            <Button onClick={onClaim} className="h-14 w-full rounded-2xl bg-herb font-black text-white hover:bg-herb/90" disabled={claimLoading}>
+              {claimLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Marquer comme utilisé"}
+            </Button>
+          )}
+
+          {result.claimed && result.claimedAt && (
+            <p className="text-sm text-muted-foreground">
+              Utilisé le{" "}
+              {new Date(result.claimedAt).toLocaleDateString("fr-FR", {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <h2 className="font-display text-xl font-black text-destructive">Code invalide</h2>
+          <p className="mt-2 text-sm text-muted-foreground">{result.message || "Ce code n’existe pas"}</p>
+        </>
+      )}
+
+      <Button variant="outline" onClick={onReset} className="mt-5 rounded-2xl font-bold">
+        Nouveau scan
+      </Button>
+    </motion.div>
   );
 };
 
