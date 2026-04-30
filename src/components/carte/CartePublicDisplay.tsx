@@ -16,6 +16,8 @@ type MenuItem = {
   name: string;
   description?: string;
   badge?: string;
+  /** Prix utilisé uniquement pour classer la carte. Il n'est jamais affiché côté client. */
+  sortPrice: number;
 };
 
 type MenuSection = {
@@ -27,57 +29,66 @@ type MenuSection = {
   items: MenuItem[];
 };
 
+const sortItemsByPrice = (items: MenuItem[]) =>
+  [...items].sort((a, b) => a.sortPrice - b.sortPrice || a.name.localeCompare(b.name, "fr"));
+
 const SECTIONS: MenuSection[] = [
   {
     id: "formules",
     title: "Nos formules",
-    subtitle: "Les formules affichées ici reprennent exactement l’esprit de la page d’accueil, sans prix sur cette page.",
+    subtitle: "Des formules pensées pour choisir vite, bien manger et profiter d’un vrai moment crêperie.",
     icon: Sparkles,
     tone: "signature",
-    items: [
+    items: sortItemsByPrice([
       {
         name: "Formule Goûter",
         description: "Crêpe gourmande de la semaine + 1 boisson sans alcool.",
         badge: "dès juillet",
+        sortPrice: 5,
       },
       {
         name: "Formule Petite Faim",
         description: "1 galette avec 2 ingrédients au choix + 1 boisson sans alcool.",
+        sortPrice: 7,
       },
       {
         name: "Formule Salade",
         description: "1 salade + 1 crêpe classique + 1 boisson.",
         badge: "dès juin",
+        sortPrice: 12,
       },
       {
         name: "Formule Classique",
         description: "1 boisson + 1 galette classique + 1 crêpe classique.",
+        sortPrice: 13.9,
       },
       {
         name: "Formule Gourmande",
         description: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
         badge: "menu secret",
+        sortPrice: 16.9,
       },
-    ],
+    ]),
   },
   {
     id: "galettes",
     title: "Galettes classiques",
-    subtitle: "Les incontournables maison : simples, généreuses, lisibles et prêtes à rassurer les grands appétits.",
+    subtitle: "Les incontournables maison : simples, généreuses et prêtes à rassurer les grands appétits.",
     icon: Flame,
     tone: "classic",
-    items: [
-      { name: "Complète", description: "Œuf, emmental, jambon." },
-      { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates." },
-      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates." },
-      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates." },
-      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené." },
+    items: sortItemsByPrice([
+      { name: "Complète", description: "Œuf, emmental, jambon.", sortPrice: 7 },
+      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", sortPrice: 10.5 },
+      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", sortPrice: 10.5 },
+      { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates.", sortPrice: 10.5 },
+      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené.", sortPrice: 12.5 },
       {
         name: "Tête du chef",
         description: "Œuf, emmental, jambon, confit d’oignon, bœuf haché, sauce moutarde.",
         badge: "chef",
+        sortPrice: 14,
       },
-    ],
+    ]),
   },
   {
     id: "crepes",
@@ -85,26 +96,27 @@ const SECTIONS: MenuSection[] = [
     subtitle: "Les douceurs simples et efficaces : le genre de crêpe qui ne négocie pas avec la gourmandise.",
     icon: Snowflake,
     tone: "sweet",
-    items: [
-      { name: "Beurre" },
-      { name: "Sucre" },
-      { name: "Beurre sucre" },
-      { name: "Jus citron" },
-      { name: "Miel" },
-      { name: "Amande grillée" },
-      { name: "Confiture du jour" },
-      { name: "Amande jus citron" },
-      { name: "Caramel beurre salé" },
-      { name: "Chocolat maison" },
-      { name: "Chocolat maison amande" },
-      { name: "Caramel beurre salé amande" },
-      { name: "Chocaramel" },
+    items: sortItemsByPrice([
+      { name: "Beurre", sortPrice: 2 },
+      { name: "Sucre", sortPrice: 2 },
+      { name: "Beurre sucre", sortPrice: 2.5 },
+      { name: "Jus citron", sortPrice: 2.5 },
+      { name: "Amande grillée", sortPrice: 3 },
+      { name: "Confiture du jour", sortPrice: 3 },
+      { name: "Miel", sortPrice: 3 },
+      { name: "Amande jus citron", sortPrice: 3.5 },
+      { name: "Caramel beurre salé", sortPrice: 3.5 },
+      { name: "Chocolat maison", sortPrice: 3.5 },
+      { name: "Caramel beurre salé amande", sortPrice: 4 },
+      { name: "Chocaramel", sortPrice: 4 },
+      { name: "Chocolat maison amande", sortPrice: 4 },
       {
         name: "Crêpe 3 ingrédients au choix",
         description: "Beurre, sucre, amandes grillées, jus citron, miel, chocolat, gelée de cidre + 1 boule de glace + chantilly.",
         badge: "sur-mesure",
+        sortPrice: 5,
       },
-    ],
+    ]),
   },
   {
     id: "salades",
@@ -112,17 +124,18 @@ const SECTIONS: MenuSection[] = [
     subtitle: "Des assiettes fraîches et complètes pour manger plus léger sans tomber dans la feuille triste.",
     icon: Salad,
     tone: "fresh",
-    items: [
-      { name: "Salade Fermière", description: "Dés de fromage, dés de jambon, miel, noix." },
-      { name: "Salade Gasconne", description: "Gésiers de canard, dés de fromage, pommes de terre, tomates." },
-      { name: "Salade Nordique", description: "Saumon fumé, pommes de terre, tomates cerises, dés de fromage." },
-      { name: "Salade Campagnarde", description: "Lardons, œuf, pommes de terre, tomates cerises, dés de fromage, oignons rouges." },
+    items: sortItemsByPrice([
+      { name: "Salade Fermière", description: "Dés de fromage, dés de jambon, miel, noix.", sortPrice: 10 },
+      { name: "Salade Gasconne", description: "Gésiers de canard, dés de fromage, pommes de terre, tomates.", sortPrice: 10 },
+      { name: "Salade Nordique", description: "Saumon fumé, pommes de terre, tomates cerises, dés de fromage.", sortPrice: 10 },
+      { name: "Salade Campagnarde", description: "Lardons, œuf, pommes de terre, tomates cerises, dés de fromage, oignons rouges.", sortPrice: 12 },
       {
         name: "Salade du chef",
         description: "Gésiers de canard, tomates cerises, dés de fromage, œuf, avocat.",
         badge: "chef",
+        sortPrice: 12,
       },
-    ],
+    ]),
   },
 ];
 
@@ -173,7 +186,7 @@ const MenuHero = () => (
     <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
     <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes & salades</h2>
     <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-      Une carte volontairement sans prix ici : elle présente les recettes à découvrir, pendant que les formules restent cohérentes avec l’accueil.
+      Découvrez les recettes maison, classées naturellement des plus accessibles aux plus généreuses.
     </p>
   </div>
 );
