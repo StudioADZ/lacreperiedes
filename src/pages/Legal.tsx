@@ -1,273 +1,292 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { FileText, Mail, Phone, Shield, Scale, Gift, Lock, ScrollText } from "lucide-react";
-import SocialFooter from "@/components/SocialFooter";
+import {
+  Award,
+  ChevronRight,
+  FileText,
+  Gift,
+  Lock,
+  Mail,
+  MapPin,
+  Phone,
+  Scale,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+const EMAIL = "dlacreperie@gmail.com";
+const PHONE = "02 59 66 01 76";
+const PHONE_LINK = "tel:0259660176";
+const MAPS_LINK = "https://maps.app.goo.gl/ShXSrr3XBsQTEYZ87?g_st=ac";
+
+const quickLinks = [
+  { href: "#identification", label: "Identification", icon: Scale },
+  { href: "#privacy", label: "Confidentialité", icon: Lock },
+  { href: "#terms", label: "CGU", icon: FileText },
+  { href: "#quiz", label: "Règlement quiz", icon: Gift },
+];
 
 const Legal = () => {
   const location = useLocation();
 
-  // Scroll to section on hash change
   useEffect(() => {
-    if (location.hash) {
-      const element = document.getElementById(location.hash.slice(1));
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 100);
-      }
+    if (!location.hash) return;
+    const element = document.getElementById(location.hash.slice(1));
+    if (element) {
+      setTimeout(() => element.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
     }
   }, [location.hash]);
 
   return (
-    <div className="min-h-screen pt-20 pb-24 px-4">
-      <div className="max-w-lg mx-auto">
-        {/* Header */}
-        <div className="text-center mb-10">
-          <span className="inline-block px-4 py-1.5 bg-primary/10 text-primary rounded-full text-sm font-medium mb-4">
-            <FileText className="w-4 h-4 inline mr-1" />
-            Informations légales
-          </span>
-          <h1 className="font-display text-3xl font-bold mb-3">
-            Mentions légales
-          </h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-b from-[hsl(35_45%_92%)] via-background to-[hsl(42_50%_96%)] px-4 pb-24 pt-20">
+      <div className="mx-auto max-w-lg space-y-6">
+        <section className="relative overflow-hidden rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-espresso via-espresso/95 to-caramel/80 p-5 text-white shadow-elevated">
+          <div className="absolute -right-16 -top-16 h-44 w-44 rounded-full bg-white/10 blur-sm" />
+          <div className="absolute -bottom-16 -left-16 h-44 w-44 rounded-full bg-butter/10 blur-sm" />
 
-        {/* Company Info */}
-        <section className="card-warm mb-6">
-          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-            <Scale className="w-5 h-5 text-primary" />
-            Identification
-          </h2>
-          <div className="space-y-2 text-sm">
-            <p><strong>Raison sociale :</strong> La Crêperie des Saveurs</p>
-            <p><strong>SIRET :</strong> 930 910 187 000 10</p>
-            <p><strong>Adresse :</strong> 17 Place Carnot – Galerie des Halles – 72600 Mamers</p>
-            <p><strong>Email :</strong> <a href="mailto:dlacreperie@gmail.com" className="text-primary">dlacreperie@gmail.com</a></p>
-            <p><strong>Téléphone :</strong> <a href="tel:0259660176" className="text-primary">02 59 66 01 76</a></p>
-          </div>
-        </section>
-
-        {/* Privacy Policy */}
-        <section id="privacy" className="card-warm mb-6 scroll-mt-24">
-          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-            <Lock className="w-5 h-5 text-herb" />
-            Politique de Confidentialité
-          </h2>
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p><strong>1. Responsable du traitement</strong></p>
-            <p>
-              La Crêperie des Saveurs, située au 17 Place Carnot – 72600 Mamers, 
-              est responsable du traitement de vos données personnelles.
-            </p>
-
-            <p><strong>2. Données collectées</strong></p>
-            <p>Nous collectons les données suivantes :</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Prénom</li>
-              <li>Adresse email</li>
-              <li>Numéro de téléphone</li>
-              <li>Identifiant technique de l'appareil (empreinte anonymisée)</li>
-            </ul>
-
-            <p><strong>3. Finalités du traitement</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Participation au quiz hebdomadaire</li>
-              <li>Attribution et validation des lots gagnés</li>
-              <li>Prévention des fraudes et abus</li>
-              <li>Communications promotionnelles (avec consentement explicite)</li>
-            </ul>
-
-            <p><strong>4. Base légale</strong></p>
-            <p>
-              Le traitement est basé sur votre consentement explicite, 
-              donné avant toute participation au quiz ou soumission de formulaire.
-            </p>
-
-            <p><strong>5. Durée de conservation</strong></p>
-            <p>
-              Vos données sont conservées pendant 1 an maximum après votre dernière 
-              interaction, puis supprimées automatiquement.
-            </p>
-
-            <p><strong>6. Vos droits</strong></p>
-            <p>Conformément au RGPD, vous disposez des droits suivants :</p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Droit d'accès à vos données</li>
-              <li>Droit de rectification</li>
-              <li>Droit à l'effacement ("droit à l'oubli")</li>
-              <li>Droit à la portabilité</li>
-              <li>Droit d'opposition au traitement</li>
-              <li>Droit de retirer votre consentement à tout moment</li>
-            </ul>
-
-            <p><strong>7. Exercer vos droits</strong></p>
-            <p>
-              Pour exercer vos droits, contactez-nous à{" "}
-              <a href="mailto:dlacreperie@gmail.com" className="text-primary">
-                dlacreperie@gmail.com
-              </a>. Réponse sous 30 jours.
-            </p>
-
-            <p><strong>8. Sécurité</strong></p>
-            <p>
-              Vos données sont stockées de manière sécurisée et chiffrée. 
-              Elles ne sont jamais vendues ni partagées avec des tiers.
+          <div className="relative">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+              <Sparkles className="h-3.5 w-3.5 text-butter" />
+              Informations légales
+            </div>
+            <h1 className="font-display text-3xl font-black leading-tight">Mentions légales</h1>
+            <p className="mt-2 text-sm leading-relaxed text-white/82">
+              Les informations essentielles sur l’établissement, l’utilisation de l’application, la protection des données et le règlement du quiz.
             </p>
           </div>
         </section>
 
-        {/* Terms of Use */}
-        <section id="terms" className="card-warm mb-6 scroll-mt-24">
-          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-            <ScrollText className="w-5 h-5 text-caramel" />
-            Conditions Générales d'Utilisation
-          </h2>
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p><strong>1. Objet</strong></p>
-            <p>
-              Les présentes CGU régissent l'utilisation du site web de La Crêperie 
-              des Saveurs et de ses services, notamment le quiz hebdomadaire.
-            </p>
-
-            <p><strong>2. Accès au service</strong></p>
-            <p>
-              L'accès au site est gratuit. L'utilisateur doit disposer d'un appareil 
-              connecté à Internet pour y accéder.
-            </p>
-
-            <p><strong>3. Inscription et participation</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>L'utilisateur s'engage à fournir des informations exactes</li>
-              <li>Une seule participation gagnante par semaine et par personne</li>
-              <li>Toute tentative de fraude entraînera la disqualification</li>
-            </ul>
-
-            <p><strong>4. Propriété intellectuelle</strong></p>
-            <p>
-              Tous les contenus du site (textes, images, logos) sont la propriété 
-              exclusive de La Crêperie des Saveurs. Toute reproduction est interdite.
-            </p>
-
-            <p><strong>5. Responsabilité</strong></p>
-            <p>
-              La Crêperie des Saveurs ne saurait être tenue responsable des 
-              dysfonctionnements techniques ou des interruptions de service.
-            </p>
-
-            <p><strong>6. Modification des CGU</strong></p>
-            <p>
-              Nous nous réservons le droit de modifier ces CGU à tout moment. 
-              Les utilisateurs seront informés de toute modification significative.
-            </p>
-
-            <p><strong>7. Droit applicable</strong></p>
-            <p>
-              Les présentes CGU sont soumises au droit français. 
-              En cas de litige, les tribunaux de Le Mans seront compétents.
-            </p>
-          </div>
+        <section className="grid grid-cols-2 gap-3">
+          {quickLinks.map((link) => {
+            const Icon = link.icon;
+            return (
+              <a key={link.href} href={link.href} className="rounded-3xl border border-caramel/15 bg-white/70 p-4 shadow-sm backdrop-blur transition hover:border-caramel/30 hover:bg-white">
+                <Icon className="mb-3 h-5 w-5 text-caramel" />
+                <span className="font-display text-sm font-black text-espresso">{link.label}</span>
+              </a>
+            );
+          })}
         </section>
 
-        {/* RGPD Summary */}
-        <section className="card-warm mb-6">
-          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-            <Shield className="w-5 h-5 text-herb" />
-            Protection des données (RGPD)
-          </h2>
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p>
-              Conformément au Règlement Général sur la Protection des Données (RGPD), 
-              nous vous informons que les données personnelles collectées via notre site 
-              sont utilisées uniquement pour les finalités décrites dans notre 
-              politique de confidentialité ci-dessus.
-            </p>
-            <div className="p-3 rounded-xl bg-herb/10 border border-herb/20">
-              <p className="text-herb text-xs">
-                🇪🇺 <strong>Conformité RGPD garantie</strong> : Vos données sont protégées 
-                et vous pouvez exercer vos droits à tout moment.
+        <LegalSection id="identification" icon={Scale} eyebrow="Éditeur" title="Identification de l’établissement">
+          <InfoLine label="Nom commercial" value="La Crêperie des Saveurs" />
+          <InfoLine label="SIRET" value="930 910 187 000 10" />
+          <InfoLine label="Adresse" value="17 Place Carnot – Galerie des Halles, 72600 Mamers" />
+          <InfoLine label="Email" value={<a href={`mailto:${EMAIL}`} className="text-caramel underline-offset-4 hover:underline">{EMAIL}</a>} />
+          <InfoLine label="Téléphone" value={<a href={PHONE_LINK} className="text-caramel underline-offset-4 hover:underline">{PHONE}</a>} />
+          <a href={MAPS_LINK} target="_blank" rel="noopener noreferrer" className="mt-4 block">
+            <Button variant="outline" className="h-12 w-full rounded-2xl font-black">
+              Voir l’adresse sur Google Maps
+              <MapPin className="ml-2 h-4 w-4" />
+            </Button>
+          </a>
+        </LegalSection>
+
+        <LegalSection id="privacy" icon={Lock} eyebrow="Données personnelles" title="Politique de confidentialité">
+          <Article title="1. Responsable du traitement">
+            La Crêperie des Saveurs, située au 17 Place Carnot – Galerie des Halles, 72600 Mamers, est responsable du traitement des données collectées via l’application.
+          </Article>
+
+          <Article title="2. Données susceptibles d’être collectées">
+            <LegalList
+              items={[
+                "prénom, email et numéro de téléphone lorsque vous participez au quiz ou utilisez un formulaire ;",
+                "identifiant technique de session ou d’appareil, utilisé pour limiter la fraude au quiz ;",
+                "informations de compte client si vous vous connectez ;",
+                "historique lié aux gains, récompenses ou avantages fidélité lorsque ces fonctions sont utilisées.",
+              ]}
+            />
+          </Article>
+
+          <Article title="3. Finalités">
+            <LegalList
+              items={[
+                "gérer la participation au quiz et l’attribution des lots ;",
+                "sécuriser l’application et prévenir les abus ;",
+                "gérer l’espace client, les avantages et la fidélité ;",
+                "répondre aux demandes envoyées par email, téléphone ou formulaire ;",
+                "envoyer des communications uniquement lorsque le consentement est demandé et accepté.",
+              ]}
+            />
+          </Article>
+
+          <Article title="4. Base légale">
+            Selon le service utilisé, le traitement repose sur le consentement, l’exécution d’un service demandé, l’intérêt légitime de sécurisation, ou le respect d’obligations légales.
+          </Article>
+
+          <Article title="5. Durée de conservation">
+            Les données sont conservées uniquement le temps nécessaire aux finalités indiquées. Les données liées au quiz et aux gains peuvent être conservées jusqu’à 1 an après la dernière interaction, sauf obligation ou demande légitime de conservation plus longue.
+          </Article>
+
+          <Article title="6. Vos droits">
+            Vous pouvez demander l’accès, la rectification, l’effacement, la limitation, l’opposition au traitement ou le retrait de votre consentement. Pour exercer vos droits, contactez {EMAIL}. Une réponse sera apportée dans les meilleurs délais et au plus tard dans le délai légal applicable.
+          </Article>
+
+          <Article title="7. Sécurité et partage">
+            Les données ne sont pas vendues. Elles peuvent être traitées par les services techniques nécessaires au fonctionnement de l’application, notamment l’hébergement, l’authentification, la base de données ou les outils de réservation utilisés.
+          </Article>
+        </LegalSection>
+
+        <LegalSection id="terms" icon={FileText} eyebrow="Utilisation" title="Conditions générales d’utilisation">
+          <Article title="1. Objet">
+            Les présentes conditions encadrent l’utilisation du site et de l’application La Crêperie des Saveurs : carte, réservation, quiz, espace client, avis, réseaux sociaux et informations pratiques.
+          </Article>
+
+          <Article title="2. Accès">
+            L’accès est gratuit. Certains services peuvent nécessiter une connexion, une adresse email, un numéro de téléphone ou une validation sur une plateforme tierce.
+          </Article>
+
+          <Article title="3. Exactitude des informations">
+            L’utilisateur s’engage à fournir des informations exactes. Toute fraude, tentative de contournement ou utilisation abusive peut entraîner l’annulation d’un gain, d’un avantage ou d’un accès.
+          </Article>
+
+          <Article title="4. Réservations et plateformes tierces">
+            La réservation peut s’appuyer sur Google ou d’autres services externes. Ces plateformes possèdent leurs propres règles, disponibilités et conditions d’utilisation.
+          </Article>
+
+          <Article title="5. Propriété intellectuelle">
+            Les textes, images, logos, éléments graphiques et contenus de l’application sont protégés. Toute reproduction ou réutilisation non autorisée est interdite.
+          </Article>
+
+          <Article title="6. Responsabilité">
+            La Crêperie des Saveurs fait ses meilleurs efforts pour proposer une application fiable, mais ne peut garantir l’absence totale d’interruption, d’erreur technique ou d’indisponibilité temporaire.
+          </Article>
+
+          <Article title="7. Droit applicable">
+            Les présentes conditions sont soumises au droit français. En cas de litige, les juridictions compétentes seront déterminées selon les règles applicables.
+          </Article>
+        </LegalSection>
+
+        <LegalSection id="quiz" icon={Gift} eyebrow="Jeu gratuit" title="Règlement du quiz">
+          <Article title="1. Organisation">
+            La Crêperie des Saveurs organise un quiz gratuit, sans obligation d’achat. Le quiz peut être modifié, suspendu ou arrêté en cas de nécessité technique, de fraude ou de force majeure.
+          </Article>
+
+          <Article title="2. Participation">
+            <LegalList
+              items={[
+                "une seule participation gagnante par semaine et par personne ;",
+                "les informations demandées doivent être exactes ;",
+                "les lots sont personnels, non échangeables contre de l’argent et à retirer selon les conditions affichées dans l’application ;",
+                "toute tentative de fraude peut entraîner une disqualification.",
+              ]}
+            />
+          </Article>
+
+          <Article title="3. Attribution des lots">
+            Le résultat dépend du score obtenu et du stock disponible. À titre indicatif : 100 % peut donner droit à une Formule Complète, 90 % ou plus à une galette, 80 % ou plus à une crêpe. Si le stock hebdomadaire est épuisé, aucun lot ne peut être attribué même si le score est suffisant.
+          </Article>
+
+          <Article title="4. Validation du gain">
+            Un gain peut nécessiter un QR code, un code unique ou une vérification en restaurant. Le personnel peut refuser un gain expiré, déjà utilisé, falsifié ou ne correspondant pas aux règles.
+          </Article>
+        </LegalSection>
+
+        <section className="rounded-[2rem] border border-herb/20 bg-herb/10 p-5">
+          <div className="flex gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-herb">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-black text-espresso">Protection des données</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Cette page explique clairement les usages principaux. Pour toute question ou demande liée à vos données, contactez directement l’établissement par email.
               </p>
             </div>
           </div>
         </section>
 
-        {/* Quiz Rules */}
-        <section className="card-warm mb-6">
-          <h2 className="font-display text-lg font-semibold mb-4 flex items-center gap-2">
-            <Gift className="w-5 h-5 text-caramel" />
-            Règlement du Quiz
-          </h2>
-          <div className="space-y-4 text-sm text-muted-foreground">
-            <p><strong>Article 1 – Organisation</strong></p>
-            <p>
-              La Crêperie des Saveurs organise un jeu-quiz hebdomadaire gratuit, 
-              sans obligation d'achat, du dimanche 01h00 au samedi 23h59 (heure de Paris).
-            </p>
-
-            <p><strong>Article 2 – Participation</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Ouvert à toute personne de 16 ans ou plus</li>
-              <li>Une seule participation gagnante par semaine et par personne (téléphone + appareil)</li>
-              <li>Les lots sont à retirer sur place au restaurant</li>
-            </ul>
-
-            <p><strong>Article 3 – Lots</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>100% de bonnes réponses : 1 Formule Complète (limité à 10/semaine)</li>
-              <li>90-99% de bonnes réponses : 1 Galette (limité à 20/semaine)</li>
-              <li>80-89% de bonnes réponses : 1 Crêpe (limité à 30/semaine)</li>
-              <li>Moins de 80% : pas de lot</li>
-            </ul>
-
-            <p><strong>Article 4 – Validité</strong></p>
-            <p>
-              Les lots sont valables 7 jours après la date de gain et 
-              doivent être réclamés en présentant le QR code unique au restaurant.
-            </p>
-
-            <p><strong>Article 5 – Responsabilité</strong></p>
-            <p>
-              La Crêperie des Saveurs se réserve le droit d'annuler ou modifier le 
-              jeu sans préavis en cas de force majeure.
-            </p>
+        <section className="rounded-[2rem] border border-caramel/20 bg-butter/35 p-5">
+          <div className="flex gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-caramel">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="font-display text-lg font-black text-espresso">Non-affiliation</h2>
+              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                Le quiz et les opérations de La Crêperie des Saveurs ne sont pas sponsorisés, gérés ou organisés par Google, Facebook, Instagram, WhatsApp, TikTok, YouTube ou toute autre plateforme tierce. Ces noms sont cités uniquement à titre informatif.
+              </p>
+            </div>
           </div>
         </section>
 
-        {/* Disclaimer */}
-        <section className="card-warm mb-6 bg-butter/30 border-caramel/20">
-          <h2 className="font-display text-lg font-semibold mb-4">Non-affiliation</h2>
-          <p className="text-sm text-muted-foreground">
-            Ce jeu n'est pas sponsorisé, organisé ou géré par Google, Facebook, 
-            Instagram, WhatsApp ou toute autre plateforme tierce. Ces marques 
-            sont citées uniquement à titre informatif.
-          </p>
-        </section>
-
-        {/* Contact */}
-        <section className="text-center p-6 bg-secondary/30 rounded-2xl">
-          <h2 className="font-display text-lg font-semibold mb-4">Une question ?</h2>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <a 
-              href="mailto:dlacreperie@gmail.com"
-              className="flex items-center gap-2 text-primary hover:underline"
-            >
-              <Mail className="w-4 h-4" />
-              dlacreperie@gmail.com
+        <section className="rounded-[2rem] border border-caramel/20 bg-white/70 p-5 text-center shadow-warm backdrop-blur">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Contact</p>
+          <h2 className="mt-1 font-display text-xl font-black text-espresso">Une question ?</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <a href={`mailto:${EMAIL}`} className="block">
+              <Button variant="outline" className="h-12 w-full rounded-2xl font-bold">
+                <Mail className="mr-2 h-4 w-4" />
+                Email
+              </Button>
             </a>
-            <a 
-              href="tel:0259660176"
-              className="flex items-center gap-2 text-primary hover:underline"
-            >
-              <Phone className="w-4 h-4" />
-              02 59 66 01 76
+            <a href={PHONE_LINK} className="block">
+              <Button className="h-12 w-full rounded-2xl bg-caramel font-bold text-white hover:bg-caramel/90">
+                <Phone className="mr-2 h-4 w-4" />
+                Appeler
+              </Button>
             </a>
           </div>
         </section>
-
-        {/* Social Footer */}
-        <SocialFooter />
       </div>
     </div>
   );
 };
+
+const LegalSection = ({
+  id,
+  icon: Icon,
+  eyebrow,
+  title,
+  children,
+}: {
+  id: string;
+  icon: typeof FileText;
+  eyebrow: string;
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section id={id} className="card-warm scroll-mt-24 space-y-4">
+    <div className="flex items-start gap-3">
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-caramel/10 text-caramel">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">{eyebrow}</p>
+        <h2 className="font-display text-xl font-black text-espresso">{title}</h2>
+      </div>
+    </div>
+    <div className="space-y-4">{children}</div>
+  </section>
+);
+
+const Article = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="rounded-3xl border border-border/55 bg-white/65 p-4">
+    <h3 className="mb-2 flex items-center gap-2 font-display text-base font-black text-espresso">
+      <ChevronRight className="h-4 w-4 text-caramel" />
+      {title}
+    </h3>
+    <div className="text-sm leading-relaxed text-muted-foreground">{children}</div>
+  </div>
+);
+
+const LegalList = ({ items }: { items: string[] }) => (
+  <ul className="ml-1 space-y-2">
+    {items.map((item) => (
+      <li key={item} className="flex gap-2">
+        <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-caramel" />
+        <span>{item}</span>
+      </li>
+    ))}
+  </ul>
+);
+
+const InfoLine = ({ label, value }: { label: string; value: React.ReactNode }) => (
+  <div className="rounded-2xl border border-border/55 bg-white/65 p-3">
+    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className="mt-1 text-sm font-semibold text-foreground">{value}</p>
+  </div>
+);
 
 export default Legal;
