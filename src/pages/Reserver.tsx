@@ -11,6 +11,7 @@ import {
   Sparkles,
   Star,
   Users,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GoogleMap from "@/components/home/GoogleMap";
@@ -120,12 +121,7 @@ const buildCalendarMonths = (days: Date[]): CalendarMonth[] => {
     const key = `${date.getFullYear()}-${date.getMonth()}`;
 
     if (!monthMap.has(key)) {
-      monthMap.set(key, {
-        key,
-        label: formatMonthLabel(start),
-        start,
-        days: [],
-      });
+      monthMap.set(key, { key, label: formatMonthLabel(start), start, days: [] });
     }
 
     monthMap.get(key)!.days.push(date);
@@ -151,6 +147,7 @@ const Reserver = () => {
   const [visibleMonthIndex, setVisibleMonthIndex] = useState(0);
   const [selectedSlotId, setSelectedSlotId] = useState("midi-12h00");
   const [people, setPeople] = useState(2);
+  const [showGoogleBooking, setShowGoogleBooking] = useState(false);
 
   const visibleMonth = months[visibleMonthIndex] ?? months[0];
   const monthCells = useMemo(() => buildMonthCells(visibleMonth), [visibleMonth]);
@@ -181,13 +178,7 @@ const Reserver = () => {
           <SectionTitle eyebrow="1. Choisir le jour" title="Agenda annuel" />
           <div className="rounded-[1.75rem] border border-caramel/15 bg-white/70 p-3 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
-              <button
-                type="button"
-                onClick={() => handleMonthChange(visibleMonthIndex - 1)}
-                disabled={visibleMonthIndex === 0}
-                className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35"
-                aria-label="Mois précédent"
-              >
+              <button type="button" onClick={() => handleMonthChange(visibleMonthIndex - 1)} disabled={visibleMonthIndex === 0} className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35" aria-label="Mois précédent">
                 <ChevronLeft className="h-4 w-4" />
               </button>
 
@@ -196,38 +187,21 @@ const Reserver = () => {
                 <p className="text-[11px] text-muted-foreground">Réservation possible sur 12 mois glissants</p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleMonthChange(visibleMonthIndex + 1)}
-                disabled={visibleMonthIndex === months.length - 1}
-                className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35"
-                aria-label="Mois suivant"
-              >
+              <button type="button" onClick={() => handleMonthChange(visibleMonthIndex + 1)} disabled={visibleMonthIndex === months.length - 1} className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35" aria-label="Mois suivant">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
 
             <div className="mb-3 flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch]">
               {months.map((month, index) => (
-                <button
-                  key={month.key}
-                  type="button"
-                  onClick={() => handleMonthChange(index)}
-                  className={`min-w-fit rounded-full border px-3 py-1.5 text-xs font-bold capitalize transition ${
-                    visibleMonthIndex === index
-                      ? "border-caramel bg-caramel text-white shadow-sm"
-                      : "border-border/70 bg-background/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
-                  }`}
-                >
+                <button key={month.key} type="button" onClick={() => handleMonthChange(index)} className={`min-w-fit rounded-full border px-3 py-1.5 text-xs font-bold capitalize transition ${visibleMonthIndex === index ? "border-caramel bg-caramel text-white shadow-sm" : "border-border/70 bg-background/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"}`}>
                   {month.label.split(" ")[0]}
                 </button>
               ))}
             </div>
 
             <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground">
-              {WEEK_DAYS.map((day, index) => (
-                <span key={`${day}-${index}`}>{day}</span>
-              ))}
+              {WEEK_DAYS.map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}
             </div>
 
             <div className="grid grid-cols-7 gap-1.5">
@@ -239,16 +213,7 @@ const Reserver = () => {
                 const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
 
                 return (
-                  <button
-                    key={toISODate(date)}
-                    type="button"
-                    onClick={() => handleDateChange(date)}
-                    className={`relative min-h-12 rounded-2xl border px-1 py-2 text-center transition ${
-                      active
-                        ? "border-caramel bg-caramel text-white shadow-warm"
-                        : "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"
-                    }`}
-                  >
+                  <button key={toISODate(date)} type="button" onClick={() => handleDateChange(date)} className={`relative min-h-12 rounded-2xl border px-1 py-2 text-center transition ${active ? "border-caramel bg-caramel text-white shadow-warm" : "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"}`}>
                     <span className="block font-display text-base font-black leading-none">{date.getDate()}</span>
                     {today && <span className={`mt-1 block text-[8px] font-bold uppercase ${active ? "text-white/80" : "text-caramel"}`}>auj.</span>}
                     {hasEvening && <span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${active ? "bg-white" : "bg-caramel"}`} />}
@@ -257,9 +222,7 @@ const Reserver = () => {
               })}
             </div>
 
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">
-              Le point doré indique un service du soir disponible. Les mois avancent sur une année complète.
-            </p>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">Le point doré indique un service du soir disponible. Les mois avancent sur une année complète.</p>
           </div>
         </section>
 
@@ -273,16 +236,7 @@ const Reserver = () => {
           <SectionTitle eyebrow="3. Nombre de personnes" title="Combien de couverts ?" />
           <div className="grid grid-cols-3 gap-2">
             {PEOPLE_OPTIONS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => setPeople(option)}
-                className={`rounded-2xl border px-3 py-3 font-display text-lg font-black transition ${
-                  people === option
-                    ? "border-caramel bg-caramel text-white shadow-sm"
-                    : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
-                }`}
-              >
+              <button key={option} type="button" onClick={() => setPeople(option)} className={`rounded-2xl border px-3 py-3 font-display text-lg font-black transition ${people === option ? "border-caramel bg-caramel text-white shadow-sm" : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"}`}>
                 {option === 9 ? "9+" : option}
               </button>
             ))}
@@ -290,11 +244,15 @@ const Reserver = () => {
           <p className="text-xs leading-relaxed text-muted-foreground">Pour 9 personnes ou plus, privilégiez l’appel afin de confirmer la disponibilité.</p>
         </section>
 
-        <ReservationSummary selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} shouldPreferPhone={shouldPreferPhone} whatsappUrl={whatsappUrl} />
+        <ReservationSummary selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} shouldPreferPhone={shouldPreferPhone} whatsappUrl={whatsappUrl} onOpenGoogle={() => setShowGoogleBooking(true)} />
         <OpeningHours />
         <LocationBlock />
         <GoogleReviewCTA variant="card" className="mb-8" />
       </div>
+
+      {showGoogleBooking && (
+        <GoogleBookingModal selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} onClose={() => setShowGoogleBooking(false)} />
+      )}
     </div>
   );
 };
@@ -306,9 +264,7 @@ const Hero = ({ selectedDate, selectedSlot, people }: { selectedDate: Date; sele
       Réservation
     </div>
     <h1 className="font-display text-3xl font-black leading-tight">Réservez votre table</h1>
-    <p className="mt-2 text-sm leading-relaxed text-white/82">
-      Sélectionnez une date sur l’année, un horaire et le nombre de couverts. Google gère la réservation finale, l’appel reste recommandé pour les grandes tables.
-    </p>
+    <p className="mt-2 text-sm leading-relaxed text-white/82">Sélectionnez une date sur l’année, un horaire et le nombre de couverts. Google s’ouvre dans l’application quand c’est possible.</p>
 
     <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
       <HeroStat icon={Calendar} label="Jour" value={formatDateShort(selectedDate)} />
@@ -338,17 +294,7 @@ const TimeSlotGroup = ({ title, slots, selectedSlot, onSelect }: { title: string
     <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {slots.map((slot) => (
-        <button
-          key={slot.id}
-          type="button"
-          disabled={!slot.available}
-          onClick={() => onSelect(slot.id)}
-          className={`rounded-2xl border px-3 py-3 text-center font-display text-base font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
-            selectedSlot.id === slot.id
-              ? "border-caramel bg-caramel text-white shadow-sm"
-              : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
-          }`}
-        >
+        <button key={slot.id} type="button" disabled={!slot.available} onClick={() => onSelect(slot.id)} className={`rounded-2xl border px-3 py-3 text-center font-display text-base font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${selectedSlot.id === slot.id ? "border-caramel bg-caramel text-white shadow-sm" : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"}`}>
           {slot.time}
         </button>
       ))}
@@ -356,7 +302,7 @@ const TimeSlotGroup = ({ title, slots, selectedSlot, onSelect }: { title: string
   </div>
 );
 
-const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPhone, whatsappUrl }: { selectedDate: Date; selectedSlot: ServiceSlot; people: number; shouldPreferPhone: boolean; whatsappUrl: string }) => (
+const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPhone, whatsappUrl, onOpenGoogle }: { selectedDate: Date; selectedSlot: ServiceSlot; people: number; shouldPreferPhone: boolean; whatsappUrl: string; onOpenGoogle: () => void }) => (
   <section className="rounded-[2rem] border border-caramel/25 bg-gradient-to-br from-white via-butter/35 to-caramel/10 p-5 shadow-warm">
     <div className="flex items-start gap-3">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-caramel text-white">
@@ -365,9 +311,7 @@ const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPh
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Votre sélection</p>
         <h2 className="mt-1 font-display text-xl font-black capitalize text-espresso">{formatDateLong(selectedDate)} · {selectedSlot.time}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}
-        </p>
+        <p className="mt-1 text-sm text-muted-foreground">{people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}</p>
       </div>
     </div>
 
@@ -380,12 +324,10 @@ const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPh
           </Button>
         </a>
       ) : (
-        <a href={BOOKING_LINK} target="_blank" rel="noopener noreferrer" className="block">
-          <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
-            Réserver sur Google
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </a>
+        <Button onClick={onOpenGoogle} className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
+          Réserver sur Google
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
       )}
 
       <div className="grid grid-cols-2 gap-3">
@@ -404,6 +346,37 @@ const ReservationSummary = ({ selectedDate, selectedSlot, people, shouldPreferPh
       </div>
     </div>
   </section>
+);
+
+const GoogleBookingModal = ({ selectedDate, selectedSlot, people, onClose }: { selectedDate: Date; selectedSlot: ServiceSlot; people: number; onClose: () => void }) => (
+  <div className="fixed inset-0 z-50 bg-espresso/70 p-3 backdrop-blur-sm">
+    <div className="mx-auto flex h-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-white/20 bg-background shadow-elevated">
+      <div className="flex items-start justify-between gap-3 border-b border-border/60 p-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Réservation Google</p>
+          <h2 className="font-display text-lg font-black capitalize text-espresso">{formatDateLong(selectedDate)} · {selectedSlot.time}</h2>
+          <p className="text-xs text-muted-foreground">{people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · restez dans l’application si Google l’autorise.</p>
+        </div>
+        <button type="button" onClick={onClose} className="rounded-full border border-border bg-white p-2 text-muted-foreground" aria-label="Fermer la réservation Google">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+
+      <iframe title="Réservation Google" src={BOOKING_LINK} className="min-h-0 flex-1 bg-white" loading="lazy" />
+
+      <div className="grid gap-2 border-t border-border/60 p-3">
+        <a href={BOOKING_LINK} target="_blank" rel="noopener noreferrer" className="block">
+          <Button className="h-12 w-full rounded-2xl bg-caramel font-black text-white hover:bg-caramel/90">
+            Ouvrir dans Google si besoin
+            <ExternalLink className="ml-2 h-4 w-4" />
+          </Button>
+        </a>
+        <Button variant="ghost" onClick={onClose} className="h-11 rounded-2xl font-bold">
+          Revenir à l’application
+        </Button>
+      </div>
+    </div>
+  </div>
 );
 
 const OpeningHours = () => (
