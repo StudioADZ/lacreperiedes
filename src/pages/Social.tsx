@@ -3,13 +3,10 @@ import {
   Facebook,
   Instagram,
   MessageCircle,
-  PlayCircle,
   Sparkles,
-  Users,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
-import NetworkPreviewCards from "@/components/social/NetworkPreviewCards";
 
 type SocialLink = {
   name: string;
@@ -87,75 +84,43 @@ const Social = () => {
               Réseaux sociaux
             </div>
 
-            <h1 className="font-display text-3xl font-black leading-tight">Suivez La Crêperie des Saveurs</h1>
+            <h1 className="font-display text-3xl font-black leading-tight">Tous nos réseaux officiels</h1>
             <p className="mt-2 text-sm leading-relaxed text-white/82">
-              Un seul endroit pour retrouver les réseaux officiels, les nouveautés, les vidéos, les coulisses et la communauté WhatsApp.
+              Choisissez votre canal préféré pour suivre La Crêperie des Saveurs : photos, vidéos, actualités, offres et communauté WhatsApp.
             </p>
-
-            <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
-              <HeroStat icon={Instagram} label="Photos" value="Instagram" />
-              <HeroStat icon={PlayCircle} label="Vidéos" value="TikTok" />
-              <HeroStat icon={Users} label="Infos" value="WhatsApp" />
-            </div>
           </div>
         </section>
 
-        <section className="-mx-4 overflow-hidden rounded-[2rem] border-y border-caramel/10 bg-white/45 py-4 shadow-sm backdrop-blur">
-          <div className="mb-3 px-4 text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Aperçu</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Vitrines sociales</h2>
-          </div>
-          <NetworkPreviewCards />
-        </section>
-
-        <section className="card-warm space-y-4">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Liens officiels</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Choisir un réseau</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Chaque carte ouvre directement le bon compte. Simple, propre, sans labyrinthe de galette.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {SOCIALS.map((social) => {
-              const Icon = social.icon;
-              return (
-                <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <div className="rounded-3xl border border-border/55 bg-white/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-caramel/30 hover:bg-white hover:shadow-warm">
-                    <div className="flex items-center gap-4">
-                      <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${social.color}`}>
-                        <Icon />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-display text-lg font-black text-espresso">{social.name}</h3>
-                          <span className="rounded-full bg-caramel/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-caramel">
-                            {social.badge}
-                          </span>
-                        </div>
-                        <p className="truncate text-sm font-bold text-caramel">{social.handle}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{social.description}</p>
-                      </div>
-                      <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <section className="space-y-3">
+          {SOCIALS.map((social) => {
+            const Icon = social.icon;
+            return (
+              <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer" className="block">
+                <div className="rounded-3xl border border-border/55 bg-white/75 p-4 shadow-sm backdrop-blur transition hover:-translate-y-0.5 hover:border-caramel/30 hover:bg-white hover:shadow-warm">
+                  <div className="flex items-center gap-4">
+                    <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${social.color}`}>
+                      <Icon />
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-display text-lg font-black text-espresso">{social.name}</h2>
+                        <span className="rounded-full bg-caramel/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-caramel">
+                          {social.badge}
+                        </span>
+                      </div>
+                      <p className="truncate text-sm font-bold text-caramel">{social.handle}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{social.description}</p>
+                    </div>
+                    <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </div>
-                </a>
-              );
-            })}
-          </div>
+                </div>
+              </a>
+            );
+          })}
         </section>
       </div>
     </div>
   );
 };
-
-const HeroStat = ({ icon: Icon, label, value }: { icon: LucideIcon; label: string; value: string }) => (
-  <div className="rounded-2xl bg-white/12 p-3 text-center">
-    <Icon className="mx-auto mb-1 h-5 w-5 text-butter" />
-    <p className="text-[10px] uppercase tracking-wide text-white/65">{label}</p>
-    <p className="text-xs font-bold">{value}</p>
-  </div>
-);
 
 export default Social;
