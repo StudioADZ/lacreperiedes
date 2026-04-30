@@ -1,13 +1,22 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { 
-  corsHeaders, 
+import {
+  corsHeaders,
   isValidFingerprint,
   errorResponse,
   successResponse,
-  serverErrorResponse
+  serverErrorResponse,
 } from '../_shared/validation.ts'
 
 const QUIZ_SIZE = 10
+const SESSION_TTL_MS = 5 * 60 * 1000
+const PREMIUM_CATEGORIES = ['local', 'food', 'bretagne'] as const
+
+type QuizCategory = typeof PREMIUM_CATEGORIES[number]
+type QuestionLite = {
+  id: string
+  question?: string | null
+  category?: string | null
+}
 
 const shuffle = <T>(items: T[]): T[] => {
   const copy = [...items]
@@ -38,17 +47,91 @@ const uniqueByQuestionText = <T extends { id: string; question?: string | null }
   return unique
 }
 
+const isPremiumCategory = (category: string | null | undefined): category is QuizCategory =>
+  PREMIUM_CATEGORIES.includes(category as QuizCategory)
+
+async function readJson(req: Request): Promise<Record<string, unknown> | null> {
+  try {
+    const data = await req.json()
+    return data && typeof data === 'object' && !Array.isArray(data)
+      ? data as Record<string, unknown>
+      : null
+  } catch {
+    return null
+  }
+}
+
+const selectPremiumQuestions = (questions: QuestionLite[]): QuestionLite[] => {
+  const uniqueQuestions = uniqueByQuestionText(questions.filter((q) => isPremiumCategory(q.category)))
+  const byCategory = new Map<QuizCategory, QuestionLite[]>()
+
+  for (const category of PREMIUM_CATEGORIES) {
+    byCategory.set(
+      category,
+      shuffle(uniqueQuestions.filter((q) => q.category === category)),
+    )
+  }
+
+  // Mix premium équilibré : 4 local, 3 food, 3 bretagne.
+  // Si une catégorie n'a pas assez de questions, on complète avec les autres.
+  const preferred: Record<QuizCategory, number> = {
+    local: 4,
+    food: 3,
+    bretagne: 3,
+  }
+
+  const selected: QuestionLite[] = []
+  const selectedIds = new Set<string>()
+
+  for (const category of PREMIUM_CATEGORIES) {
+    const pool = byCategory.get(category) || []
+    for (const question of pool.slice(0, preferred[category])) {
+      if (selectedIds.has(question.id)) continue
+      selectedIds.add(question.id)
+      selected.push(question)
+    }
+  }
+
+  const fallbackPool = shuffle(uniqueQuestions)
+  for (const question of fallbackPool) {
+    if (selected.length >= QUIZ_SIZE) break
+    if (selectedIds.has(question.id)) continue
+    selectedIds.add(question.id)
+    selected.push(question)
+  }
+
+  return shuffle(selected).slice(0, QUIZ_SIZE)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
-  try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+  if (req.method !== 'POST') {
+    return errorResponse('method_not_allowed', 'Méthode non autorisée', 405)
+  }
 
-    const { action, deviceFingerprint, sessionId, answer, questionIndex } = await req.json()
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing Supabase environment variables')
+      return serverErrorResponse()
+    }
+
+    const body = await readJson(req)
+    if (!body) {
+      return errorResponse('invalid_json', 'Requête invalide')
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const action = typeof body.action === 'string' ? body.action : ''
+    const deviceFingerprint = typeof body.deviceFingerprint === 'string' ? body.deviceFingerprint.trim() : ''
+    const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
+    const answer = typeof body.answer === 'string' ? body.answer.trim() : ''
+    const questionIndex = typeof body.questionIndex === 'number' ? body.questionIndex : null
 
     if (!isValidFingerprint(deviceFingerprint)) {
       return errorResponse('invalid_fingerprint', 'Session invalide')
@@ -66,7 +149,8 @@ Deno.serve(async (req) => {
       if (existingSession) {
         const { data: questions } = await supabase
           .from('quiz_questions')
-          .select('id, question, option_a, option_b, option_c, option_d')
+          .select('id, question, option_a, option_b, option_c, option_d, category')
+          .eq('is_active', true)
           .in('id', existingSession.question_ids)
 
         const orderedQuestions = existingSession.question_ids
@@ -76,36 +160,26 @@ Deno.serve(async (req) => {
         return successResponse({ session: existingSession, questions: orderedQuestions })
       }
 
-      // Premium mix: more variety, no duplicated question wording inside a session.
-      const { data: localQuestions } = await supabase
+      // Banque premium complète : local + food + bretagne, sans doublon de texte.
+      const { data: questionBank, error: bankError } = await supabase
         .from('quiz_questions')
-        .select('id, question')
+        .select('id, question, category')
         .eq('is_active', true)
-        .eq('category', 'local')
-        .limit(150)
+        .in('category', PREMIUM_CATEGORIES)
+        .limit(1000)
 
-      const { data: foodQuestions } = await supabase
-        .from('quiz_questions')
-        .select('id, question')
-        .eq('is_active', true)
-        .eq('category', 'food')
-        .limit(100)
+      if (bankError) {
+        console.error('Question bank lookup error')
+        return serverErrorResponse()
+      }
 
-      const uniqueLocal = shuffle(uniqueByQuestionText(localQuestions || []))
-      const uniqueFood = shuffle(uniqueByQuestionText(foodQuestions || []))
-
-      const selected = uniqueByQuestionText([
-        ...uniqueLocal.slice(0, 7),
-        ...uniqueFood.slice(0, 3),
-        ...uniqueLocal.slice(7),
-        ...uniqueFood.slice(3),
-      ]).slice(0, QUIZ_SIZE)
+      const selected = selectPremiumQuestions(questionBank || [])
 
       if (selected.length < QUIZ_SIZE) {
         return errorResponse('not_enough_questions', 'Pas assez de questions disponibles')
       }
 
-      const selectedIds = shuffle(selected).map((q) => q.id)
+      const selectedIds = selected.map((q) => q.id)
 
       const { data: session, error: sessionError } = await supabase
         .from('quiz_sessions')
@@ -123,7 +197,8 @@ Deno.serve(async (req) => {
 
       const { data: questions } = await supabase
         .from('quiz_questions')
-        .select('id, question, option_a, option_b, option_c, option_d')
+        .select('id, question, option_a, option_b, option_c, option_d, category')
+        .eq('is_active', true)
         .in('id', selectedIds)
 
       const orderedQuestions = selectedIds
@@ -134,7 +209,7 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'answer') {
-      if (!sessionId || typeof sessionId !== 'string') {
+      if (!sessionId) {
         return errorResponse('invalid_session', 'Session invalide')
       }
 
@@ -142,7 +217,7 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_answer', 'Réponse invalide')
       }
 
-      if (typeof questionIndex !== 'number' || questionIndex < 0 || questionIndex > 9) {
+      if (typeof questionIndex !== 'number' || questionIndex < 0 || questionIndex >= QUIZ_SIZE) {
         return errorResponse('invalid_question', 'Question invalide')
       }
 
@@ -157,36 +232,60 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_session', 'Session invalide')
       }
 
+      if (session.completed) {
+        return errorResponse('already_completed', 'Quiz déjà terminé')
+      }
+
       if (new Date(session.expires_at) < new Date()) {
         return errorResponse('session_expired', 'Session expirée, veuillez recommencer')
       }
 
+      if (!Array.isArray(session.question_ids) || session.question_ids.length !== QUIZ_SIZE) {
+        return errorResponse('invalid_session', 'Session invalide')
+      }
+
+      const existingAnswers = Array.isArray(session.answers) ? session.answers : []
+      if (existingAnswers.some((item: { questionIndex?: number }) => item?.questionIndex === questionIndex)) {
+        return errorResponse('duplicate_answer', 'Cette question a déjà été validée')
+      }
+
+      if (questionIndex !== existingAnswers.length) {
+        return errorResponse('invalid_question_order', 'Ordre de question invalide')
+      }
+
       const questionId = session.question_ids[questionIndex]
-      const { data: question } = await supabase
+      const { data: question, error: questionError } = await supabase
         .from('quiz_questions')
         .select('correct_answer')
         .eq('id', questionId)
+        .eq('is_active', true)
         .single()
 
-      const isCorrect = question?.correct_answer === answer
-      const newAnswers = [...(session.answers || []), { questionIndex, answer, isCorrect }]
-      
+      if (questionError || !question) {
+        return errorResponse('invalid_question', 'Question invalide')
+      }
+
+      const isCorrect = question.correct_answer === answer
+      const newAnswers = [...existingAnswers, { questionIndex, answer, isCorrect }]
+
       const { error: updateError } = await supabase
         .from('quiz_sessions')
         .update({
           answers: newAnswers,
           current_question: questionIndex + 1,
           last_activity: new Date().toISOString(),
-          expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString()
+          expires_at: new Date(Date.now() + SESSION_TTL_MS).toISOString(),
         })
         .eq('id', sessionId)
+        .eq('device_fingerprint', deviceFingerprint)
+        .eq('completed', false)
 
       if (updateError) {
         console.error('Session update error')
         return serverErrorResponse()
       }
 
-      return successResponse({ isCorrect, correctAnswer: question?.correct_answer })
+      return successResponse({ isCorrect, correctAnswer: question.correct_answer })
     }
 
     if (action === 'reset') {
@@ -200,7 +299,6 @@ Deno.serve(async (req) => {
     }
 
     return errorResponse('invalid_action', 'Action non reconnue')
-
   } catch (error: unknown) {
     console.error('Quiz session error:', error instanceof Error ? error.message : 'Unknown')
     return serverErrorResponse()
