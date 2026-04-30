@@ -480,9 +480,9 @@ const Quiz = () => {
 
   if (phase === "playing" && currentQuestion) {
     return (
-      <div className="min-h-screen px-4 pb-8 pt-20">
+      <div className="min-h-dvh overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+8rem)] pt-20 [touch-action:pan-y]">
         <div className="mx-auto max-w-lg">
-          <div className="mb-4">
+          <div className="sticky top-16 z-10 mb-4 rounded-2xl bg-background/90 pb-2 backdrop-blur supports-[backdrop-filter]:bg-background/70">
             <QuizTimer
               duration={QUESTION_TIME_LIMIT}
               onTimeUp={handleTimeUp}
