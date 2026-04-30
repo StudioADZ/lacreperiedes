@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Gift, Loader2, RefreshCw, Search, Trophy, UserRound, Users } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Gift,
+  Loader2,
+  Mail,
+  Phone,
+  RefreshCw,
+  Search,
+  Trophy,
+  UserRound,
+  Users,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -29,10 +41,20 @@ type Customer = {
   bestScore: number | null;
   firstSeen: string;
   lastSeen: string;
+  history: Participation[];
 };
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 const getCustomerKey = (row: Participation) =>
   row.email?.trim().toLowerCase() || row.phone?.trim() || row.first_name?.trim().toLowerCase() || row.id;
@@ -41,6 +63,7 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
   const [rows, setRows] = useState<Participation[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [openedCustomerId, setOpenedCustomerId] = useState<string | null>(null);
 
   const loadRows = async () => {
     setLoading(true);
@@ -81,9 +104,11 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
         bestScore: null,
         firstSeen: row.created_at,
         lastSeen: row.created_at,
+        history: [],
       };
 
       current.visits += 1;
+      current.history.push(row);
       if (row.prize_won) current.wins += 1;
       if (row.prize_won && !row.prize_claimed && row.status !== "invalidated") current.activeRewards += 1;
       if (typeof row.score === "number") current.bestScore = Math.max(current.bestScore ?? 0, row.score);
@@ -96,7 +121,12 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
       map.set(key, current);
     });
 
-    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, "fr", { sensitivity: "base" }));
+    return Array.from(map.values())
+      .map((customer) => ({
+        ...customer,
+        history: customer.history.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
+      }))
+      .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
   }, [rows]);
 
   const filteredCustomers = useMemo(() => {
@@ -118,10 +148,10 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
       <div className="rounded-[1.75rem] border border-caramel/15 bg-gradient-to-br from-white via-butter/30 to-caramel/10 p-4 shadow-sm">
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.16em] text-caramel">Données clients</p>
-            <h3 className="font-display text-xl font-black text-espresso">Répertoire alphabétique</h3>
+            <p className="text-xs font-black uppercase tracking-[0.16em] text-caramel">Fiches clients</p>
+            <h3 className="font-display text-xl font-black text-espresso">Derniers clients en haut</h3>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Base construite avec les participations quiz enregistrées. Les profils complets seront ajoutés au prochain passage Supabase.
+              Une ligne par client. Touchez une ligne pour ouvrir sa fiche complète.
             </p>
           </div>
           <Button variant="outline" size="icon" onClick={loadRows} disabled={loading} className="shrink-0 rounded-2xl">
@@ -152,9 +182,14 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
           <p className="mt-1 text-sm text-muted-foreground">La recherche ne retourne aucun résultat.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredCustomers.map((customer) => (
-            <CustomerCard key={customer.id} customer={customer} />
+            <CustomerRow
+              key={customer.id}
+              customer={customer}
+              isOpen={openedCustomerId === customer.id}
+              onToggle={() => setOpenedCustomerId((current) => (current === customer.id ? null : customer.id))}
+            />
           ))}
         </div>
       )}
@@ -170,32 +205,77 @@ const StatCard = ({ icon: Icon, label, value }: { icon: typeof Users; label: str
   </div>
 );
 
-const CustomerCard = ({ customer }: { customer: Customer }) => (
-  <article className="rounded-[1.75rem] border border-border/55 bg-white/75 p-4 shadow-sm backdrop-blur">
-    <div className="flex items-start gap-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-caramel/12 font-display text-base font-black text-caramel">
-        {customer.name.slice(0, 2).toUpperCase()}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h4 className="truncate font-display text-lg font-black text-espresso">{customer.name}</h4>
-            <p className="truncate text-xs text-muted-foreground">{customer.email || customer.phone || "Contact non renseigné"}</p>
+const CustomerRow = ({ customer, isOpen, onToggle }: { customer: Customer; isOpen: boolean; onToggle: () => void }) => (
+  <article className="overflow-hidden rounded-[1.25rem] border border-border/55 bg-white/80 shadow-sm backdrop-blur">
+    <button type="button" onClick={onToggle} className="w-full p-3 text-left">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-caramel/12 font-display text-sm font-black text-caramel">
+          {customer.name.slice(0, 2).toUpperCase()}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h4 className="truncate font-display text-base font-black text-espresso">{customer.name}</h4>
+            <span className="shrink-0 text-[11px] font-bold text-caramel">{formatDate(customer.lastSeen)}</span>
           </div>
-          <span className="rounded-full bg-herb/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-herb">
-            {customer.activeRewards} actif{customer.activeRewards > 1 ? "s" : ""}
-          </span>
+          <p className="truncate text-xs text-muted-foreground">{customer.email || customer.phone || "Contact non renseigné"}</p>
         </div>
+        <div className="shrink-0 text-muted-foreground">{isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</div>
+      </div>
+    </button>
 
-        <div className="mt-3 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
-          <span className="rounded-full bg-caramel/10 px-2 py-1 text-caramel">{customer.visits} passages</span>
-          <span className="rounded-full bg-caramel/10 px-2 py-1 text-caramel">{customer.wins} gains</span>
-          <span className="rounded-full bg-background/70 px-2 py-1">Score max {customer.bestScore ?? "—"}</span>
-          <span className="rounded-full bg-background/70 px-2 py-1">Vu le {formatDate(customer.lastSeen)}</span>
-        </div>
+    {isOpen && <CustomerDetails customer={customer} />}
+  </article>
+);
+
+const CustomerDetails = ({ customer }: { customer: Customer }) => (
+  <div className="border-t border-border/55 bg-background/45 p-4">
+    <div className="grid grid-cols-2 gap-2">
+      <DetailTile label="Passages" value={customer.visits} />
+      <DetailTile label="Gains" value={customer.wins} />
+      <DetailTile label="Gains actifs" value={customer.activeRewards} />
+      <DetailTile label="Score max" value={customer.bestScore ?? "—"} />
+    </div>
+
+    <div className="mt-3 space-y-2 rounded-2xl bg-white/70 p-3 text-xs text-muted-foreground">
+      <p className="font-black uppercase tracking-wide text-caramel">Contact</p>
+      <p className="flex items-center gap-2">
+        <Mail className="h-3.5 w-3.5 text-caramel" />
+        {customer.email || "Email non renseigné"}
+      </p>
+      <p className="flex items-center gap-2">
+        <Phone className="h-3.5 w-3.5 text-caramel" />
+        {customer.phone || "Téléphone non renseigné"}
+      </p>
+      <p>Première activité : {formatDate(customer.firstSeen)}</p>
+      <p>Dernière activité : {formatDateTime(customer.lastSeen)}</p>
+    </div>
+
+    <div className="mt-3 rounded-2xl bg-white/70 p-3">
+      <p className="mb-2 text-xs font-black uppercase tracking-wide text-caramel">Historique récent</p>
+      <div className="space-y-2">
+        {customer.history.slice(0, 5).map((item) => (
+          <div key={item.id} className="rounded-xl border border-border/50 bg-background/60 p-2 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-espresso">{formatDateTime(item.created_at)}</span>
+              <span className="rounded-full bg-caramel/10 px-2 py-0.5 text-caramel">{item.score ?? "—"}/{item.total_questions ?? "—"}</span>
+            </div>
+            <p className="mt-1 text-muted-foreground">
+              {item.prize_won ? `Gain : ${item.prize_won}` : "Aucun gain"}
+              {item.prize_won && item.prize_claimed ? " · utilisé" : ""}
+              {item.prize_won && !item.prize_claimed ? " · actif" : ""}
+            </p>
+          </div>
+        ))}
       </div>
     </div>
-  </article>
+  </div>
+);
+
+const DetailTile = ({ label, value }: { label: string; value: string | number }) => (
+  <div className="rounded-2xl bg-white/75 p-3 text-center">
+    <p className="font-display text-lg font-black text-espresso">{value}</p>
+    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+  </div>
 );
 
 export default CustomerDirectoryPanel;
