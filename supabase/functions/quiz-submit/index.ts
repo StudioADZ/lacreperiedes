@@ -35,18 +35,9 @@ const normalizePhone = (phone: string): string => {
 }
 
 const determinePrize = (percentage: number): PrizeDecision => {
-  if (percentage === 100) {
-    return { prizeType: 'formule_complete', prizeLabel: 'Formule Complète' }
-  }
-
-  if (percentage >= 90) {
-    return { prizeType: 'galette', prizeLabel: 'Une Galette' }
-  }
-
-  if (percentage >= 80) {
-    return { prizeType: 'crepe', prizeLabel: 'Une Crêpe' }
-  }
-
+  if (percentage === 100) return { prizeType: 'formule_complete', prizeLabel: 'Formule Complète' }
+  if (percentage >= 90) return { prizeType: 'galette', prizeLabel: 'Une Galette' }
+  if (percentage >= 80) return { prizeType: 'crepe', prizeLabel: 'Une Crêpe' }
   return { prizeType: null, prizeLabel: null }
 }
 
@@ -65,6 +56,74 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
   } catch {
     return null
   }
+}
+
+async function getAuthenticatedUserId(
+  supabase: ReturnType<typeof createClient>,
+  req: Request,
+): Promise<string | null> {
+  const authHeader = req.headers.get('Authorization') || ''
+  const token = authHeader.replace(/^Bearer\s+/i, '').trim()
+
+  if (!token || token === 'null' || token === 'undefined') return null
+
+  const { data, error } = await supabase.auth.getUser(token)
+  if (error || !data?.user?.id) {
+    console.warn('Quiz submit authenticated profile lookup failed')
+    return null
+  }
+
+  return data.user.id
+}
+
+async function attachWinToProfile(
+  supabase: ReturnType<typeof createClient>,
+  params: {
+    userId: string | null
+    firstName: string
+    phone: string
+    prizeLabel: string | null
+    prizeCode: string | null
+    secretCode: string | null
+  },
+) {
+  if (!params.userId) return
+
+  const { data: existingProfile, error: profileLookupError } = await supabase
+    .from('profiles')
+    .select('id, first_name, phone, secret_menu_unlocked, secret_menu_code')
+    .eq('user_id', params.userId)
+    .maybeSingle()
+
+  if (profileLookupError) {
+    console.warn('Quiz profile lookup failed')
+    return
+  }
+
+  const profilePatch = {
+    user_id: params.userId,
+    first_name: existingProfile?.first_name || params.firstName,
+    phone: existingProfile?.phone || params.phone,
+    secret_menu_unlocked: params.prizeLabel ? true : existingProfile?.secret_menu_unlocked || false,
+    secret_menu_code: params.secretCode || existingProfile?.secret_menu_code || null,
+    secret_menu_unlocked_at: params.prizeLabel ? new Date().toISOString() : null,
+  }
+
+  if (existingProfile?.id) {
+    const { error } = await supabase
+      .from('profiles')
+      .update(profilePatch)
+      .eq('id', existingProfile.id)
+
+    if (error) console.warn('Quiz profile update failed')
+    return
+  }
+
+  const { error } = await supabase
+    .from('profiles')
+    .insert(profilePatch)
+
+  if (error) console.warn('Quiz profile insert failed')
 }
 
 async function generateUniquePrizeCode(supabase: ReturnType<typeof createClient>): Promise<string | null> {
@@ -117,13 +176,8 @@ async function refundPrizeStock(
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
-  }
-
-  if (req.method !== 'POST') {
-    return errorResponse('method_not_allowed', 'Méthode non autorisée', 405)
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
+  if (req.method !== 'POST') return errorResponse('method_not_allowed', 'Méthode non autorisée', 405)
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -135,11 +189,10 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const authenticatedUserId = await getAuthenticatedUserId(supabase, req)
     const body = await readJson(req)
 
-    if (!body) {
-      return errorResponse('invalid_json', 'Requête invalide')
-    }
+    if (!body) return errorResponse('invalid_json', 'Requête invalide')
 
     console.log('Quiz submit request:', sanitizeForLog(body))
 
@@ -154,25 +207,11 @@ Deno.serve(async (req) => {
       return errorResponse('missing_fields', 'Tous les champs sont requis')
     }
 
-    if (!rgpdConsent) {
-      return errorResponse('rgpd_required', 'Le consentement RGPD est requis')
-    }
-
-    if (!isValidFingerprint(deviceFingerprint)) {
-      return errorResponse('invalid_fingerprint', 'Session invalide')
-    }
-
-    if (!isValidName(firstName)) {
-      return errorResponse('invalid_name', 'Prénom invalide')
-    }
-
-    if (!isValidEmail(email)) {
-      return errorResponse('invalid_email', 'Format d\'email invalide')
-    }
-
-    if (!isValidPhone(phone)) {
-      return errorResponse('invalid_phone', 'Format de téléphone invalide')
-    }
+    if (!rgpdConsent) return errorResponse('rgpd_required', 'Le consentement RGPD est requis')
+    if (!isValidFingerprint(deviceFingerprint)) return errorResponse('invalid_fingerprint', 'Session invalide')
+    if (!isValidName(firstName)) return errorResponse('invalid_name', 'Prénom invalide')
+    if (!isValidEmail(email)) return errorResponse('invalid_email', 'Format d\'email invalide')
+    if (!isValidPhone(phone)) return errorResponse('invalid_phone', 'Format de téléphone invalide')
 
     const cleanFirstName = firstName.slice(0, 50)
     const cleanEmail = email.toLowerCase().slice(0, 100)
@@ -185,17 +224,9 @@ Deno.serve(async (req) => {
       .eq('device_fingerprint', deviceFingerprint)
       .single()
 
-    if (sessionError || !session) {
-      return errorResponse('invalid_session', 'Session invalide')
-    }
-
-    if (session.completed) {
-      return errorResponse('already_submitted', 'Ce quiz a déjà été soumis')
-    }
-
-    if (new Date(session.expires_at) < new Date()) {
-      return errorResponse('session_expired', 'Session expirée, veuillez recommencer')
-    }
+    if (sessionError || !session) return errorResponse('invalid_session', 'Session invalide')
+    if (session.completed) return errorResponse('already_submitted', 'Ce quiz a déjà été soumis')
+    if (new Date(session.expires_at) < new Date()) return errorResponse('session_expired', 'Session expirée, veuillez recommencer')
 
     const answers = Array.isArray(session.answers) ? session.answers as QuizAnswer[] : []
     const questionIds = Array.isArray(session.question_ids) ? session.question_ids : []
@@ -245,9 +276,7 @@ Deno.serve(async (req) => {
       return serverErrorResponse()
     }
 
-    if (existingWin) {
-      return errorResponse('already_won_this_week', 'Vous avez déjà gagné cette semaine')
-    }
+    if (existingWin) return errorResponse('already_won_this_week', 'Vous avez déjà gagné cette semaine')
 
     let prizeCode: string | null = null
     let claimedStock = false
@@ -300,16 +329,11 @@ Deno.serve(async (req) => {
 
     const { error: completeError } = await supabase
       .from('quiz_sessions')
-      .update({
-        completed: true,
-        last_activity: new Date().toISOString(),
-      })
+      .update({ completed: true, last_activity: new Date().toISOString() })
       .eq('id', sessionId)
       .eq('device_fingerprint', deviceFingerprint)
 
-    if (completeError) {
-      console.warn('Session completion update failed')
-    }
+    if (completeError) console.warn('Session completion update failed')
 
     const { data: stock } = await supabase
       .from('weekly_stock')
@@ -325,6 +349,15 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    await attachWinToProfile(supabase, {
+      userId: authenticatedUserId,
+      firstName: cleanFirstName,
+      phone: cleanPhone,
+      prizeLabel,
+      prizeCode,
+      secretCode: menuData?.secret_code || null,
+    })
+
     return successResponse({
       success: true,
       score: correctAnswers,
@@ -335,6 +368,7 @@ Deno.serve(async (req) => {
       firstName: cleanFirstName,
       stock,
       secretCode: menuData?.secret_code || null,
+      attachedToProfile: !!authenticatedUserId,
     })
   } catch (error: unknown) {
     console.error('Quiz submit error:', error instanceof Error ? error.message : 'Unknown')
