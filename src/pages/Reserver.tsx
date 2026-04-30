@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import {
   ArrowRight,
   Calendar,
-  CheckCircle2,
   Clock,
   ExternalLink,
   MapPin,
@@ -18,7 +17,6 @@ import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
 const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 const WHATSAPP_NUMBER = "33781246918";
 const PHONE_NUMBER = "0259660176";
-const PHONE_DISPLAY = "02 59 66 01 76";
 const MAPS_DIRECTIONS_LINK =
   "https://www.google.com/maps/dir/?api=1&destination=La%20Cr%C3%AAperie%20des%20Saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers&travelmode=driving";
 
@@ -72,13 +70,56 @@ const toISODate = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const isSameCalendarDay = (a: Date, b: Date) => toISODate(a) === toISODate(b);
+
+const slotTimeToMinutes = (time: string) => {
+  const [hours, minutes] = time.replace("h", ":").split(":").map(Number);
+  return hours * 60 + minutes;
+};
+
+const getNowInMinutes = () => {
+  const now = new Date();
+  return now.getHours() * 60 + now.getMinutes();
+};
+
+const isSlotStillBookable = (date: Date, time: string) => {
+  if (!isSameCalendarDay(date, new Date())) return true;
+  return slotTimeToMinutes(time) > getNowInMinutes();
+};
+
+const getAvailableSlots = (date: Date): ServiceSlot[] => {
+  const day = date.getDay();
+  const hasEvening = day === 5 || day === 6;
+
+  return [
+    ...MIDDAY_SLOTS.map((time) => ({
+      id: `midi-${time}`,
+      time,
+      available: isSlotStillBookable(date, time),
+      period: "Midi" as const,
+    })),
+    ...EVENING_SLOTS.map((time) => ({
+      id: `soir-${time}`,
+      time,
+      available: hasEvening && isSlotStillBookable(date, time),
+      period: "Soir" as const,
+    })),
+  ];
+};
+
+const dateHasAvailableSlot = (date: Date) => getAvailableSlots(date).some((slot) => slot.available);
+
 const buildUpcomingDays = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const startDate = new Date();
+  startDate.setHours(0, 0, 0, 0);
+
+  if (!dateHasAvailableSlot(startDate)) {
+    startDate.setDate(startDate.getDate() + 1);
+  }
 
   return Array.from({ length: 31 }, (_, index) => {
-    const date = new Date(today);
-    date.setDate(today.getDate() + index);
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + index);
     return date;
   });
 };
@@ -88,16 +129,6 @@ const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
 const buildAgendaCells = (days: Date[]) => {
   const blanks = Array.from({ length: getMondayFirstDayIndex(days[0]) }, () => null);
   return [...blanks, ...days];
-};
-
-const getAvailableSlots = (date: Date): ServiceSlot[] => {
-  const day = date.getDay();
-  const hasEvening = day === 5 || day === 6;
-
-  return [
-    ...MIDDAY_SLOTS.map((time) => ({ id: `midi-${time}`, time, available: true, period: "Midi" as const })),
-    ...EVENING_SLOTS.map((time) => ({ id: `soir-${time}`, time, available: hasEvening, period: "Soir" as const })),
-  ];
 };
 
 const buildWhatsAppText = (date: Date, slot: ServiceSlot, people: number) =>
@@ -111,7 +142,7 @@ const Reserver = () => {
   const [people, setPeople] = useState(2);
 
   const slots = useMemo(() => getAvailableSlots(selectedDate), [selectedDate]);
-  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && slot.available) ?? slots[0];
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && slot.available) ?? slots.find((slot) => slot.available) ?? slots[0];
   const selectedDateISO = toISODate(selectedDate);
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppText(selectedDate, selectedSlot, people))}`;
   const shouldPreferPhone = people >= 9;
@@ -120,7 +151,9 @@ const Reserver = () => {
     setSelectedDate(date);
     const nextSlots = getAvailableSlots(date);
     const stillAvailable = nextSlots.some((slot) => slot.id === selectedSlotId && slot.available);
-    if (!stillAvailable) setSelectedSlotId("midi-12h00");
+    if (!stillAvailable) {
+      setSelectedSlotId(nextSlots.find((slot) => slot.available)?.id ?? "midi-12h00");
+    }
   };
 
   return (
@@ -147,7 +180,7 @@ const Reserver = () => {
                 if (!date) return <div key={`blank-${index}`} className="h-12" aria-hidden="true" />;
 
                 const active = toISODate(date) === selectedDateISO;
-                const today = toISODate(date) === toISODate(days[0]);
+                const today = isSameCalendarDay(date, new Date());
                 const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
 
                 return (
@@ -169,7 +202,9 @@ const Reserver = () => {
               })}
             </div>
 
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">Le point doré indique un service du soir disponible.</p>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">
+              L’agenda avance automatiquement : lorsqu’une journée n’a plus de créneau disponible, elle sort de la liste.
+            </p>
           </div>
         </section>
 
