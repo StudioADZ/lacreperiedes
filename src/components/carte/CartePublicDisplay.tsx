@@ -156,7 +156,7 @@ const TONE_STYLES: Record<MenuTone, string> = {
 
 const getHeaderOffset = () => {
   const appHeader = document.querySelector("header")?.getBoundingClientRect().height ?? 64;
-  return Math.ceil(appHeader + 96);
+  return Math.ceil(appHeader + 104);
 };
 
 const CartePublicDisplay = () => {
@@ -269,30 +269,57 @@ const MenuFilters = ({
 }: {
   activeFilter: SectionId;
   onChange: (filter: SectionId) => void;
-}) => (
-  <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/92 px-4 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-    <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
-      {FILTERS.map((filter) => {
-        const active = activeFilter === filter.id;
-        return (
-          <button
-            key={filter.id}
-            type="button"
-            onClick={() => onChange(filter.id)}
-            aria-current={active ? "true" : undefined}
-            className={`min-w-fit rounded-full border px-4 py-2 text-sm font-bold transition ${
-              active
-                ? "border-caramel bg-caramel text-white shadow-sm"
-                : "border-border/70 bg-white/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
-            }`}
-          >
-            {filter.label}
-          </button>
-        );
-      })}
+}) => {
+  const activeButtonRefs = useRef<Record<SectionId, HTMLButtonElement | null>>({
+    all: null,
+    formules: null,
+    galettes: null,
+    crepes: null,
+    salades: null,
+  });
+  const activeLabel = FILTERS.find((filter) => filter.id === activeFilter)?.label ?? "Tout";
+
+  useEffect(() => {
+    activeButtonRefs.current[activeFilter]?.scrollIntoView({
+      behavior: "smooth",
+      block: "nearest",
+      inline: "center",
+    });
+  }, [activeFilter]);
+
+  return (
+    <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Vous consultez</span>
+        <span className="rounded-full bg-caramel/12 px-3 py-1 text-xs font-black text-caramel">{activeLabel}</span>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:grid sm:grid-cols-5 sm:overflow-visible sm:pb-0">
+        {FILTERS.map((filter) => {
+          const active = activeFilter === filter.id;
+          return (
+            <button
+              key={filter.id}
+              ref={(element) => {
+                activeButtonRefs.current[filter.id] = element;
+              }}
+              type="button"
+              onClick={() => onChange(filter.id)}
+              aria-current={active ? "true" : undefined}
+              className={`min-w-fit rounded-full border px-4 py-2 text-sm font-bold transition ${
+                active
+                  ? "border-caramel bg-caramel text-white shadow-sm"
+                  : "border-border/70 bg-white/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
+              }`}
+            >
+              {filter.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const MenuSectionCard = ({
   section,
@@ -312,7 +339,7 @@ const MenuSectionCard = ({
       initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: sectionIndex * 0.05 }}
-      className={`scroll-mt-40 rounded-[2rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
+      className={`scroll-mt-44 rounded-[2rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
     >
       <div className="mb-4 flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-caramel shadow-sm">
