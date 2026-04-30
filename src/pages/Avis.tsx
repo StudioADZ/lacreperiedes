@@ -71,25 +71,14 @@ const Avis = () => {
               <p className="text-center font-display text-2xl font-black">Merci pour votre soutien</p>
               <p className="mt-1 text-center text-xs text-white/70">Un avis Google, c’est petit à écrire, grand pour une crêperie locale.</p>
             </div>
-          </div>
-        </section>
 
-        <section className="rounded-[2rem] border border-caramel/25 bg-gradient-to-br from-white via-butter/35 to-caramel/10 p-5 text-center shadow-warm">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-3xl bg-caramel text-white shadow-sm">
-            <Star className="h-8 w-8 fill-white" />
+            <a href={GOOGLE_REVIEW_LINK} target="_blank" rel="noopener noreferrer" className="mt-5 block">
+              <Button className="h-14 w-full rounded-2xl bg-white text-base font-black text-espresso hover:bg-white/90">
+                Donner mon avis sur Google
+                <ExternalLink className="ml-2 h-5 w-5" />
+              </Button>
+            </a>
           </div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Action rapide</p>
-          <h2 className="mt-1 font-display text-2xl font-black text-espresso">Laisser un avis Google</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Le lien ouvre Google directement. Vous pouvez laisser une note, écrire un mot, puis revenir dans l’application.
-          </p>
-
-          <a href={GOOGLE_REVIEW_LINK} target="_blank" rel="noopener noreferrer" className="mt-5 block">
-            <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
-              Donner mon avis sur Google
-              <ExternalLink className="ml-2 h-5 w-5" />
-            </Button>
-          </a>
         </section>
 
         <section className="card-warm space-y-4">
