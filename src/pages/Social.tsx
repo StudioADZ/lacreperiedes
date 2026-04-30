@@ -1,18 +1,15 @@
 import {
-  ArrowRight,
   ExternalLink,
   Facebook,
   Instagram,
   MessageCircle,
   PlayCircle,
   Sparkles,
-  Star,
   Users,
   Youtube,
   type LucideIcon,
 } from "lucide-react";
 import NetworkPreviewCards from "@/components/social/NetworkPreviewCards";
-import { Button } from "@/components/ui/button";
 
 type SocialLink = {
   name: string;
@@ -21,8 +18,7 @@ type SocialLink = {
   icon: LucideIcon | (() => JSX.Element);
   color: string;
   description: string;
-  action: string;
-  featured?: boolean;
+  badge: string;
 };
 
 const SOCIALS: SocialLink[] = [
@@ -32,9 +28,8 @@ const SOCIALS: SocialLink[] = [
     url: "https://www.instagram.com/lacreperiedessaveurs?utm_source=qr&igsh=MXhzZGl5OG96NjZrZA==",
     icon: Instagram,
     color: "bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400",
-    description: "Photos, stories, nouveautés et coulisses gourmandes de la crêperie.",
-    action: "Voir Instagram",
-    featured: true,
+    description: "Photos, stories, nouveautés et coulisses gourmandes.",
+    badge: "Photos & stories",
   },
   {
     name: "Facebook",
@@ -42,8 +37,8 @@ const SOCIALS: SocialLink[] = [
     url: "https://www.facebook.com/share/1C9p9uUBDM/",
     icon: Facebook,
     color: "bg-[#1877F2]",
-    description: "Actualités, événements, informations pratiques et publications locales.",
-    action: "Voir Facebook",
+    description: "Actualités, événements et informations pratiques.",
+    badge: "Actualités",
   },
   {
     name: "TikTok",
@@ -55,9 +50,8 @@ const SOCIALS: SocialLink[] = [
       </svg>
     ),
     color: "bg-black",
-    description: "Vidéos courtes, moments fun, coulisses et contenus plus spontanés.",
-    action: "Voir TikTok",
-    featured: true,
+    description: "Vidéos courtes, moments fun et coulisses spontanées.",
+    badge: "Vidéos courtes",
   },
   {
     name: "YouTube",
@@ -65,8 +59,8 @@ const SOCIALS: SocialLink[] = [
     url: "https://www.youtube.com/@LACRÊPERIEDESSAVEURS",
     icon: Youtube,
     color: "bg-[#FF0000]",
-    description: "Vidéos longues, recettes, reportages et contenus de fond autour de la crêperie.",
-    action: "Voir YouTube",
+    description: "Vidéos longues, recettes et contenus de fond.",
+    badge: "Vidéos longues",
   },
   {
     name: "WhatsApp",
@@ -74,21 +68,12 @@ const SOCIALS: SocialLink[] = [
     url: "https://wa.me/message/QVZO5N4ZDR64M1",
     icon: MessageCircle,
     color: "bg-[#25D366]",
-    description: "Promos exclusives, informations importantes et avant-premières directement sur mobile.",
-    action: "Rejoindre WhatsApp",
-    featured: true,
+    description: "Promos exclusives et informations en avant-première.",
+    badge: "Communauté",
   },
 ];
 
-const TikTokIcon = ({ className = "h-5 w-5" }: { className?: string }) => (
-  <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z" />
-  </svg>
-);
-
 const Social = () => {
-  const featuredLinks = SOCIALS.filter((social) => social.featured);
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(35_45%_92%)] via-background to-[hsl(42_50%_96%)] px-4 pb-24 pt-20">
       <div className="mx-auto max-w-lg space-y-6">
@@ -104,7 +89,7 @@ const Social = () => {
 
             <h1 className="font-display text-3xl font-black leading-tight">Suivez La Crêperie des Saveurs</h1>
             <p className="mt-2 text-sm leading-relaxed text-white/82">
-              Retrouvez les coulisses, les nouveautés, les offres et les moments gourmands sur nos réseaux officiels.
+              Un seul endroit pour retrouver les réseaux officiels, les nouveautés, les vidéos, les coulisses et la communauté WhatsApp.
             </p>
 
             <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
@@ -115,54 +100,21 @@ const Social = () => {
           </div>
         </section>
 
-        <section className="card-warm space-y-4">
-          <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Accès rapide</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Les chemins principaux</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Pour suivre l’actualité sans chercher partout comme une crêpe perdue dans la poêle.
-            </p>
-          </div>
-
-          <div className="grid gap-3">
-            {featuredLinks.map((social) => {
-              const Icon = social.icon;
-              return (
-                <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <div className="rounded-3xl border border-caramel/15 bg-white/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-caramel/30 hover:shadow-warm">
-                    <div className="flex items-center gap-4">
-                      <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${social.color}`}>
-                        <Icon />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-display text-lg font-black text-espresso">{social.name}</h3>
-                          <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <p className="truncate text-sm font-bold text-caramel">{social.handle}</p>
-                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{social.description}</p>
-                      </div>
-                      <ArrowRight className="h-5 w-5 shrink-0 text-caramel" />
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        </section>
-
         <section className="-mx-4 overflow-hidden rounded-[2rem] border-y border-caramel/10 bg-white/45 py-4 shadow-sm backdrop-blur">
           <div className="mb-3 px-4 text-center">
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Aperçu</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Dernières vitrines sociales</h2>
+            <h2 className="mt-1 font-display text-xl font-black text-espresso">Vitrines sociales</h2>
           </div>
           <NetworkPreviewCards />
         </section>
 
         <section className="card-warm space-y-4">
           <div className="text-center">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Tous nos liens</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Réseaux sociaux officiels</h2>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Liens officiels</p>
+            <h2 className="mt-1 font-display text-xl font-black text-espresso">Choisir un réseau</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Chaque carte ouvre directement le bon compte. Simple, propre, sans labyrinthe de galette.
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -170,15 +122,20 @@ const Social = () => {
               const Icon = social.icon;
               return (
                 <a key={social.name} href={social.url} target="_blank" rel="noopener noreferrer" className="block">
-                  <div className="rounded-2xl border border-border/55 bg-white/70 p-4 transition hover:border-caramel/30 hover:bg-white">
+                  <div className="rounded-3xl border border-border/55 bg-white/70 p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-caramel/30 hover:bg-white hover:shadow-warm">
                     <div className="flex items-center gap-4">
-                      <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white ${social.color}`}>
+                      <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-sm ${social.color}`}>
                         <Icon />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h3 className="font-display text-base font-black text-espresso">{social.name}</h3>
-                        <p className="truncate text-xs font-bold text-caramel">{social.handle}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">{social.action}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-display text-lg font-black text-espresso">{social.name}</h3>
+                          <span className="rounded-full bg-caramel/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-caramel">
+                            {social.badge}
+                          </span>
+                        </div>
+                        <p className="truncate text-sm font-bold text-caramel">{social.handle}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{social.description}</p>
                       </div>
                       <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
                     </div>
@@ -187,26 +144,6 @@ const Social = () => {
               );
             })}
           </div>
-        </section>
-
-        <section className="relative overflow-hidden rounded-[2rem] bg-gradient-to-br from-[#25D366] to-[#128C7E] p-5 text-white shadow-warm">
-          <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
-          <div className="relative flex items-center gap-4">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-white/20">
-              <MessageCircle className="h-7 w-7" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/70">Communauté</p>
-              <h3 className="font-display text-xl font-black">WhatsApp</h3>
-              <p className="mt-1 text-sm text-white/82">Promos exclusives et infos en avant-première.</p>
-            </div>
-          </div>
-          <a href="https://wa.me/message/QVZO5N4ZDR64M1" target="_blank" rel="noopener noreferrer" className="mt-5 block">
-            <Button className="h-13 w-full rounded-2xl bg-white font-black text-[#128C7E] hover:bg-white/90">
-              Rejoindre la communauté
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Button>
-          </a>
         </section>
       </div>
     </div>
