@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import AuthModal from '@/components/auth/AuthModal';
-import ClientDashboard from '@/components/client/ClientDashboard';
+import ClientDashboardPremium from '@/components/client/ClientDashboardPremium';
 import { Button } from '@/components/ui/button';
 import { User, Gift, Calendar, Lock, Star, ChevronRight, Loader2 } from 'lucide-react';
 import logo from '@/assets/logo.png';
@@ -26,7 +26,7 @@ const Client = () => {
   }
 
   if (isAuthenticated) {
-    return <ClientDashboard />;
+    return <ClientDashboardPremium />;
   }
 
   return (
