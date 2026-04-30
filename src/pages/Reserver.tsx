@@ -4,9 +4,9 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Copy,
   ExternalLink,
   MapPin,
-  MessageCircle,
   Phone,
   Sparkles,
   Star,
@@ -16,19 +16,32 @@ import {
 import { Button } from "@/components/ui/button";
 import GoogleMap from "@/components/home/GoogleMap";
 import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
+import { toast } from "sonner";
 
 const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 const WHATSAPP_NUMBER = "33781246918";
+const PHONE_NUMBER = "0259660176";
 const PHONE_DISPLAY = "02 59 66 01 76";
-const WHATSAPP_DISPLAY = "07 81 24 69 18";
-const MAPS_LINK = "https://maps.app.goo.gl/ShXSrr3XBsQTEYZ87?g_st=ac";
+const MAPS_DIRECTIONS_LINK =
+  "https://www.google.com/maps/dir/?api=1&destination=La%20Cr%C3%AAperie%20des%20Saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers&travelmode=driving";
 
 const OPENING_HOURS = [
-  { label: "Midi", days: "Lundi au dimanche", hours: "12h00 – 14h00" },
-  { label: "Soir", days: "Vendredi & samedi", hours: "19h00 – 22h00" },
+  { label: "Midi", days: "Lundi au dimanche", hours: "12h00 – 14h00", slots: "12h00, 12h30, 13h00, 13h30" },
+  { label: "Soir", days: "Vendredi & samedi", hours: "19h00 – 22h00", slots: "19h00 à 21h30, toutes les 30 min" },
 ];
 
-const PEOPLE_OPTIONS = [2, 3, 4, 5, 6, 7, 8];
+const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+const MIDDAY_SLOTS = ["12h00", "12h30", "13h00", "13h30"];
+const EVENING_SLOTS = ["19h00", "19h30", "20h00", "20h30", "21h00", "21h30"];
+
+type ServiceSlot = {
+  id: string;
+  label: string;
+  time: string;
+  available: boolean;
+  period: "Midi" | "Soir";
+};
 
 const WhatsAppIcon = () => (
   <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -61,47 +74,67 @@ const buildUpcomingDays = () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  return Array.from({ length: 21 }, (_, index) => {
+  return Array.from({ length: 31 }, (_, index) => {
     const date = new Date(today);
     date.setDate(today.getDate() + index);
     return date;
   });
 };
 
-const getAvailablePeriods = (date: Date) => {
+const getAvailableSlots = (date: Date): ServiceSlot[] => {
   const day = date.getDay();
-  const isFriday = day === 5;
-  const isSaturday = day === 6;
+  const hasEvening = day === 5 || day === 6;
 
   return [
-    { id: "midi", label: "Midi", time: "12h00 – 14h00", available: true },
-    { id: "soir", label: "Soir", time: "19h00 – 22h00", available: isFriday || isSaturday },
+    ...MIDDAY_SLOTS.map((time) => ({
+      id: `midi-${time}`,
+      label: time,
+      time,
+      available: true,
+      period: "Midi" as const,
+    })),
+    ...EVENING_SLOTS.map((time) => ({
+      id: `soir-${time}`,
+      label: time,
+      time,
+      available: hasEvening,
+      period: "Soir" as const,
+    })),
   ];
 };
 
-const buildWhatsAppText = (date: Date, periodLabel: string, people: number) =>
-  `Bonjour ! Je souhaite réserver une table à La Crêperie des Saveurs pour ${people} personne${people > 1 ? "s" : ""}, le ${formatDateLong(date)} (${periodLabel}).`;
+const buildReservationText = (date: Date, slot: ServiceSlot, people: number) =>
+  `Bonjour ! Je souhaite réserver une table à La Crêperie des Saveurs pour ${people} personne${people > 1 ? "s" : ""}, le ${formatDateLong(date)} à ${slot.time} (${slot.period}).`;
 
 const Reserver = () => {
   const days = useMemo(() => buildUpcomingDays(), []);
   const [selectedDate, setSelectedDate] = useState(days[0]);
-  const [selectedPeriod, setSelectedPeriod] = useState("midi");
+  const [selectedSlotId, setSelectedSlotId] = useState("midi-12h00");
   const [people, setPeople] = useState(2);
   const [showGoogleBooking, setShowGoogleBooking] = useState(false);
 
-  const periods = useMemo(() => getAvailablePeriods(selectedDate), [selectedDate]);
-  const selectedPeriodData = periods.find((period) => period.id === selectedPeriod && period.available) ?? periods[0];
+  const slots = useMemo(() => getAvailableSlots(selectedDate), [selectedDate]);
+  const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && slot.available) ?? slots[0];
   const selectedDateISO = toISODate(selectedDate);
-  const googleBookingUrl = `${BOOKING_LINK}?date=${selectedDateISO}`;
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(
-    buildWhatsAppText(selectedDate, selectedPeriodData.label, people),
-  )}`;
+  const reservationText = buildReservationText(selectedDate, selectedSlot, people);
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(reservationText)}`;
+  const googleBookingUrl = BOOKING_LINK;
+  const shouldPreferPhone = people >= 9;
 
   const handleDateChange = (date: Date) => {
     setSelectedDate(date);
-    const nextPeriods = getAvailablePeriods(date);
-    const stillAvailable = nextPeriods.some((period) => period.id === selectedPeriod && period.available);
-    if (!stillAvailable) setSelectedPeriod("midi");
+    const nextSlots = getAvailableSlots(date);
+    const stillAvailable = nextSlots.some((slot) => slot.id === selectedSlotId && slot.available);
+    if (!stillAvailable) setSelectedSlotId("midi-12h00");
+  };
+
+  const handleCopyRequest = async () => {
+    try {
+      await navigator.clipboard.writeText(reservationText);
+      toast.success("Demande copiée");
+    } catch {
+      toast.info(reservationText);
+    }
   };
 
   return (
@@ -114,7 +147,7 @@ const Reserver = () => {
           </div>
           <h1 className="font-display text-3xl font-black leading-tight">Réservez votre table</h1>
           <p className="mt-2 text-sm leading-relaxed text-white/82">
-            Choisissez votre jour, votre service et le nombre de personnes. Le bouton Google garde votre choix en mémoire pour vous guider plus vite.
+            Choisissez votre jour, votre horaire et le nombre de couverts. Votre demande est préparée automatiquement pour Google, WhatsApp ou l’appel.
           </p>
 
           <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
@@ -125,13 +158,13 @@ const Reserver = () => {
             </div>
             <div className="rounded-2xl bg-white/12 p-3 text-center">
               <Clock className="mx-auto mb-1 h-5 w-5 text-butter" />
-              <p className="text-[10px] uppercase tracking-wide text-white/65">Service</p>
-              <p className="text-xs font-bold">{selectedPeriodData.label}</p>
+              <p className="text-[10px] uppercase tracking-wide text-white/65">Horaire</p>
+              <p className="text-xs font-bold">{selectedSlot.time}</p>
             </div>
             <div className="rounded-2xl bg-white/12 p-3 text-center">
               <Users className="mx-auto mb-1 h-5 w-5 text-butter" />
               <p className="text-[10px] uppercase tracking-wide text-white/65">Couverts</p>
-              <p className="text-xs font-bold">{people}</p>
+              <p className="text-xs font-bold">{people === 9 ? "9+" : people}</p>
             </div>
           </div>
         </section>
@@ -139,13 +172,13 @@ const Reserver = () => {
         <section className="card-warm space-y-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">1. Choisir le jour</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Calendrier</h2>
+            <h2 className="mt-1 font-display text-xl font-black text-espresso">Calendrier sur 31 jours</h2>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-7">
-            {days.slice(0, 14).map((date) => {
+          <div className="grid max-h-[32rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-7">
+            {days.map((date) => {
               const active = toISODate(date) === selectedDateISO;
-              const hasEvening = getAvailablePeriods(date).some((period) => period.id === "soir" && period.available);
+              const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
 
               return (
                 <button
@@ -178,37 +211,28 @@ const Reserver = () => {
 
         <section className="card-warm space-y-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">2. Choisir le service</p>
+            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">2. Choisir l’horaire</p>
             <h2 className="mt-1 font-display text-xl font-black text-espresso capitalize">{formatDateLong(selectedDate)}</h2>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {periods.map((period) => {
-              const active = selectedPeriodData.id === period.id;
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Midi</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                {slots.filter((slot) => slot.period === "Midi").map((slot) => (
+                  <TimeSlotButton key={slot.id} slot={slot} active={selectedSlot.id === slot.id} onClick={() => setSelectedSlotId(slot.id)} />
+                ))}
+              </div>
+            </div>
 
-              return (
-                <button
-                  key={period.id}
-                  type="button"
-                  disabled={!period.available}
-                  onClick={() => setSelectedPeriod(period.id)}
-                  className={`rounded-3xl border p-4 text-left transition disabled:cursor-not-allowed disabled:opacity-45 ${
-                    active
-                      ? "border-caramel bg-gradient-to-br from-caramel/18 to-butter/30 shadow-warm"
-                      : "border-border/70 bg-white/70 hover:border-caramel/40"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-display text-lg font-black text-espresso">{period.label}</p>
-                      <p className="text-sm text-muted-foreground">{period.time}</p>
-                    </div>
-                    {active && <CheckCircle2 className="h-5 w-5 text-caramel" />}
-                  </div>
-                  {!period.available && <p className="mt-2 text-xs font-semibold text-muted-foreground">Disponible uniquement vendredi & samedi.</p>}
-                </button>
-              );
-            })}
+            <div>
+              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Soir — vendredi & samedi</p>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {slots.filter((slot) => slot.period === "Soir").map((slot) => (
+                  <TimeSlotButton key={slot.id} slot={slot} active={selectedSlot.id === slot.id} onClick={() => setSelectedSlotId(slot.id)} />
+                ))}
+              </div>
+            </div>
           </div>
         </section>
 
@@ -218,7 +242,7 @@ const Reserver = () => {
             <h2 className="mt-1 font-display text-xl font-black text-espresso">Combien de couverts ?</h2>
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {PEOPLE_OPTIONS.map((option) => (
               <button
                 key={option}
@@ -230,12 +254,12 @@ const Reserver = () => {
                     : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
                 }`}
               >
-                {option}
+                {option === 9 ? "9+" : option}
               </button>
             ))}
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Pour une grande tablée ou une demande spéciale, WhatsApp reste le plus rapide.
+            Pour 9 personnes ou plus, l’appel est conseillé afin de confirmer la place et l’organisation de la table.
           </p>
         </section>
 
@@ -247,34 +271,50 @@ const Reserver = () => {
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Votre demande</p>
               <h2 className="mt-1 font-display text-xl font-black text-espresso capitalize">
-                {formatDateLong(selectedDate)} · {selectedPeriodData.label}
+                {formatDateLong(selectedDate)} · {selectedSlot.time}
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {people} personne{people > 1 ? "s" : ""} · {selectedPeriodData.time}
+                {people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}
               </p>
             </div>
           </div>
 
-          <div className="mt-5 grid gap-3">
-            <Button
-              onClick={() => setShowGoogleBooking(true)}
-              className="h-14 rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90"
-            >
-              Réserver sur Google
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
+          <div className="mt-4 rounded-2xl border border-caramel/20 bg-white/70 p-3 text-sm text-muted-foreground">
+            {reservationText}
+          </div>
 
-            <div className="grid grid-cols-2 gap-3">
+          <div className="mt-5 grid gap-3">
+            {shouldPreferPhone ? (
+              <a href={`tel:${PHONE_NUMBER}`} className="block">
+                <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
+                  Appeler pour confirmer
+                  <Phone className="ml-2 h-5 w-5" />
+                </Button>
+              </a>
+            ) : (
+              <Button
+                onClick={() => setShowGoogleBooking(true)}
+                className="h-14 rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90"
+              >
+                Réserver sur Google
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button variant="outline" onClick={handleCopyRequest} className="h-13 rounded-2xl font-bold">
+                <Copy className="mr-2 h-4 w-4" />
+                Copier
+              </Button>
+              <a href={`tel:${PHONE_NUMBER}`} className="block">
+                <Button variant="outline" className="h-13 w-full rounded-2xl font-bold">
+                  <Phone className="mr-2 h-4 w-4" />
+                  Appel
+                </Button>
+              </a>
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block">
                 <Button variant="outline" className="h-13 w-full rounded-2xl border-[#25D366]/35 bg-[#25D366]/10 font-bold text-[#128C4A] hover:bg-[#25D366]/15">
                   <WhatsAppIcon />
-                  WhatsApp
-                </Button>
-              </a>
-              <a href="tel:0259660176" className="block">
-                <Button variant="outline" className="h-13 w-full rounded-2xl font-bold">
-                  <Phone className="mr-2 h-5 w-5" />
-                  Appeler
                 </Button>
               </a>
             </div>
@@ -289,10 +329,11 @@ const Reserver = () => {
           <div className="space-y-3">
             {OPENING_HOURS.map((item) => (
               <div key={item.label} className="rounded-2xl border border-border/50 bg-white/55 p-4">
-                <div className="flex items-center justify-between gap-3">
+                <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-display text-base font-black text-espresso">{item.label}</p>
                     <p className="text-sm text-muted-foreground">{item.days}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Créneaux : {item.slots}</p>
                   </div>
                   <p className="whitespace-nowrap text-sm font-bold text-caramel">{item.hours}</p>
                 </div>
@@ -314,9 +355,9 @@ const Reserver = () => {
             <GoogleMap />
           </div>
 
-          <a href={MAPS_LINK} target="_blank" rel="noopener noreferrer">
+          <a href={MAPS_DIRECTIONS_LINK} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" className="mt-4 h-12 w-full rounded-2xl font-bold">
-              Ouvrir l’itinéraire
+              Ouvrir l’itinéraire dans Google Maps
               <ExternalLink className="ml-2 h-4 w-4" />
             </Button>
           </a>
@@ -332,9 +373,11 @@ const Reserver = () => {
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Google réservation</p>
                 <h2 className="font-display text-lg font-black text-espresso capitalize">
-                  {formatDateLong(selectedDate)} · {selectedPeriodData.label}
+                  {formatDateLong(selectedDate)} · {selectedSlot.time}
                 </h2>
-                <p className="text-xs text-muted-foreground">Si Google bloque l’affichage intégré, ouvrez le lien externe.</p>
+                <p className="text-xs text-muted-foreground">
+                  Google ne préremplit pas toujours les liens de réservation. Votre demande est prête à copier juste dessous.
+                </p>
               </div>
               <button
                 type="button"
@@ -344,6 +387,16 @@ const Reserver = () => {
               >
                 <X className="h-5 w-5" />
               </button>
+            </div>
+
+            <div className="border-b border-border/60 bg-butter/20 p-3">
+              <div className="rounded-2xl border border-caramel/20 bg-white/80 p-3 text-sm text-muted-foreground">
+                {reservationText}
+              </div>
+              <Button variant="outline" onClick={handleCopyRequest} className="mt-2 h-11 w-full rounded-2xl font-bold">
+                <Copy className="mr-2 h-4 w-4" />
+                Copier ma demande
+              </Button>
             </div>
 
             <iframe
@@ -370,5 +423,20 @@ const Reserver = () => {
     </div>
   );
 };
+
+const TimeSlotButton = ({ slot, active, onClick }: { slot: ServiceSlot; active: boolean; onClick: () => void }) => (
+  <button
+    type="button"
+    disabled={!slot.available}
+    onClick={onClick}
+    className={`rounded-2xl border px-3 py-3 text-center font-display text-base font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
+      active
+        ? "border-caramel bg-caramel text-white shadow-sm"
+        : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
+    }`}
+  >
+    {slot.time}
+  </button>
+);
 
 export default Reserver;
