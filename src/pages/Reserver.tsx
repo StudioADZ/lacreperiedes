@@ -4,19 +4,16 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Copy,
   ExternalLink,
   MapPin,
   Phone,
   Sparkles,
   Star,
   Users,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import GoogleMap from "@/components/home/GoogleMap";
 import GoogleReviewCTA from "@/components/common/GoogleReviewCTA";
-import { toast } from "sonner";
 
 const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
 const WHATSAPP_NUMBER = "33781246918";
@@ -27,24 +24,23 @@ const MAPS_DIRECTIONS_LINK =
 
 const OPENING_HOURS = [
   { label: "Midi", days: "Lundi au dimanche", hours: "12h00 – 14h00", slots: "12h00, 12h30, 13h00, 13h30" },
-  { label: "Soir", days: "Vendredi & samedi", hours: "19h00 – 22h00", slots: "19h00 à 21h30, toutes les 30 min" },
+  { label: "Soir", days: "Vendredi & samedi", hours: "19h00 – 22h00", slots: "19h00, 19h30, 20h00, 20h30, 21h00, 21h30" },
 ];
 
 const PEOPLE_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-
 const MIDDAY_SLOTS = ["12h00", "12h30", "13h00", "13h30"];
 const EVENING_SLOTS = ["19h00", "19h30", "20h00", "20h30", "21h00", "21h30"];
+const WEEK_DAYS = ["L", "M", "M", "J", "V", "S", "D"];
 
 type ServiceSlot = {
   id: string;
-  label: string;
   time: string;
   available: boolean;
   period: "Midi" | "Soir";
 };
 
 const WhatsAppIcon = () => (
-  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+  <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347M12.05 21.785h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z" />
   </svg>
 );
@@ -54,6 +50,12 @@ const formatDateLong = (date: Date) =>
     weekday: "long",
     day: "numeric",
     month: "long",
+  }).format(date);
+
+const formatMonthLabel = (date: Date) =>
+  new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric",
   }).format(date);
 
 const formatDateShort = (date: Date) =>
@@ -81,44 +83,37 @@ const buildUpcomingDays = () => {
   });
 };
 
+const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
+
+const buildAgendaCells = (days: Date[]) => {
+  const blanks = Array.from({ length: getMondayFirstDayIndex(days[0]) }, () => null);
+  return [...blanks, ...days];
+};
+
 const getAvailableSlots = (date: Date): ServiceSlot[] => {
   const day = date.getDay();
   const hasEvening = day === 5 || day === 6;
 
   return [
-    ...MIDDAY_SLOTS.map((time) => ({
-      id: `midi-${time}`,
-      label: time,
-      time,
-      available: true,
-      period: "Midi" as const,
-    })),
-    ...EVENING_SLOTS.map((time) => ({
-      id: `soir-${time}`,
-      label: time,
-      time,
-      available: hasEvening,
-      period: "Soir" as const,
-    })),
+    ...MIDDAY_SLOTS.map((time) => ({ id: `midi-${time}`, time, available: true, period: "Midi" as const })),
+    ...EVENING_SLOTS.map((time) => ({ id: `soir-${time}`, time, available: hasEvening, period: "Soir" as const })),
   ];
 };
 
-const buildReservationText = (date: Date, slot: ServiceSlot, people: number) =>
-  `Bonjour ! Je souhaite réserver une table à La Crêperie des Saveurs pour ${people} personne${people > 1 ? "s" : ""}, le ${formatDateLong(date)} à ${slot.time} (${slot.period}).`;
+const buildWhatsAppText = (date: Date, slot: ServiceSlot, people: number) =>
+  `Bonjour ! Je souhaite réserver une table à La Crêperie des Saveurs pour ${people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`}, le ${formatDateLong(date)} à ${slot.time}.`;
 
 const Reserver = () => {
   const days = useMemo(() => buildUpcomingDays(), []);
+  const agendaCells = useMemo(() => buildAgendaCells(days), [days]);
   const [selectedDate, setSelectedDate] = useState(days[0]);
   const [selectedSlotId, setSelectedSlotId] = useState("midi-12h00");
   const [people, setPeople] = useState(2);
-  const [showGoogleBooking, setShowGoogleBooking] = useState(false);
 
   const slots = useMemo(() => getAvailableSlots(selectedDate), [selectedDate]);
   const selectedSlot = slots.find((slot) => slot.id === selectedSlotId && slot.available) ?? slots[0];
   const selectedDateISO = toISODate(selectedDate);
-  const reservationText = buildReservationText(selectedDate, selectedSlot, people);
-  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(reservationText)}`;
-  const googleBookingUrl = BOOKING_LINK;
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(buildWhatsAppText(selectedDate, selectedSlot, people))}`;
   const shouldPreferPhone = people >= 9;
 
   const handleDateChange = (date: Date) => {
@@ -128,120 +123,64 @@ const Reserver = () => {
     if (!stillAvailable) setSelectedSlotId("midi-12h00");
   };
 
-  const handleCopyRequest = async () => {
-    try {
-      await navigator.clipboard.writeText(reservationText);
-      toast.success("Demande copiée");
-    } catch {
-      toast.info(reservationText);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-b from-[hsl(35_45%_92%)] via-background to-[hsl(42_50%_96%)] px-4 pb-24 pt-20">
       <div className="mx-auto max-w-lg space-y-6">
-        <section className="overflow-hidden rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-espresso via-espresso/95 to-caramel/80 p-5 text-white shadow-elevated">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-butter" />
-            Réservation premium
-          </div>
-          <h1 className="font-display text-3xl font-black leading-tight">Réservez votre table</h1>
-          <p className="mt-2 text-sm leading-relaxed text-white/82">
-            Choisissez votre jour, votre horaire et le nombre de couverts. Votre demande est préparée automatiquement pour Google, WhatsApp ou l’appel.
-          </p>
+        <Hero selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} />
 
-          <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
-            <div className="rounded-2xl bg-white/12 p-3 text-center">
-              <Calendar className="mx-auto mb-1 h-5 w-5 text-butter" />
-              <p className="text-[10px] uppercase tracking-wide text-white/65">Jour</p>
-              <p className="text-xs font-bold capitalize">{formatDateShort(selectedDate)}</p>
+        <section className="card-warm space-y-5">
+          <SectionTitle eyebrow="1. Choisir le jour" title="Agenda des 31 prochains jours" />
+          <div className="rounded-[1.75rem] border border-caramel/15 bg-white/70 p-3 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-3 px-1">
+              <p className="font-display text-lg font-black capitalize text-espresso">{formatMonthLabel(selectedDate)}</p>
+              <span className="rounded-full bg-caramel/10 px-3 py-1 text-xs font-bold text-caramel">31 jours</span>
             </div>
-            <div className="rounded-2xl bg-white/12 p-3 text-center">
-              <Clock className="mx-auto mb-1 h-5 w-5 text-butter" />
-              <p className="text-[10px] uppercase tracking-wide text-white/65">Horaire</p>
-              <p className="text-xs font-bold">{selectedSlot.time}</p>
+
+            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-[10px] font-black uppercase tracking-wide text-muted-foreground">
+              {WEEK_DAYS.map((day, index) => (
+                <span key={`${day}-${index}`}>{day}</span>
+              ))}
             </div>
-            <div className="rounded-2xl bg-white/12 p-3 text-center">
-              <Users className="mx-auto mb-1 h-5 w-5 text-butter" />
-              <p className="text-[10px] uppercase tracking-wide text-white/65">Couverts</p>
-              <p className="text-xs font-bold">{people === 9 ? "9+" : people}</p>
+
+            <div className="grid grid-cols-7 gap-1.5">
+              {agendaCells.map((date, index) => {
+                if (!date) return <div key={`blank-${index}`} className="h-12" aria-hidden="true" />;
+
+                const active = toISODate(date) === selectedDateISO;
+                const today = toISODate(date) === toISODate(days[0]);
+                const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
+
+                return (
+                  <button
+                    key={toISODate(date)}
+                    type="button"
+                    onClick={() => handleDateChange(date)}
+                    className={`relative min-h-12 rounded-2xl border px-1 py-2 text-center transition ${
+                      active
+                        ? "border-caramel bg-caramel text-white shadow-warm"
+                        : "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"
+                    }`}
+                  >
+                    <span className="block font-display text-base font-black leading-none">{date.getDate()}</span>
+                    {today && <span className={`mt-1 block text-[8px] font-bold uppercase ${active ? "text-white/80" : "text-caramel"}`}>auj.</span>}
+                    {hasEvening && <span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${active ? "bg-white" : "bg-caramel"}`} />}
+                  </button>
+                );
+              })}
             </div>
+
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">Le point doré indique un service du soir disponible.</p>
           </div>
         </section>
 
         <section className="card-warm space-y-5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">1. Choisir le jour</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Calendrier sur 31 jours</h2>
-          </div>
-
-          <div className="grid max-h-[32rem] grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-7">
-            {days.map((date) => {
-              const active = toISODate(date) === selectedDateISO;
-              const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
-
-              return (
-                <button
-                  key={toISODate(date)}
-                  type="button"
-                  onClick={() => handleDateChange(date)}
-                  className={`rounded-2xl border p-3 text-left transition ${
-                    active
-                      ? "border-caramel bg-caramel text-white shadow-warm"
-                      : "border-border/70 bg-white/65 hover:border-caramel/40 hover:bg-white"
-                  }`}
-                >
-                  <span className="block text-[10px] font-bold uppercase tracking-wide opacity-75">
-                    {new Intl.DateTimeFormat("fr-FR", { weekday: "short" }).format(date)}
-                  </span>
-                  <span className="block font-display text-xl font-black">{date.getDate()}</span>
-                  <span className="block text-[10px] capitalize opacity-75">
-                    {new Intl.DateTimeFormat("fr-FR", { month: "short" }).format(date)}
-                  </span>
-                  {hasEvening && (
-                    <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[9px] font-bold ${active ? "bg-white/18" : "bg-caramel/10 text-caramel"}`}>
-                      soir
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+          <SectionTitle eyebrow="2. Choisir l’horaire" title={formatDateLong(selectedDate)} capitalize />
+          <TimeSlotGroup title="Midi" slots={slots.filter((slot) => slot.period === "Midi")} selectedSlot={selectedSlot} onSelect={setSelectedSlotId} />
+          <TimeSlotGroup title="Soir — vendredi & samedi" slots={slots.filter((slot) => slot.period === "Soir")} selectedSlot={selectedSlot} onSelect={setSelectedSlotId} />
         </section>
 
         <section className="card-warm space-y-5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">2. Choisir l’horaire</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso capitalize">{formatDateLong(selectedDate)}</h2>
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Midi</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                {slots.filter((slot) => slot.period === "Midi").map((slot) => (
-                  <TimeSlotButton key={slot.id} slot={slot} active={selectedSlot.id === slot.id} onClick={() => setSelectedSlotId(slot.id)} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">Soir — vendredi & samedi</p>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                {slots.filter((slot) => slot.period === "Soir").map((slot) => (
-                  <TimeSlotButton key={slot.id} slot={slot} active={selectedSlot.id === slot.id} onClick={() => setSelectedSlotId(slot.id)} />
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="card-warm space-y-5">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">3. Nombre de personnes</p>
-            <h2 className="mt-1 font-display text-xl font-black text-espresso">Combien de couverts ?</h2>
-          </div>
-
+          <SectionTitle eyebrow="3. Nombre de personnes" title="Combien de couverts ?" />
           <div className="grid grid-cols-3 gap-2">
             {PEOPLE_OPTIONS.map((option) => (
               <button
@@ -259,184 +198,201 @@ const Reserver = () => {
             ))}
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Pour 9 personnes ou plus, l’appel est conseillé afin de confirmer la place et l’organisation de la table.
+            Pour 9 personnes ou plus, privilégiez l’appel afin de confirmer la disponibilité.
           </p>
         </section>
 
-        <section className="rounded-[2rem] border border-caramel/25 bg-gradient-to-br from-white via-butter/35 to-caramel/10 p-5 shadow-warm">
-          <div className="flex items-start gap-3">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-caramel text-white">
-              <Star className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Votre demande</p>
-              <h2 className="mt-1 font-display text-xl font-black text-espresso capitalize">
-                {formatDateLong(selectedDate)} · {selectedSlot.time}
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}
-              </p>
-            </div>
-          </div>
+        <ReservationSummary
+          selectedDate={selectedDate}
+          selectedSlot={selectedSlot}
+          people={people}
+          shouldPreferPhone={shouldPreferPhone}
+          whatsappUrl={whatsappUrl}
+        />
 
-          <div className="mt-4 rounded-2xl border border-caramel/20 bg-white/70 p-3 text-sm text-muted-foreground">
-            {reservationText}
-          </div>
-
-          <div className="mt-5 grid gap-3">
-            {shouldPreferPhone ? (
-              <a href={`tel:${PHONE_NUMBER}`} className="block">
-                <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
-                  Appeler pour confirmer
-                  <Phone className="ml-2 h-5 w-5" />
-                </Button>
-              </a>
-            ) : (
-              <Button
-                onClick={() => setShowGoogleBooking(true)}
-                className="h-14 rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90"
-              >
-                Réserver sur Google
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            )}
-
-            <div className="grid grid-cols-3 gap-2">
-              <Button variant="outline" onClick={handleCopyRequest} className="h-13 rounded-2xl font-bold">
-                <Copy className="mr-2 h-4 w-4" />
-                Copier
-              </Button>
-              <a href={`tel:${PHONE_NUMBER}`} className="block">
-                <Button variant="outline" className="h-13 w-full rounded-2xl font-bold">
-                  <Phone className="mr-2 h-4 w-4" />
-                  Appel
-                </Button>
-              </a>
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block">
-                <Button variant="outline" className="h-13 w-full rounded-2xl border-[#25D366]/35 bg-[#25D366]/10 font-bold text-[#128C4A] hover:bg-[#25D366]/15">
-                  <WhatsAppIcon />
-                </Button>
-              </a>
-            </div>
-          </div>
-        </section>
-
-        <section className="card-warm">
-          <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-black text-espresso">
-            <Clock className="h-5 w-5 text-caramel" />
-            Horaires d’ouverture
-          </h2>
-          <div className="space-y-3">
-            {OPENING_HOURS.map((item) => (
-              <div key={item.label} className="rounded-2xl border border-border/50 bg-white/55 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-display text-base font-black text-espresso">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.days}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Créneaux : {item.slots}</p>
-                  </div>
-                  <p className="whitespace-nowrap text-sm font-bold text-caramel">{item.hours}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="card-warm">
-          <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-black text-espresso">
-            <MapPin className="h-5 w-5 text-caramel" />
-            Nous trouver
-          </h2>
-          <p className="font-bold text-foreground">La Crêperie des Saveurs</p>
-          <p className="mt-1 text-sm text-muted-foreground">17 Place Carnot – Galerie des Halles</p>
-          <p className="text-sm text-muted-foreground">72600 Mamers</p>
-
-          <div className="mt-4 overflow-hidden rounded-2xl border border-border/50">
-            <GoogleMap />
-          </div>
-
-          <a href={MAPS_DIRECTIONS_LINK} target="_blank" rel="noopener noreferrer">
-            <Button variant="outline" className="mt-4 h-12 w-full rounded-2xl font-bold">
-              Ouvrir l’itinéraire dans Google Maps
-              <ExternalLink className="ml-2 h-4 w-4" />
-            </Button>
-          </a>
-        </section>
-
+        <OpeningHours />
+        <LocationBlock />
         <GoogleReviewCTA variant="card" className="mb-8" />
       </div>
-
-      {showGoogleBooking && (
-        <div className="fixed inset-0 z-50 bg-espresso/70 p-3 backdrop-blur-sm">
-          <div className="mx-auto flex h-full max-w-lg flex-col overflow-hidden rounded-[2rem] border border-white/20 bg-background shadow-elevated">
-            <div className="flex items-start justify-between gap-3 border-b border-border/60 p-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Google réservation</p>
-                <h2 className="font-display text-lg font-black text-espresso capitalize">
-                  {formatDateLong(selectedDate)} · {selectedSlot.time}
-                </h2>
-                <p className="text-xs text-muted-foreground">
-                  Google ne préremplit pas toujours les liens de réservation. Votre demande est prête à copier juste dessous.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGoogleBooking(false)}
-                className="rounded-full border border-border bg-white p-2 text-muted-foreground"
-                aria-label="Fermer la réservation Google"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="border-b border-border/60 bg-butter/20 p-3">
-              <div className="rounded-2xl border border-caramel/20 bg-white/80 p-3 text-sm text-muted-foreground">
-                {reservationText}
-              </div>
-              <Button variant="outline" onClick={handleCopyRequest} className="mt-2 h-11 w-full rounded-2xl font-bold">
-                <Copy className="mr-2 h-4 w-4" />
-                Copier ma demande
-              </Button>
-            </div>
-
-            <iframe
-              title="Réservation Google"
-              src={googleBookingUrl}
-              className="min-h-0 flex-1 bg-white"
-              loading="lazy"
-            />
-
-            <div className="grid gap-2 border-t border-border/60 p-3">
-              <a href={googleBookingUrl} target="_blank" rel="noopener noreferrer" className="block">
-                <Button className="h-12 w-full rounded-2xl bg-caramel font-black text-white hover:bg-caramel/90">
-                  Ouvrir dans Google
-                  <ExternalLink className="ml-2 h-4 w-4" />
-                </Button>
-              </a>
-              <Button variant="ghost" onClick={() => setShowGoogleBooking(false)} className="h-11 rounded-2xl font-bold">
-                Revenir à l’application
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-const TimeSlotButton = ({ slot, active, onClick }: { slot: ServiceSlot; active: boolean; onClick: () => void }) => (
-  <button
-    type="button"
-    disabled={!slot.available}
-    onClick={onClick}
-    className={`rounded-2xl border px-3 py-3 text-center font-display text-base font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
-      active
-        ? "border-caramel bg-caramel text-white shadow-sm"
-        : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
-    }`}
-  >
-    {slot.time}
-  </button>
+const Hero = ({ selectedDate, selectedSlot, people }: { selectedDate: Date; selectedSlot: ServiceSlot; people: number }) => (
+  <section className="overflow-hidden rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-espresso via-espresso/95 to-caramel/80 p-5 text-white shadow-elevated">
+    <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur">
+      <Sparkles className="h-3.5 w-3.5 text-butter" />
+      Réservation
+    </div>
+    <h1 className="font-display text-3xl font-black leading-tight">Réservez votre table</h1>
+    <p className="mt-2 text-sm leading-relaxed text-white/82">
+      Sélectionnez une date, un horaire et le nombre de couverts. Google gère la réservation finale, l’appel reste recommandé pour les grandes tables.
+    </p>
+
+    <div className="mt-5 grid grid-cols-3 gap-2 rounded-3xl bg-white/10 p-2 backdrop-blur">
+      <HeroStat icon={Calendar} label="Jour" value={formatDateShort(selectedDate)} />
+      <HeroStat icon={Clock} label="Horaire" value={selectedSlot.time} />
+      <HeroStat icon={Users} label="Couverts" value={people === 9 ? "9+" : String(people)} />
+    </div>
+  </section>
+);
+
+const HeroStat = ({ icon: Icon, label, value }: { icon: typeof Calendar; label: string; value: string }) => (
+  <div className="rounded-2xl bg-white/12 p-3 text-center">
+    <Icon className="mx-auto mb-1 h-5 w-5 text-butter" />
+    <p className="text-[10px] uppercase tracking-wide text-white/65">{label}</p>
+    <p className="text-xs font-bold capitalize">{value}</p>
+  </div>
+);
+
+const SectionTitle = ({ eyebrow, title, capitalize = false }: { eyebrow: string; title: string; capitalize?: boolean }) => (
+  <div>
+    <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">{eyebrow}</p>
+    <h2 className={`mt-1 font-display text-xl font-black text-espresso ${capitalize ? "capitalize" : ""}`}>{title}</h2>
+  </div>
+);
+
+const TimeSlotGroup = ({
+  title,
+  slots,
+  selectedSlot,
+  onSelect,
+}: {
+  title: string;
+  slots: ServiceSlot[];
+  selectedSlot: ServiceSlot;
+  onSelect: (slotId: string) => void;
+}) => (
+  <div>
+    <p className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{title}</p>
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {slots.map((slot) => (
+        <button
+          key={slot.id}
+          type="button"
+          disabled={!slot.available}
+          onClick={() => onSelect(slot.id)}
+          className={`rounded-2xl border px-3 py-3 text-center font-display text-base font-black transition disabled:cursor-not-allowed disabled:opacity-40 ${
+            selectedSlot.id === slot.id
+              ? "border-caramel bg-caramel text-white shadow-sm"
+              : "border-border/70 bg-white/70 text-espresso hover:border-caramel/40"
+          }`}
+        >
+          {slot.time}
+        </button>
+      ))}
+    </div>
+  </div>
+);
+
+const ReservationSummary = ({
+  selectedDate,
+  selectedSlot,
+  people,
+  shouldPreferPhone,
+  whatsappUrl,
+}: {
+  selectedDate: Date;
+  selectedSlot: ServiceSlot;
+  people: number;
+  shouldPreferPhone: boolean;
+  whatsappUrl: string;
+}) => (
+  <section className="rounded-[2rem] border border-caramel/25 bg-gradient-to-br from-white via-butter/35 to-caramel/10 p-5 shadow-warm">
+    <div className="flex items-start gap-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-caramel text-white">
+        <Star className="h-6 w-6" />
+      </div>
+      <div>
+        <p className="text-xs font-bold uppercase tracking-[0.18em] text-caramel">Votre sélection</p>
+        <h2 className="mt-1 font-display text-xl font-black capitalize text-espresso">
+          {formatDateLong(selectedDate)} · {selectedSlot.time}
+        </h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {people === 9 ? "9 personnes ou plus" : `${people} personne${people > 1 ? "s" : ""}`} · {selectedSlot.period}
+        </p>
+      </div>
+    </div>
+
+    <div className="mt-5 grid gap-3">
+      {shouldPreferPhone ? (
+        <a href={`tel:${PHONE_NUMBER}`} className="block">
+          <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
+            Appeler pour réserver
+            <Phone className="ml-2 h-5 w-5" />
+          </Button>
+        </a>
+      ) : (
+        <a href={BOOKING_LINK} target="_blank" rel="noopener noreferrer" className="block">
+          <Button className="h-14 w-full rounded-2xl bg-caramel text-base font-black text-white hover:bg-caramel/90">
+            Réserver sur Google
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </a>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <a href={`tel:${PHONE_NUMBER}`} className="block">
+          <Button variant="outline" className="h-13 w-full rounded-2xl font-bold">
+            <Phone className="mr-2 h-4 w-4" />
+            Appeler
+          </Button>
+        </a>
+        <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="block">
+          <Button variant="outline" className="h-13 w-full rounded-2xl border-[#25D366]/35 bg-[#25D366]/10 font-bold text-[#128C4A] hover:bg-[#25D366]/15">
+            <WhatsAppIcon />
+            WhatsApp
+          </Button>
+        </a>
+      </div>
+    </div>
+  </section>
+);
+
+const OpeningHours = () => (
+  <section className="card-warm">
+    <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-black text-espresso">
+      <Clock className="h-5 w-5 text-caramel" />
+      Horaires d’ouverture
+    </h2>
+    <div className="space-y-3">
+      {OPENING_HOURS.map((item) => (
+        <div key={item.label} className="rounded-2xl border border-border/50 bg-white/55 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="font-display text-base font-black text-espresso">{item.label}</p>
+              <p className="text-sm text-muted-foreground">{item.days}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Créneaux : {item.slots}</p>
+            </div>
+            <p className="whitespace-nowrap text-sm font-bold text-caramel">{item.hours}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+);
+
+const LocationBlock = () => (
+  <section className="card-warm">
+    <h2 className="mb-4 flex items-center gap-2 font-display text-lg font-black text-espresso">
+      <MapPin className="h-5 w-5 text-caramel" />
+      Nous trouver
+    </h2>
+    <p className="font-bold text-foreground">La Crêperie des Saveurs</p>
+    <p className="mt-1 text-sm text-muted-foreground">17 Place Carnot – Galerie des Halles</p>
+    <p className="text-sm text-muted-foreground">72600 Mamers</p>
+
+    <div className="mt-4 overflow-hidden rounded-2xl border border-border/50">
+      <GoogleMap />
+    </div>
+
+    <a href={MAPS_DIRECTIONS_LINK} target="_blank" rel="noopener noreferrer">
+      <Button variant="outline" className="mt-4 h-12 w-full rounded-2xl font-bold">
+        Ouvrir l’itinéraire dans Google Maps
+        <ExternalLink className="ml-2 h-4 w-4" />
+      </Button>
+    </a>
+  </section>
 );
 
 export default Reserver;
