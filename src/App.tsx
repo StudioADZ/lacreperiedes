@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/services/auth/AuthProvider";
 import SplashScreen from "./components/SplashScreen";
 import Layout from "./components/Layout";
-import ProtectedRoute from "./components/guards/ProtectedRoute";
 import Index from "./pages/Index";
 
 const Quiz = lazy(() => import("./pages/Quiz"));
@@ -91,15 +90,8 @@ const App = () => {
                   <Route path="/client" element={<Client />} />
                   <Route path="/mon-compte" element={<Client />} />
 
-                  {/* Administration */}
-                  <Route
-                    path="/admin"
-                    element={
-                      <ProtectedRoute requireAdmin>
-                        <Admin />
-                      </ProtectedRoute>
-                    }
-                  />
+                  {/* Administration : accessible à l'URL, puis protégée par le mot de passe admin côté fonction Supabase */}
+                  <Route path="/admin" element={<Admin />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />
