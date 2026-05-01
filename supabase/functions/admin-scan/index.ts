@@ -42,7 +42,6 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_code', 'Format de code invalide')
       }
 
-      // Find participation by code
       const { data: participation, error } = await supabase
         .from('quiz_participations')
         .select('id, first_name, prize_won, week_start, prize_claimed, claimed_at, created_at, status, security_token, token_generated_at')
@@ -61,7 +60,6 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Check if invalidated
       if (participation.status === 'invalidated') {
         return successResponse({
           valid: false,
@@ -70,12 +68,10 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Calculate week number
       const weekDate = new Date(participation.week_start)
       const startOfYear = new Date(weekDate.getFullYear(), 0, 1)
       const weekNumber = Math.ceil(((weekDate.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
 
-      // Calculate expected security token (changes every 10 seconds)
       const currentToken = generateSecurityToken()
 
       return successResponse({
@@ -102,7 +98,6 @@ Deno.serve(async (req) => {
         return errorResponse('invalid_code', 'Format de code invalide')
       }
 
-      // Check status before claiming
       const { data: existing } = await supabase
         .from('quiz_participations')
         .select('status, prize_claimed')
@@ -123,7 +118,6 @@ Deno.serve(async (req) => {
         })
       }
 
-      // Mark as claimed
       const { data, error } = await supabase
         .from('quiz_participations')
         .update({ 
@@ -158,7 +152,7 @@ Deno.serve(async (req) => {
         .from('quiz_participations')
         .update({ 
           status: 'invalidated',
-          prize_claimed: true, // Mark as used so can't be reused
+          prize_claimed: true,
           claimed_at: new Date().toISOString()
         })
         .eq('id', participationId)
@@ -178,7 +172,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'list_participations') {
-      // Get recent participations with all details for admin
       const { data: participations, error } = await supabase
         .from('quiz_participations')
         .select('id, created_at, first_name, email, phone, score, total_questions, prize_won, prize_code, prize_claimed, claimed_at, status')
@@ -194,7 +187,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'stats') {
-      // Get current week stats
       const { data: weekStart } = await supabase.rpc('get_current_week_start')
       
       const { data: stock } = await supabase
@@ -203,7 +195,6 @@ Deno.serve(async (req) => {
         .eq('week_start', weekStart)
         .maybeSingle()
 
-      // Get aggregated stats only, no PII
       const { count: totalParticipations } = await supabase
         .from('quiz_participations')
         .select('id', { count: 'exact', head: true })
@@ -231,42 +222,88 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update_secret_menu') {
-      if (!menuId || !menuData) {
-        return errorResponse('missing_data', 'Données requises')
+      if (!menuData) {
+        return errorResponse('missing_data', 'Données du menu requises')
       }
 
-      // Validate menu data
+      // Validate menu data only if a custom name is provided.
       if (menuData.menu_name && !isValidName(menuData.menu_name)) {
         return errorResponse('invalid_menu_name', 'Nom de menu invalide')
       }
 
+      let targetMenuId = menuId
+
+      if (!targetMenuId) {
+        const { data: existingMenu, error: existingMenuError } = await supabase
+          .from('secret_menu')
+          .select('id')
+          .eq('is_active', true)
+          .order('week_start', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (existingMenuError) {
+          console.error('Secret menu lookup error:', existingMenuError)
+          return serverErrorResponse()
+        }
+
+        targetMenuId = existingMenu?.id
+      }
+
+      const basePayload = {
+        menu_name: menuData.menu_name?.slice(0, 100) || 'Menu secret de la semaine',
+        secret_code: menuData.secret_code?.toUpperCase().slice(0, 20) || 'SECRET',
+        galette_special: menuData.galette_special?.slice(0, 100) || null,
+        galette_special_description: menuData.galette_special_description?.slice(0, 500) || null,
+        galette_special_price: menuData.galette_special_price?.slice(0, 20) || null,
+        galette_special_image_url: menuData.galette_special_image_url || null,
+        galette_special_video_url: menuData.galette_special_video_url || null,
+        crepe_special: menuData.crepe_special?.slice(0, 100) || null,
+        crepe_special_description: menuData.crepe_special_description?.slice(0, 500) || null,
+        crepe_special_price: menuData.crepe_special_price?.slice(0, 20) || null,
+        crepe_special_image_url: menuData.crepe_special_image_url || null,
+        crepe_special_video_url: menuData.crepe_special_video_url || null,
+        valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
+        valid_to: menuData.valid_to ? new Date(menuData.valid_to).toISOString() : null,
+        is_active: menuData.is_active !== undefined ? menuData.is_active : true,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (!targetMenuId) {
+        const { data: weekStart, error: weekStartError } = await supabase.rpc('get_current_week_start')
+
+        if (weekStartError) {
+          console.error('Week start error:', weekStartError)
+          return serverErrorResponse()
+        }
+
+        const { data: createdMenu, error: createMenuError } = await supabase
+          .from('secret_menu')
+          .insert({
+            week_start: weekStart,
+            ...basePayload,
+          })
+          .select()
+          .single()
+
+        if (createMenuError) {
+          console.error('Menu create error:', createMenuError)
+          return errorResponse('create_failed', `Création impossible : ${createMenuError.message}`, 400)
+        }
+
+        return successResponse({ success: true, menu: createdMenu })
+      }
+
       const { data, error } = await supabase
         .from('secret_menu')
-        .update({
-          menu_name: menuData.menu_name?.slice(0, 100),
-          secret_code: menuData.secret_code?.toUpperCase().slice(0, 20),
-          galette_special: menuData.galette_special?.slice(0, 100) || null,
-          galette_special_description: menuData.galette_special_description?.slice(0, 500) || null,
-          galette_special_price: menuData.galette_special_price?.slice(0, 20) || null,
-          galette_special_image_url: menuData.galette_special_image_url || null,
-          galette_special_video_url: menuData.galette_special_video_url || null,
-          crepe_special: menuData.crepe_special?.slice(0, 100) || null,
-          crepe_special_description: menuData.crepe_special_description?.slice(0, 500) || null,
-          crepe_special_price: menuData.crepe_special_price?.slice(0, 20) || null,
-          crepe_special_image_url: menuData.crepe_special_image_url || null,
-          crepe_special_video_url: menuData.crepe_special_video_url || null,
-          valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
-          valid_to: menuData.valid_to ? new Date(menuData.valid_to).toISOString() : null,
-          is_active: menuData.is_active !== undefined ? menuData.is_active : true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', menuId)
+        .update(basePayload)
+        .eq('id', targetMenuId)
         .select()
         .single()
 
       if (error) {
-        console.error('Menu update error')
-        return serverErrorResponse()
+        console.error('Menu update error:', error)
+        return errorResponse('save_failed', `Sauvegarde impossible : ${error.message}`, 400)
       }
 
       return successResponse({ success: true, menu: data })
@@ -305,7 +342,6 @@ Deno.serve(async (req) => {
         return errorResponse('missing_code', 'Code requis')
       }
 
-      // Get active secret menu
       const { data: menu, error: menuError } = await supabase
         .from('secret_menu')
         .select('id, secret_code, valid_from, valid_to, is_active')
@@ -318,7 +354,6 @@ Deno.serve(async (req) => {
         return successResponse({ valid: false, message: 'Aucun menu secret actif' })
       }
 
-      // Check if within valid period
       const now = new Date()
       const validFrom = menu.valid_from ? new Date(menu.valid_from) : null
       const validTo = menu.valid_to ? new Date(menu.valid_to) : null
@@ -326,16 +361,15 @@ Deno.serve(async (req) => {
       if (validFrom && now < validFrom) {
         return successResponse({ valid: false, message: 'Menu secret pas encore disponible' })
       }
+
       if (validTo && now > validTo) {
         return successResponse({ valid: false, message: 'Menu secret expiré' })
       }
 
-      // Get daily code
       const { data: dailyCode } = await supabase.rpc('get_daily_code', { 
         p_secret_code: menu.secret_code 
       })
 
-      // Check if submitted code matches daily code or main secret code
       const isValid = code.toUpperCase() === dailyCode?.toUpperCase() || 
                       code.toUpperCase() === menu.secret_code?.toUpperCase()
 
@@ -346,7 +380,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_security_token') {
-      // Return current expected security token for verification
       return successResponse({ 
         token: generateSecurityToken(),
         validFor: 10 - (Math.floor(Date.now() / 1000) % 10)
@@ -354,7 +387,6 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_secret_menu') {
-      // Admin-only: fetch full secret_menu including secret_code
       const { data: menuData, error: menuError } = await supabase
         .from('secret_menu')
         .select('*')
@@ -388,6 +420,7 @@ Deno.serve(async (req) => {
 
     if (action === 'mark_message_read') {
       const { messageId } = body
+
       if (!messageId) {
         return errorResponse('missing_id', 'ID message requis')
       }
@@ -415,8 +448,7 @@ Deno.serve(async (req) => {
 
 // Generate a 4-digit security token that changes every 10 seconds
 function generateSecurityToken(): string {
-  const now = Math.floor(Date.now() / 10000) // Changes every 10 seconds
-  // Simple hash based on time
+  const now = Math.floor(Date.now() / 10000)
   const hash = ((now * 9301 + 49297) % 233280).toString()
   return hash.padStart(4, '0').slice(-4)
 }
