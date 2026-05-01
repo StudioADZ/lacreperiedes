@@ -59,7 +59,7 @@ const QuizStatsPanel = ({ adminPassword }: QuizStatsPanelProps) => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
+      className="space-y-5"
     >
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'participations')}>
