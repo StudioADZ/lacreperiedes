@@ -221,18 +221,41 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'update_secret_menu') {
-      if (!menuData) {
+      if (!menuData || typeof menuData !== 'object') {
         return errorResponse('missing_data', 'Données du menu requises')
       }
 
-      let targetMenuId = menuId
+      const cleanText = (value: unknown, max: number) => {
+        if (typeof value !== 'string') return null
+        const text = value.trim()
+        return text ? text.slice(0, max) : null
+      }
+
+      const cleanDate = (value: unknown) => {
+        if (typeof value !== 'string') return null
+        const text = value.trim()
+        if (!text) return null
+
+        const date = new Date(text)
+        if (Number.isNaN(date.getTime())) return null
+
+        return date.toISOString()
+      }
+
+      const { data: weekStart, error: weekStartError } = await supabase.rpc('get_current_week_start')
+
+      if (weekStartError || !weekStart) {
+        console.error('Week start error:', weekStartError)
+        return serverErrorResponse()
+      }
+
+      let targetMenuId = typeof menuId === 'string' && menuId.trim() ? menuId.trim() : null
 
       if (!targetMenuId) {
         const { data: existingMenu, error: existingMenuError } = await supabase
           .from('secret_menu')
           .select('id')
-          .eq('is_active', true)
-          .order('week_start', { ascending: false })
+          .eq('week_start', weekStart)
           .limit(1)
           .maybeSingle()
 
@@ -245,38 +268,29 @@ Deno.serve(async (req) => {
       }
 
       const basePayload = {
-        menu_name: menuData.menu_name?.slice(0, 100) || 'Menu secret de la semaine',
-        secret_code: menuData.secret_code?.toUpperCase().slice(0, 20) || 'SECRET',
-        galette_special: menuData.galette_special?.slice(0, 100) || null,
-        galette_special_description: menuData.galette_special_description?.slice(0, 500) || null,
-        galette_special_price: menuData.galette_special_price?.slice(0, 20) || null,
-        galette_special_image_url: menuData.galette_special_image_url || null,
-        galette_special_video_url: menuData.galette_special_video_url || null,
-        crepe_special: menuData.crepe_special?.slice(0, 100) || null,
-        crepe_special_description: menuData.crepe_special_description?.slice(0, 500) || null,
-        crepe_special_price: menuData.crepe_special_price?.slice(0, 20) || null,
-        crepe_special_image_url: menuData.crepe_special_image_url || null,
-        crepe_special_video_url: menuData.crepe_special_video_url || null,
-        valid_from: menuData.valid_from ? new Date(menuData.valid_from).toISOString() : null,
-        valid_to: menuData.valid_to ? new Date(menuData.valid_to).toISOString() : null,
-        is_active: menuData.is_active !== undefined ? menuData.is_active : true,
+        week_start: weekStart,
+        menu_name: cleanText(menuData.menu_name, 100) || 'Menu secret de la semaine',
+        secret_code: cleanText(menuData.secret_code, 20)?.toUpperCase() || 'SECRET',
+        galette_special: cleanText(menuData.galette_special, 100),
+        galette_special_description: cleanText(menuData.galette_special_description, 500),
+        galette_special_price: cleanText(menuData.galette_special_price, 20),
+        galette_special_image_url: cleanText(menuData.galette_special_image_url, 1000),
+        galette_special_video_url: cleanText(menuData.galette_special_video_url, 1000),
+        crepe_special: cleanText(menuData.crepe_special, 100),
+        crepe_special_description: cleanText(menuData.crepe_special_description, 500),
+        crepe_special_price: cleanText(menuData.crepe_special_price, 20),
+        crepe_special_image_url: cleanText(menuData.crepe_special_image_url, 1000),
+        crepe_special_video_url: cleanText(menuData.crepe_special_video_url, 1000),
+        valid_from: cleanDate(menuData.valid_from),
+        valid_to: cleanDate(menuData.valid_to),
+        is_active: typeof menuData.is_active === 'boolean' ? menuData.is_active : true,
         updated_at: new Date().toISOString(),
       }
 
       if (!targetMenuId) {
-        const { data: weekStart, error: weekStartError } = await supabase.rpc('get_current_week_start')
-
-        if (weekStartError) {
-          console.error('Week start error:', weekStartError)
-          return serverErrorResponse()
-        }
-
         const { data: createdMenu, error: createMenuError } = await supabase
           .from('secret_menu')
-          .insert({
-            week_start: weekStart,
-            ...basePayload,
-          })
+          .insert(basePayload)
           .select()
           .single()
 
@@ -381,10 +395,32 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_secret_menu') {
+      const { data: weekStart, error: weekStartError } = await supabase.rpc('get_current_week_start')
+
+      if (weekStartError || !weekStart) {
+        console.error('Week start error:', weekStartError)
+        return serverErrorResponse()
+      }
+
+      const { data: currentWeekMenu, error: currentWeekMenuError } = await supabase
+        .from('secret_menu')
+        .select('*')
+        .eq('week_start', weekStart)
+        .limit(1)
+        .maybeSingle()
+
+      if (currentWeekMenuError) {
+        console.error('Get current week secret menu error')
+        return serverErrorResponse()
+      }
+
+      if (currentWeekMenu) {
+        return successResponse({ menu: currentWeekMenu })
+      }
+
       const { data: menuData, error: menuError } = await supabase
         .from('secret_menu')
         .select('*')
-        .eq('is_active', true)
         .order('week_start', { ascending: false })
         .limit(1)
         .maybeSingle()
