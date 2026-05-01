@@ -3,8 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
   BarChart3,
-  Camera,
-  CameraOff,
   CheckCircle,
   CreditCard,
   Database,
@@ -26,7 +24,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import confetti from "canvas-confetti";
-import CodeCamera from "@/components/admin/QRScanner";
 import ActusLivePanel from "@/components/admin/ActusLivePanel";
 import SplashSettingsPanel from "@/components/admin/SplashSettingsPanel";
 import QuizStatsPanel from "@/components/admin/QuizStatsPanel";
@@ -76,7 +73,6 @@ const Admin = () => {
   const [result, setResult] = useState<VerifyResult | null>(null);
   const [claimLoading, setClaimLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<AdminTab>("scan");
-  const [scannerActive, setScannerActive] = useState(false);
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const storedPassword = useRef("");
 
@@ -109,7 +105,6 @@ const Admin = () => {
     setIsAuthenticated(false);
     setManualCode("");
     setResult(null);
-    setScannerActive(false);
     setLastScannedCode(null);
   };
 
@@ -120,7 +115,6 @@ const Admin = () => {
     setIsLoading(true);
     setResult(null);
     setManualCode(code.toUpperCase());
-    setScannerActive(false);
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: "POST",
@@ -190,7 +184,7 @@ const Admin = () => {
             {activeTab === "carte" && <CarteMenuPanel adminPassword={storedPassword.current} />}
             {activeTab === "messages" && <MessagesPanel adminPassword={storedPassword.current} />}
             {activeTab === "payment" && <PaymentQRPanel adminPassword={storedPassword.current} />}
-            {activeTab === "scan" && <ValidationPanel result={result} manualCode={manualCode} isLoading={isLoading} claimLoading={claimLoading} scannerActive={scannerActive} onManualCodeChange={setManualCode} onScannerToggle={() => setScannerActive((value) => !value)} onVerify={handleVerify} onClaim={handleClaim} onReset={handleReset} />}
+            {activeTab === "scan" && <ValidationPanel result={result} manualCode={manualCode} isLoading={isLoading} claimLoading={claimLoading} onManualCodeChange={setManualCode} onVerify={handleVerify} onClaim={handleClaim} onReset={handleReset} />}
             {activeTab === "actus" && <ActusLivePanel adminPassword={storedPassword.current} />}
             {activeTab === "splash" && <SplashSettingsPanel adminPassword={storedPassword.current} />}
           </div>
@@ -210,9 +204,7 @@ const AdminNavigation = ({ activeTab, setActiveTab }: { activeTab: AdminTab; set
 
 const AdminNavButton = ({ tab, active, onClick }: { tab: { id: AdminTab; label: string; description: string; icon: LucideIcon }; active: boolean; onClick: () => void }) => { const Icon = tab.icon; return <button type="button" onClick={onClick} className={`rounded-2xl border p-3 text-left transition ${active ? "border-caramel bg-caramel text-white shadow-sm" : "border-border/60 bg-background/75 text-espresso hover:border-caramel/40 hover:bg-white"}`}><div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-white/18 text-white" : "bg-caramel/10 text-caramel"}`}><Icon className="h-4 w-4" /></div><p className="font-display text-sm font-black">{tab.label}</p><p className={`mt-0.5 text-[10px] leading-tight ${active ? "text-white/72" : "text-muted-foreground"}`}>{tab.description}</p></button>; };
 
-const ValidationPanel = ({ result, manualCode, isLoading, claimLoading, scannerActive, onManualCodeChange, onScannerToggle, onVerify, onClaim, onReset }: { result: VerifyResult | null; manualCode: string; isLoading: boolean; claimLoading: boolean; scannerActive: boolean; onManualCodeChange: (code: string) => void; onScannerToggle: () => void; onVerify: (code: string) => void; onClaim: () => void; onReset: () => void }) => <div className="space-y-5">{!result && <ValidationCameraCard scannerActive={scannerActive} onScannerToggle={onScannerToggle} onVerify={onVerify} />}{!result && <ManualCodeCard manualCode={manualCode} isLoading={isLoading} onManualCodeChange={onManualCodeChange} onVerify={onVerify} />}<AnimatePresence mode="wait">{result && <ValidationResult result={result} claimLoading={claimLoading} onClaim={onClaim} onReset={onReset} />}</AnimatePresence></div>;
-
-const ValidationCameraCard = ({ scannerActive, onScannerToggle, onVerify }: { scannerActive: boolean; onScannerToggle: () => void; onVerify: (code: string) => void }) => <div className="rounded-3xl border border-border/55 bg-background/70 p-4"><div className="flex items-center justify-between gap-3"><Label className="flex items-center gap-2 font-bold"><Camera className="h-4 w-4 text-caramel" />Contrôle caméra</Label><Button variant={scannerActive ? "destructive" : "outline"} size="sm" onClick={onScannerToggle} className="rounded-2xl">{scannerActive ? <><CameraOff className="mr-1 h-4 w-4" />Arrêter</> : <><Camera className="mr-1 h-4 w-4" />Activer</>}</Button></div>{scannerActive && <div className="mt-4"><CodeCamera onScan={onVerify} isActive={scannerActive} /></div>}</div>;
+const ValidationPanel = ({ result, manualCode, isLoading, claimLoading, onManualCodeChange, onVerify, onClaim, onReset }: { result: VerifyResult | null; manualCode: string; isLoading: boolean; claimLoading: boolean; onManualCodeChange: (code: string) => void; onVerify: (code: string) => void; onClaim: () => void; onReset: () => void }) => <div className="space-y-5">{!result && <ManualCodeCard manualCode={manualCode} isLoading={isLoading} onManualCodeChange={onManualCodeChange} onVerify={onVerify} />}<AnimatePresence mode="wait">{result && <ValidationResult result={result} claimLoading={claimLoading} onClaim={onClaim} onReset={onReset} />}</AnimatePresence></div>;
 
 const ManualCodeCard = ({ manualCode, isLoading, onManualCodeChange, onVerify }: { manualCode: string; isLoading: boolean; onManualCodeChange: (code: string) => void; onVerify: (code: string) => void }) => <div className="rounded-3xl border border-border/55 bg-background/70 p-4"><Label htmlFor="code" className="mb-2 flex items-center gap-2 font-bold"><TicketCheck className="h-4 w-4 text-caramel" />Saisie manuelle</Label><div className="flex gap-2"><Input id="code" value={manualCode} onChange={(e) => onManualCodeChange(e.target.value.toUpperCase())} onKeyDown={(e) => e.key === "Enter" && onVerify(manualCode)} placeholder="XXXXXXXX" className="h-12 rounded-2xl font-mono text-lg tracking-wider" maxLength={8} /><Button onClick={() => onVerify(manualCode)} disabled={isLoading || !manualCode.trim()} className="h-12 rounded-2xl bg-caramel font-bold text-white hover:bg-caramel/90">{isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Contrôler"}</Button></div></div>;
 
