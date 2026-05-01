@@ -11,7 +11,7 @@ on:
 
 jobs:
   deploy:
-    name: Pull remote schema and deploy functions
+    name: Repair migration history and deploy functions
     runs-on: ubuntu-latest
 
     env:
@@ -38,11 +38,51 @@ jobs:
       - name: Link Supabase project
         run: supabase link --project-ref "$SUPABASE_PROJECT_ID"
 
-      - name: Pull remote database schema
-        run: supabase db pull --linked -p "$SUPABASE_DB_PASSWORD" --schema public
+      - name: Repair reverted migrations
+        run: |
+          supabase migration repair --status reverted 20260210231408 -p "$SUPABASE_DB_PASSWORD"
+          supabase migration repair --status reverted 20260221194000 -p "$SUPABASE_DB_PASSWORD"
 
-      - name: Show generated migrations
-        run: ls -la supabase/migrations
+      - name: Repair applied migrations
+        run: |
+          for migration in \
+            20260112002548 \
+            20260112002705 \
+            20260112004500 \
+            20260112005000 \
+            20260112011451 \
+            20260112013000 \
+            20260112014000 \
+            20260112021334 \
+            20260112025659 \
+            20260112071018 \
+            20260112151421 \
+            20260112153815 \
+            20260112173542 \
+            20260112174050 \
+            20260112174328 \
+            20260112175754 \
+            20260112222334 \
+            20260113205308 \
+            20260114013102 \
+            20260114013135 \
+            20260115004000 \
+            20260116010444 \
+            20260120004418 \
+            20260120004455 \
+            20260120215123 \
+            20260120231408 \
+            20260120234055 \
+            20260208162852 \
+            20260208164724 \
+            20260211141624 \
+            20260214160000 \
+            20260220074350 \
+            20260221194400 \
+            20260430082516
+          do
+            supabase migration repair --status applied "$migration" -p "$SUPABASE_DB_PASSWORD"
+          done
 
       - name: Deploy Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
