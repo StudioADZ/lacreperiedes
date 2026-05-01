@@ -13,7 +13,7 @@ interface CarteMenuPanelProps {
 }
 
 const CarteMenuPanel = ({ adminPassword }: CarteMenuPanelProps) => {
-  const [activeTab, setActiveTab] = useState<'carte' | 'secret'>('carte');
+  const [activeTab, setActiveTab] = useState<'carte' | 'secret'>('secret');
   const [dailyCode, setDailyCode] = useState<string | null>(null);
   const [isLoadingCode, setIsLoadingCode] = useState(false);
 
