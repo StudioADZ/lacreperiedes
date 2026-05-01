@@ -80,6 +80,7 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
 
   const fetchMenu = async () => {
     setIsLoading(true);
+
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: "POST",
@@ -127,23 +128,41 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
     setMessage(null);
 
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/secret-menu-save`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("secret-menu-save", {
+        body: {
           adminPassword,
           menuId: menu?.id,
-          menuData: formData,
-        }),
+          menuData: {
+            menu_name: formData.menu_name || "Menu secret de la semaine",
+
+            galette_special: formData.galette_special || "",
+            galette_special_description: formData.galette_special_description || "",
+            galette_special_price: formData.galette_special_price || "",
+            galette_special_image_url: formData.galette_special_image_url || "",
+            galette_special_video_url: formData.galette_special_video_url || "",
+
+            crepe_special: formData.crepe_special || "",
+            crepe_special_description: formData.crepe_special_description || "",
+            crepe_special_price: formData.crepe_special_price || "",
+            crepe_special_image_url: formData.crepe_special_image_url || "",
+            crepe_special_video_url: formData.crepe_special_video_url || "",
+
+            valid_from: formData.valid_from || "",
+            valid_to: formData.valid_to || "",
+            is_active: formData.is_active,
+          },
+        },
       });
 
-      const result = await response.json();
-
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Erreur de sauvegarde");
+      if (error) {
+        throw new Error(error.message || "Erreur de connexion Supabase");
       }
 
-      setMenu(result.menu);
+      if (!data?.success) {
+        throw new Error(data?.message || "Sauvegarde impossible");
+      }
+
+      setMenu(data.menu);
       setMessage({ type: "success", text: "Menu secret de la semaine enregistré." });
       await fetchMenu();
     } catch (error) {
@@ -156,10 +175,11 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
     }
   };
 
-  const mediaKeys = (type: SpecialType) => ({
-    image: type === "galette" ? "galette_special_image_url" : "crepe_special_image_url",
-    video: type === "galette" ? "galette_special_video_url" : "crepe_special_video_url",
-  } as const);
+  const mediaKeys = (type: SpecialType) =>
+    ({
+      image: type === "galette" ? "galette_special_image_url" : "crepe_special_image_url",
+      video: type === "galette" ? "galette_special_video_url" : "crepe_special_video_url",
+    }) as const;
 
   const uploadMedia = async (type: SpecialType, kind: "image" | "video", file: File) => {
     const key = `${type}-${kind}`;
@@ -244,7 +264,11 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
       />
 
       {message && (
-        <div className={`rounded-2xl p-3 text-center text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 text-green-700" : "bg-destructive/10 text-destructive"}`}>
+        <div
+          className={`rounded-2xl p-3 text-center text-sm font-semibold ${
+            message.type === "success" ? "bg-green-500/10 text-green-700" : "bg-destructive/10 text-destructive"
+          }`}
+        >
           {message.text}
         </div>
       )}
@@ -409,13 +433,16 @@ const MediaUploader = ({
         <Icon className="h-3 w-3" />
         {label}
       </Label>
+
       <div className="flex gap-2">
         <Input value={value} readOnly placeholder={icon === "video" ? "Aucune vidéo" : "Aucune photo"} className="h-12 flex-1 rounded-2xl" />
+
         {value && (
           <Button type="button" variant="outline" size="icon" onClick={onClear} className="h-12 w-12 rounded-2xl text-destructive">
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
+
         <label className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-border bg-background hover:bg-accent">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
           <input
