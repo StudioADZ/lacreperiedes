@@ -53,15 +53,15 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey =
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ||
-      Deno.env.get('SUPABASE_SECRET_KEYS')
+      Deno.env.get('SUPABASE_SECRET_KEYS') ||
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
     if (!supabaseUrl || !serviceRoleKey) {
       return jsonResponse(
         {
           success: false,
           error: 'missing_supabase_config',
-          message: 'Configuration Supabase manquante côté fonction.',
+          message: 'Configuration Supabase manquante côté fonction : SUPABASE_URL ou SUPABASE_SECRET_KEYS.',
         },
         500,
       )
