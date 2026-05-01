@@ -1,2 +1,3 @@
 -- Placeholder migration added to align local Git history with the existing Supabase remote migration history.
 -- The corresponding changes already exist in the remote database.
+select 1;
