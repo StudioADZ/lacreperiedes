@@ -47,7 +47,31 @@ type PrizeRecord = {
 };
 
 const normalizeEmail = (email?: string | null) => (email || "").trim().toLowerCase();
-const normalizePhone = (phone?: string | null) => (phone || "").replace(/[\s.-]/g, "").trim();
+
+const normalizePhone = (phone?: string | null) => {
+  const cleaned = (phone || "").replace(/[\s.-]/g, "").trim();
+
+  if (!cleaned) return "";
+  if (cleaned.startsWith("+33")) return cleaned;
+  if (cleaned.startsWith("0")) return `+33${cleaned.slice(1)}`;
+
+  return cleaned;
+};
+
+const getPhoneVariants = (phone?: string | null) => {
+  const cleaned = (phone || "").replace(/[\s.-]/g, "").trim();
+  const normalized = normalizePhone(phone);
+  const variants = new Set<string>();
+
+  if (cleaned) variants.add(cleaned);
+  if (normalized) variants.add(normalized);
+
+  if (normalized.startsWith("+33")) {
+    variants.add(`0${normalized.slice(3)}`);
+  }
+
+  return Array.from(variants);
+};
 
 const getString = (record: RawRecord, keys: string[]) => {
   for (const key of keys) {
@@ -107,7 +131,7 @@ const buildQuizPrize = (record: RawRecord): PrizeRecord | null => {
     label,
     code,
     wonAt: getString(record, ["created_at", "submitted_at", "won_at", "inserted_at"]),
-    claimed: getBoolean(record, ["is_claimed", "claimed"]) || !!getString(record, ["claimed_at", "redeemed_at", "used_at"]),
+    claimed: getBoolean(record, ["is_claimed", "claimed", "prize_claimed"]) || !!getString(record, ["claimed_at", "redeemed_at", "used_at"]),
     score: getNumber(record, ["score", "correct_answers"]),
     totalQuestions: getNumber(record, ["total_questions", "totalQuestions"]),
     weekStart: getString(record, ["week_start", "weekStart"]),
@@ -125,7 +149,7 @@ const buildHistoryPrize = (record: RawRecord): PrizeRecord | null => {
     label,
     code,
     wonAt: getString(record, ["won_at", "created_at", "inserted_at"]),
-    claimed: getBoolean(record, ["is_claimed", "claimed"]) || !!getString(record, ["claimed_at", "redeemed_at", "used_at"]),
+    claimed: getBoolean(record, ["is_claimed", "claimed", "prize_claimed"]) || !!getString(record, ["claimed_at", "redeemed_at", "used_at"]),
     score: getNumber(record, ["score"]),
     totalQuestions: getNumber(record, ["total_questions"]),
     weekStart: getString(record, ["week_start"]),
@@ -228,7 +252,7 @@ const ClientDashboardPremium = () => {
   const [city, setCity] = useState("");
 
   const email = normalizeEmail(user?.email);
-  const phone = normalizePhone(profile?.phone);
+  const phoneVariants = useMemo(() => getPhoneVariants(profile?.phone), [profile?.phone]);
   const displayName = [profile?.first_name, profile?.last_name].filter(Boolean).join(" ").trim() || user?.user_metadata?.first_name || "Client fidèle";
 
   useEffect(() => {
@@ -275,14 +299,45 @@ const ClientDashboardPremium = () => {
       }
 
       const quizQuery = async () => {
-        if (!email && !phone) return [] as PrizeRecord[];
-        let query = (supabase as any).from("quiz_participations").select("*").not("prize_won", "is", null);
-        if (email && phone) query = query.or(`email.eq.${email},phone.eq.${phone}`);
-        else if (email) query = query.eq("email", email);
-        else query = query.eq("phone", phone);
-        const { data, error } = await query.order("created_at", { ascending: false }).limit(30);
-        if (error) throw error;
-        return ((data || []) as RawRecord[]).map(buildQuizPrize).filter(Boolean) as PrizeRecord[];
+        if (!email && phoneVariants.length === 0) return [] as PrizeRecord[];
+
+        const queries = [];
+
+        if (email) {
+          queries.push(
+            (supabase as any)
+              .from("quiz_participations")
+              .select("*")
+              .not("prize_won", "is", null)
+              .eq("email", email)
+              .order("created_at", { ascending: false })
+              .limit(30),
+          );
+        }
+
+        phoneVariants.forEach((phoneValue) => {
+          queries.push(
+            (supabase as any)
+              .from("quiz_participations")
+              .select("*")
+              .not("prize_won", "is", null)
+              .eq("phone", phoneValue)
+              .order("created_at", { ascending: false })
+              .limit(30),
+          );
+        });
+
+        const results = await Promise.allSettled(queries);
+        const rows: RawRecord[] = [];
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            const { data, error } = result.value;
+            if (!error && Array.isArray(data)) rows.push(...data);
+          }
+        });
+
+        return rows.map(buildQuizPrize).filter(Boolean) as PrizeRecord[];
       };
 
       const historyQuery = async () => {
@@ -315,7 +370,7 @@ const ClientDashboardPremium = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [email, phone, profile, user]);
+  }, [email, phoneVariants, profile, user]);
 
   useEffect(() => {
     void fetchPrizes();
