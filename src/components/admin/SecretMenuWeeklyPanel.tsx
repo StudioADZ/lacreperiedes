@@ -388,7 +388,7 @@ const SpecialCard = ({
               Aperçu client
             </p>
             <div className="flex gap-3">
-              {formData[imageKey] && <img src={formData[imageKey]} alt="Aperçu" className="h-16 w-16 rounded-2xl object-cover" />}
+              {formData[imageKey] && <img src={String(formData[imageKey])} alt="Aperçu" className="h-16 w-16 rounded-2xl object-cover" />}
               <div className="min-w-0 flex-1">
                 <p className="font-display font-black text-espresso">{formData[nameKey] || title}</p>
                 <p className="line-clamp-2 text-xs text-muted-foreground">{formData[descriptionKey]}</p>
