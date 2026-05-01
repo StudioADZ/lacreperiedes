@@ -84,5 +84,17 @@ jobs:
             supabase migration repair --status applied "$migration" -p "$SUPABASE_DB_PASSWORD"
           done
 
-      - name: Deploy Edge Functions
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+      - name: Deploy admin-scan
+        run: supabase functions deploy admin-scan --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy quiz-session
+        run: supabase functions deploy quiz-session --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy quiz-submit
+        run: supabase functions deploy quiz-submit --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy verify-prize
+        run: supabase functions deploy verify-prize --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy send-prize-email
+        run: supabase functions deploy send-prize-email --project-ref "$SUPABASE_PROJECT_ID"
