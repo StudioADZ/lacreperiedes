@@ -88,9 +88,12 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         body: JSON.stringify({ action: "get_secret_menu", adminPassword }),
       });
 
-      if (!response.ok) throw new Error("Chargement impossible");
-
       const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Chargement impossible");
+      }
+
       const data = result.menu as SecretMenu | null;
 
       if (!data) {
@@ -116,8 +119,11 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         valid_to: data.valid_to?.split("T")[0] || "",
         is_active: data.is_active,
       });
-    } catch {
-      setMessage({ type: "error", text: "Impossible de charger le menu." });
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Impossible de charger le menu.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -128,12 +134,16 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
     setMessage(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("secret-menu-save", {
-        body: {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update_secret_menu",
           adminPassword,
           menuId: menu?.id,
           menuData: {
             menu_name: formData.menu_name || "Menu secret de la semaine",
+            secret_code: "SECRET",
 
             galette_special: formData.galette_special || "",
             galette_special_description: formData.galette_special_description || "",
@@ -151,18 +161,16 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
             valid_to: formData.valid_to || "",
             is_active: formData.is_active,
           },
-        },
+        }),
       });
 
-      if (error) {
-        throw new Error(error.message || "Erreur de connexion Supabase");
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Erreur de sauvegarde");
       }
 
-      if (!data?.success) {
-        throw new Error(data?.message || "Sauvegarde impossible");
-      }
-
-      setMenu(data.menu);
+      setMenu(result.menu);
       setMessage({ type: "success", text: "Menu secret de la semaine enregistré." });
       await fetchMenu();
     } catch (error) {
@@ -245,23 +253,9 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         </div>
       </section>
 
-      <SpecialCard
-        type="galette"
-        title="Galette secrète"
-        formData={formData}
-        updateForm={updateForm}
-        uploading={uploading}
-        uploadMedia={uploadMedia}
-      />
+      <SpecialCard type="galette" title="Galette secrète" formData={formData} updateForm={updateForm} uploading={uploading} uploadMedia={uploadMedia} />
 
-      <SpecialCard
-        type="crepe"
-        title="Crêpe secrète"
-        formData={formData}
-        updateForm={updateForm}
-        uploading={uploading}
-        uploadMedia={uploadMedia}
-      />
+      <SpecialCard type="crepe" title="Crêpe secrète" formData={formData} updateForm={updateForm} uploading={uploading} uploadMedia={uploadMedia} />
 
       {message && (
         <div
