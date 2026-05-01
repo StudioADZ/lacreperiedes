@@ -395,10 +395,32 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'get_secret_menu') {
+      const { data: weekStart, error: weekStartError } = await supabase.rpc('get_current_week_start')
+
+      if (weekStartError || !weekStart) {
+        console.error('Week start error:', weekStartError)
+        return serverErrorResponse()
+      }
+
+      const { data: currentWeekMenu, error: currentWeekMenuError } = await supabase
+        .from('secret_menu')
+        .select('*')
+        .eq('week_start', weekStart)
+        .limit(1)
+        .maybeSingle()
+
+      if (currentWeekMenuError) {
+        console.error('Get current week secret menu error')
+        return serverErrorResponse()
+      }
+
+      if (currentWeekMenu) {
+        return successResponse({ menu: currentWeekMenu })
+      }
+
       const { data: menuData, error: menuError } = await supabase
         .from('secret_menu')
         .select('*')
-        .eq('is_active', true)
         .order('week_start', { ascending: false })
         .limit(1)
         .maybeSingle()
