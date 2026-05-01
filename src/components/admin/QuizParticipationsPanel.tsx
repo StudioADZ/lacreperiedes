@@ -1,28 +1,13 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  Loader2,
-  Search,
-  Download,
-  CheckCircle,
-  Gift,
-  Trophy,
-  Clock,
-  Ban,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  EyeOff,
-  RefreshCw,
-  Calendar,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Ban, CheckCircle, ChevronDown, ChevronUp, Clock, Download, Eye, EyeOff, Gift, Loader2, RefreshCw, Search, Trophy } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-interface Participation {
+type Participation = {
   id: string;
   created_at: string;
   first_name: string;
@@ -35,121 +20,68 @@ interface Participation {
   prize_claimed: boolean;
   claimed_at: string | null;
   status: string;
-
-  // optionnel si backend le renvoie
-  week_start?: string; // "YYYY-MM-DD"
-}
-
-interface QuizParticipationsPanelProps {
-  adminPassword: string;
-}
+  week_start?: string;
+};
 
 type WeekFilter = "all" | "winners" | "claimed" | "invalidated" | "lost";
 
 type WeekStats = {
   week_start: string;
   total: number;
-  winners: number; // prize_won (hors invalidés) - inclut réclamés
-  claimed: number; // prize_claimed (hors invalidés)
+  winners: number;
+  claimed: number;
   invalidated: number;
   lost: number;
-  byPrize: Record<string, number>;
 };
 
-const getStatusBadge = (p: Participation) => {
-  if (p.status === "invalidated") {
-    return (
-      <Badge variant="destructive" className="gap-1">
-        <Ban className="w-3 h-3" /> Invalidé
-      </Badge>
-    );
-  }
-  if (p.prize_claimed) {
-    return (
-      <Badge variant="secondary" className="gap-1 bg-herb/10 text-herb border-herb/20">
-        <CheckCircle className="w-3 h-3" /> Réclamé
-      </Badge>
-    );
-  }
-  if (p.prize_won) {
-    return (
-      <Badge className="gap-1 bg-caramel/10 text-caramel border-caramel/20">
-        <Gift className="w-3 h-3" /> Gagnant
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="gap-1">
-      <Clock className="w-3 h-3" /> Perdu
-    </Badge>
-  );
-};
-
-const getPrizeLabel = (prize: string | null) => {
-  if (!prize) return "-";
-  switch (prize) {
-    case "formule_complete":
-      return "🏆 Formule Complète";
-    case "galette":
-      return "🥈 Galette";
-    case "crepe":
-      return "🥉 Crêpe";
-    default:
-      return prize;
-  }
-};
-
-const maskEmail = (email: string) => {
-  const safe = email || "";
-  const [local, domain] = safe.split("@");
-  if (!domain) return "***";
-  if (!local) return `***@${domain}`;
-  if (local.length <= 2) return `${local[0]}***@${domain}`;
-  return `${local.slice(0, 2)}***@${domain}`;
-};
-
-const maskPhone = (phone: string) => {
-  const p = phone || "";
-  if (p.length < 6) return p;
-  return `${p.slice(0, 2)}****${p.slice(-2)}`;
-};
-
-// Start-of-week (lundi)
 const getWeekStartKey = (isoDate: string) => {
   const d = new Date(isoDate);
   if (Number.isNaN(d.getTime())) return "unknown";
-
-  const day = d.getDay(); // Sunday=0
-  const diffToMonday = (day + 6) % 7;
-
+  const diffToMonday = (d.getDay() + 6) % 7;
   const monday = new Date(d);
   monday.setHours(0, 0, 0, 0);
   monday.setDate(d.getDate() - diffToMonday);
-
-  return monday.toISOString().slice(0, 10); // YYYY-MM-DD
+  return monday.toISOString().slice(0, 10);
 };
 
-const formatWeekLabelFR = (weekStartISO: string) => {
-  const d = new Date(weekStartISO);
-  if (Number.isNaN(d.getTime())) return "Semaine inconnue";
-  return `Semaine du ${d.toLocaleDateString("fr-FR")}`;
+const formatDate = (value: string) =>
+  new Date(value).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+const getPrizeLabel = (prize: string | null) => {
+  if (!prize) return "Aucun gain";
+  if (prize === "formule_complete") return "Formule complète";
+  if (prize === "galette") return "Galette";
+  if (prize === "crepe") return "Crêpe";
+  return prize;
 };
 
-const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps) => {
+const maskEmail = (email = "") => {
+  const [local, domain] = email.split("@");
+  if (!domain) return "Email masqué";
+  return `${local.slice(0, 2)}***@${domain}`;
+};
+
+const maskPhone = (phone = "") => (phone.length < 6 ? "Téléphone masqué" : `${phone.slice(0, 2)}****${phone.slice(-2)}`);
+
+const getStatus = (p: Participation) => {
+  if (p.status === "invalidated") return { label: "Invalidé", tone: "destructive" as const, icon: Ban };
+  if (p.prize_claimed) return { label: "Réclamé", tone: "claimed" as const, icon: CheckCircle };
+  if (p.prize_won) return { label: "Gagnant", tone: "winner" as const, icon: Gift };
+  return { label: "Perdu", tone: "lost" as const, icon: Clock };
+};
+
+const QuizParticipationsPanel = ({ adminPassword }: { adminPassword: string }) => {
   const [participations, setParticipations] = useState<Participation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // filtres globaux (appliqués à la semaine ouverte)
   const [searchQuery, setSearchQuery] = useState("");
   const [showSensitiveData, setShowSensitiveData] = useState(false);
-
-  // UI
   const [expandedWeek, setExpandedWeek] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [weekFilter, setWeekFilter] = useState<WeekFilter>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  // filtre par semaine
-  const [weekFilterByWeek, setWeekFilterByWeek] = useState<Record<string, WeekFilter>>({});
 
   const currentWeekKey = useMemo(() => getWeekStartKey(new Date().toISOString()), []);
 
@@ -159,15 +91,11 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "list_participations",
-          adminPassword,
-        }),
+        body: JSON.stringify({ action: "list_participations", adminPassword }),
       });
-
       if (response.ok) {
         const data = await response.json();
-        setParticipations((data.participations || []) as Participation[]);
+        setParticipations(data.participations || []);
       }
     } catch (error) {
       console.error("Error fetching participations:", error);
@@ -177,123 +105,49 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
   }, [adminPassword]);
 
   useEffect(() => {
-    fetchParticipations();
+    void fetchParticipations();
   }, [fetchParticipations]);
 
-  // normalisation: week_start si absent
-  const normalizedParticipations = useMemo(() => {
-    return participations.map((p) => ({
-      ...p,
-      week_start: p.week_start || getWeekStartKey(p.created_at),
-    }));
-  }, [participations]);
+  const normalizedParticipations = useMemo(
+    () => participations.map((p) => ({ ...p, week_start: p.week_start || getWeekStartKey(p.created_at) })),
+    [participations],
+  );
 
-  const weekStats = useMemo<WeekStats[]>(() => {
+  const weekStats = useMemo(() => {
     const map = new Map<string, WeekStats>();
-
-    for (const p of normalizedParticipations) {
-      const wk = p.week_start || "unknown";
-      if (!map.has(wk)) {
-        map.set(wk, {
-          week_start: wk,
-          total: 0,
-          winners: 0,
-          claimed: 0,
-          invalidated: 0,
-          lost: 0,
-          byPrize: {},
-        });
-      }
-
-      const s = map.get(wk)!;
-      s.total += 1;
-
-      const isInvalid = p.status === "invalidated";
-      const hasPrize = Boolean(p.prize_won);
-      const isClaimed = Boolean(p.prize_claimed);
-
-      if (isInvalid) s.invalidated += 1;
-      else if (hasPrize) s.winners += 1;
-      else s.lost += 1;
-
-      if (!isInvalid && isClaimed) s.claimed += 1;
-
-      if (p.prize_won) {
-        s.byPrize[p.prize_won] = (s.byPrize[p.prize_won] || 0) + 1;
-      }
-    }
-
-    // tri décroissant
+    normalizedParticipations.forEach((p) => {
+      const key = p.week_start || "unknown";
+      const current = map.get(key) || { week_start: key, total: 0, winners: 0, claimed: 0, invalidated: 0, lost: 0 };
+      current.total += 1;
+      if (p.status === "invalidated") current.invalidated += 1;
+      else if (p.prize_won) current.winners += 1;
+      else current.lost += 1;
+      if (p.status !== "invalidated" && p.prize_claimed) current.claimed += 1;
+      map.set(key, current);
+    });
     return Array.from(map.values()).sort((a, b) => (a.week_start < b.week_start ? 1 : -1));
   }, [normalizedParticipations]);
 
-  // ouvrir semaine courante par défaut (sinon plus récente)
   useEffect(() => {
-    if (expandedWeek) return;
-    const hasCurrent = weekStats.some((w) => w.week_start === currentWeekKey);
-    if (hasCurrent) setExpandedWeek(currentWeekKey);
-    else if (weekStats[0]) setExpandedWeek(weekStats[0].week_start);
-  }, [weekStats, currentWeekKey, expandedWeek]);
+    if (expandedWeek || weekStats.length === 0) return;
+    setExpandedWeek(weekStats.some((w) => w.week_start === currentWeekKey) ? currentWeekKey : weekStats[0].week_start);
+  }, [currentWeekKey, expandedWeek, weekStats]);
 
-  const applyWeekFilter = useCallback((items: Participation[], filter: WeekFilter) => {
-    switch (filter) {
-      case "winners":
-        return items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_won));
-      case "claimed":
-        return items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_claimed));
-      case "invalidated":
-        return items.filter((p) => p.status === "invalidated");
-      case "lost":
-        return items.filter((p) => p.status !== "invalidated" && !p.prize_won);
-      case "all":
-      default:
-        return items;
+  const selectedWeek = weekStats.find((week) => week.week_start === expandedWeek) || weekStats[0];
+
+  const filteredItems = useMemo(() => {
+    let items = normalizedParticipations.filter((p) => p.week_start === selectedWeek?.week_start);
+    if (weekFilter === "winners") items = items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_won));
+    if (weekFilter === "claimed") items = items.filter((p) => p.status !== "invalidated" && Boolean(p.prize_claimed));
+    if (weekFilter === "invalidated") items = items.filter((p) => p.status === "invalidated");
+    if (weekFilter === "lost") items = items.filter((p) => p.status !== "invalidated" && !p.prize_won);
+
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      items = items.filter((p) => [p.first_name, p.email, p.phone, p.prize_code].filter(Boolean).join(" ").toLowerCase().includes(query));
     }
-  }, []);
-
-  const applySearch = useCallback((items: Participation[], q: string) => {
-    const query = (q || "").trim().toLowerCase();
-    if (!query) return items;
-    return items.filter(
-      (p) =>
-        (p.first_name || "").toLowerCase().includes(query) ||
-        (p.email || "").toLowerCase().includes(query) ||
-        (p.phone || "").includes(query) ||
-        (p.prize_code || "").toLowerCase().includes(query)
-    );
-  }, []);
-
-  const getWeekItems = useCallback(
-    (weekStart: string) => {
-      const base = normalizedParticipations.filter((p) => (p.week_start || "unknown") === weekStart);
-      const filter = weekFilterByWeek[weekStart] || "all";
-      const afterFilter = applyWeekFilter(base, filter);
-      return applySearch(afterFilter, searchQuery);
-    },
-    [normalizedParticipations, weekFilterByWeek, applyWeekFilter, applySearch, searchQuery]
-  );
-
-  const filterLabel = (f: WeekFilter) => {
-    switch (f) {
-      case "all":
-        return "Participants";
-      case "winners":
-        return "Gagnants";
-      case "claimed":
-        return "Réclamés";
-      case "invalidated":
-        return "Invalidés";
-      case "lost":
-        return "Perdus";
-      default:
-        return "Participants";
-    }
-  };
-
-  const setWeekFilter = (weekStart: string, value: WeekFilter) => {
-    setWeekFilterByWeek((prev) => ({ ...prev, [weekStart]: value }));
-    setExpandedId(null);
-  };
+    return items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [normalizedParticipations, searchQuery, selectedWeek?.week_start, weekFilter]);
 
   const handleMarkClaimed = async (participationId: string, prizeCode: string) => {
     setActionLoading(participationId);
@@ -301,22 +155,11 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "claim",
-          code: prizeCode,
-          adminPassword,
-        }),
+        body: JSON.stringify({ action: "claim", code: prizeCode, adminPassword }),
       });
-
       if (response.ok) {
-        setParticipations((prev) =>
-          prev.map((p) =>
-            p.id === participationId ? { ...p, prize_claimed: true, claimed_at: new Date().toISOString() } : p
-          )
-        );
+        setParticipations((prev) => prev.map((p) => (p.id === participationId ? { ...p, prize_claimed: true, claimed_at: new Date().toISOString() } : p)));
       }
-    } catch (error) {
-      console.error("Error claiming prize:", error);
     } finally {
       setActionLoading(null);
     }
@@ -328,400 +171,206 @@ const QuizParticipationsPanel = ({ adminPassword }: QuizParticipationsPanelProps
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "invalidate",
-          participationId,
-          adminPassword,
-        }),
+        body: JSON.stringify({ action: "invalidate", participationId, adminPassword }),
       });
-
-      if (response.ok) {
-        setParticipations((prev) => prev.map((p) => (p.id === participationId ? { ...p, status: "invalidated" } : p)));
-      }
-    } catch (error) {
-      console.error("Error invalidating:", error);
+      if (response.ok) setParticipations((prev) => prev.map((p) => (p.id === participationId ? { ...p, status: "invalidated" } : p)));
     } finally {
       setActionLoading(null);
     }
   };
 
-  const exportCSV = (rows: Participation[], filenameSuffix: string) => {
-    const headers = ["Semaine", "Date", "Prénom", "Email", "Téléphone", "Score", "Gain", "Code", "Statut"];
-    const dataRows = rows.map((p) => [
-      p.week_start || "-",
-      new Date(p.created_at).toLocaleDateString("fr-FR"),
-      p.first_name,
-      p.email,
-      p.phone,
-      `${p.score}/${p.total_questions}`,
-      p.prize_won || "Aucun",
-      p.prize_code || "-",
-      p.status === "invalidated"
-        ? "Invalidé"
-        : p.prize_claimed
-        ? "Réclamé"
-        : p.prize_won
-        ? "Gagnant"
-        : "Perdu",
-    ]);
-
-    const csvContent = [headers.join(","), ...dataRows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))].join(
-      "\n"
-    );
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const exportCSV = () => {
+    const headers = ["Date", "Prénom", "Email", "Téléphone", "Score", "Gain", "Code", "Statut"];
+    const rows = filteredItems.map((p) => [formatDateTime(p.created_at), p.first_name, p.email, p.phone, `${p.score}/${p.total_questions}`, getPrizeLabel(p.prize_won), p.prize_code || "-", getStatus(p).label]);
+    const csv = [headers, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `participations-quiz-${filenameSuffix}-${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `participations-quiz-${selectedWeek?.week_start || "semaine"}.csv`;
     link.click();
   };
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-caramel" />
       </div>
     );
   }
 
-  const currentWeekStats = weekStats.find((w) => w.week_start === currentWeekKey);
-
   return (
-    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-      {/* Header global */}
-      <div className="card-warm">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="font-display text-lg font-bold flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-caramel" />
-            Participations
-          </h2>
-
-          <div className="flex items-center gap-2">
-            <Badge variant="outline">{participations.length} total</Badge>
-            <Button variant="outline" size="sm" onClick={fetchParticipations}>
-              <RefreshCw className="w-4 h-4 mr-1" />
-              Rafraîchir
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+      <section className="rounded-[1.75rem] border border-caramel/15 bg-gradient-to-br from-white via-butter/25 to-caramel/10 p-4 shadow-sm">
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-caramel">Participations</p>
+              <h3 className="font-display text-2xl font-black text-espresso">Historique quiz</h3>
+              <p className="mt-1 text-xs text-muted-foreground">{participations.length} participations enregistrées</p>
+            </div>
+            <Button variant="outline" size="icon" onClick={fetchParticipations} className="shrink-0 rounded-2xl">
+              <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
-        </div>
 
-        {/* mini stats semaine courante */}
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="text-xs text-muted-foreground flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            {formatWeekLabelFR(currentWeekKey)}
+          <div className="grid grid-cols-2 gap-2">
+            <MiniStat label="Cette semaine" value={weekStats.find((w) => w.week_start === currentWeekKey)?.total || 0} />
+            <MiniStat label="Gagnants" value={weekStats.find((w) => w.week_start === currentWeekKey)?.winners || 0} />
           </div>
 
-          <Badge variant="outline" className="gap-2">
-            <span>Cette semaine:</span>
-            <span className="font-semibold">{currentWeekStats ? currentWeekStats.total : 0}</span>
-            <span className="text-muted-foreground">•</span>
-            <span>Gagnants:</span>
-            <span className="font-semibold">{currentWeekStats ? currentWeekStats.winners : 0}</span>
-            <span className="text-muted-foreground">•</span>
-            <span>Réclamés:</span>
-            <span className="font-semibold">{currentWeekStats ? currentWeekStats.claimed : 0}</span>
-          </Badge>
-        </div>
-
-        {/* recherche + données complètes */}
-        <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Recherche (prénom, email, tél, code) — s’applique à la semaine ouverte"
-              className="pl-9"
-            />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Rechercher client, email, téléphone, code..." className="h-12 rounded-2xl pl-10" />
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant={showSensitiveData ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowSensitiveData(!showSensitiveData)}
-            >
-              {showSensitiveData ? <Eye className="w-4 h-4 mr-1" /> : <EyeOff className="w-4 h-4 mr-1" />}
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            <Button variant={showSensitiveData ? "default" : "outline"} size="sm" onClick={() => setShowSensitiveData(!showSensitiveData)} className="shrink-0 rounded-2xl">
+              {showSensitiveData ? <Eye className="mr-1 h-4 w-4" /> : <EyeOff className="mr-1 h-4 w-4" />}
               Données complètes
             </Button>
+            <Button variant="outline" size="sm" onClick={exportCSV} className="shrink-0 rounded-2xl">
+              <Download className="mr-1 h-4 w-4" /> Export
+            </Button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Historique par semaine */}
-      <div className="card-warm">
-        <h3 className="font-display font-bold mb-3">Historique par semaine</h3>
-
-        <div className="space-y-2">
-          {weekStats.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">Aucune participation</div>
-          ) : (
-            weekStats.map((w) => {
-              const isOpen = expandedWeek === w.week_start;
-              const weekFilter = weekFilterByWeek[w.week_start] || "all";
-              const weekItems = isOpen ? getWeekItems(w.week_start) : [];
-
-              return (
-                <div key={w.week_start} className="rounded-xl border border-border bg-muted/10 overflow-hidden">
-                  {/* Header semaine */}
-                  <button
-                    type="button"
-                    className="w-full text-left p-3 flex items-start justify-between gap-3"
-                    onClick={() => {
-                      setExpandedId(null);
-                      setExpandedWeek(isOpen ? null : w.week_start);
-                    }}
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-semibold truncate">{formatWeekLabelFR(w.week_start)}</p>
-                        {w.week_start === currentWeekKey && (
-                          <Badge className="bg-caramel/10 text-caramel border-caramel/20">Semaine courante</Badge>
-                        )}
-                      </div>
-
-                      <div className="mt-2 text-sm text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                        <span>🎁 Gagnants: {w.winners}</span>
-                        <span>✅ Réclamés: {w.claimed}</span>
-                        <span>⛔ Invalidés: {w.invalidated}</span>
-                        <span>🕒 Perdus: {w.lost}</span>
-                      </div>
-
-                      {Object.keys(w.byPrize).length > 0 && (
-                        <div className="mt-2 text-xs text-muted-foreground flex flex-wrap gap-2">
-                          {Object.entries(w.byPrize).map(([k, v]) => (
-                            <Badge key={k} variant="secondary" className="bg-caramel/10 text-caramel border-caramel/20">
-                              {getPrizeLabel(k)} : {v}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant="outline">{w.total}</Badge>
-                      {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                    </div>
-                  </button>
-
-                  {/* Contenu semaine */}
-                  <AnimatePresence initial={false}>
-                    {isOpen && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-3 pb-3">
-                          {/* Filtres par semaine */}
-                          <div className="flex flex-wrap gap-2 mb-3">
-                            <Button
-                              size="sm"
-                              variant={weekFilter === "all" ? "default" : "outline"}
-                              onClick={() => setWeekFilter(w.week_start, "all")}
-                            >
-                              {filterLabel("all")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={weekFilter === "winners" ? "default" : "outline"}
-                              onClick={() => setWeekFilter(w.week_start, "winners")}
-                            >
-                              {filterLabel("winners")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={weekFilter === "claimed" ? "default" : "outline"}
-                              onClick={() => setWeekFilter(w.week_start, "claimed")}
-                            >
-                              {filterLabel("claimed")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={weekFilter === "invalidated" ? "default" : "outline"}
-                              onClick={() => setWeekFilter(w.week_start, "invalidated")}
-                            >
-                              {filterLabel("invalidated")}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={weekFilter === "lost" ? "default" : "outline"}
-                              onClick={() => setWeekFilter(w.week_start, "lost")}
-                            >
-                              {filterLabel("lost")}
-                            </Button>
-
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => exportCSV(weekItems, `${w.week_start}-${weekFilter}`)}
-                              className="ml-auto"
-                            >
-                              <Download className="w-4 h-4 mr-1" />
-                              Export CSV
-                            </Button>
-                          </div>
-
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Affiché: <b>{weekItems.length}</b> • Filtre: <b>{filterLabel(weekFilter)}</b>
-                            {searchQuery.trim() ? (
-                              <>
-                                {" "}
-                                • Recherche: <b>{searchQuery.trim()}</b>
-                              </>
-                            ) : null}
-                          </p>
-
-                          {/* Liste semaine */}
-                          <div className="space-y-2">
-                            <AnimatePresence mode="popLayout">
-                              {weekItems.length === 0 ? (
-                                <div className="text-center py-6 text-muted-foreground">Aucune participation pour ce filtre.</div>
-                              ) : (
-                                weekItems.map((p) => (
-                                  <motion.div
-                                    key={p.id}
-                                    layout
-                                    initial={{ opacity: 0, y: 10 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -10 }}
-                                    className={`card-warm p-4 ${p.status === "invalidated" ? "opacity-50" : ""}`}
-                                  >
-                                    <div
-                                      className="flex items-center justify-between cursor-pointer"
-                                      onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                                    >
-                                      <div className="min-w-0">
-                                        <p className="font-semibold truncate">{p.first_name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {new Date(p.created_at).toLocaleDateString("fr-FR", {
-                                            day: "2-digit",
-                                            month: "short",
-                                            hour: "2-digit",
-                                            minute: "2-digit",
-                                          })}
-                                        </p>
-                                      </div>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <span className="font-mono text-sm font-bold">
-                                          {p.score}/{p.total_questions}
-                                        </span>
-                                        {getStatusBadge(p)}
-                                        {expandedId === p.id ? (
-                                          <ChevronUp className="w-4 h-4 text-muted-foreground" />
-                                        ) : (
-                                          <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                                        )}
-                                      </div>
-                                    </div>
-
-                                    <AnimatePresence>
-                                      {expandedId === p.id && (
-                                        <motion.div
-                                          initial={{ height: 0, opacity: 0 }}
-                                          animate={{ height: "auto", opacity: 1 }}
-                                          exit={{ height: 0, opacity: 0 }}
-                                          className="overflow-hidden"
-                                        >
-                                          <div className="mt-4 pt-4 border-t border-border space-y-3">
-                                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                              <div>
-                                                <p className="text-muted-foreground text-xs">Email</p>
-                                                <p className="font-mono">{showSensitiveData ? p.email : maskEmail(p.email)}</p>
-                                              </div>
-                                              <div>
-                                                <p className="text-muted-foreground text-xs">Téléphone</p>
-                                                <p className="font-mono">{showSensitiveData ? p.phone : maskPhone(p.phone)}</p>
-                                              </div>
-                                            </div>
-
-                                            {p.prize_won && (
-                                              <div className="p-3 rounded-xl bg-caramel/10 border border-caramel/20">
-                                                <div className="flex items-center justify-between gap-3">
-                                                  <div className="min-w-0">
-                                                    <p className="text-xs text-muted-foreground">Gain</p>
-                                                    <p className="font-semibold">{getPrizeLabel(p.prize_won)}</p>
-                                                  </div>
-                                                  {p.prize_code && (
-                                                    <div className="text-right shrink-0">
-                                                      <p className="text-xs text-muted-foreground">Code</p>
-                                                      <p className="font-mono font-bold text-lg">{p.prize_code}</p>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                                {p.claimed_at && (
-                                                  <p className="text-xs text-muted-foreground mt-2">
-                                                    Réclamé le{" "}
-                                                    {new Date(p.claimed_at).toLocaleDateString("fr-FR", {
-                                                      day: "2-digit",
-                                                      month: "long",
-                                                      hour: "2-digit",
-                                                      minute: "2-digit",
-                                                    })}
-                                                  </p>
-                                                )}
-                                              </div>
-                                            )}
-
-                                            {p.prize_won && p.status !== "invalidated" && (
-                                              <div className="flex gap-2">
-                                                {!p.prize_claimed && p.prize_code && (
-                                                  <Button
-                                                    size="sm"
-                                                    className="flex-1"
-                                                    onClick={() => handleMarkClaimed(p.id, p.prize_code!)}
-                                                    disabled={actionLoading === p.id}
-                                                  >
-                                                    {actionLoading === p.id ? (
-                                                      <Loader2 className="w-4 h-4 animate-spin" />
-                                                    ) : (
-                                                      <>
-                                                        <CheckCircle className="w-4 h-4 mr-1" />
-                                                        Marquer réclamé
-                                                      </>
-                                                    )}
-                                                  </Button>
-                                                )}
-                                                <Button
-                                                  size="sm"
-                                                  variant="destructive"
-                                                  onClick={() => handleInvalidate(p.id)}
-                                                  disabled={actionLoading === p.id}
-                                                >
-                                                  {actionLoading === p.id ? (
-                                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                                  ) : (
-                                                    <>
-                                                      <Ban className="w-4 h-4 mr-1" />
-                                                      Invalider
-                                                    </>
-                                                  )}
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </div>
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </motion.div>
-                                ))
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })
-          )}
+      <section className="rounded-[1.75rem] border border-border/60 bg-white/80 p-4 shadow-sm">
+        <p className="mb-3 font-display text-xl font-black text-espresso">Semaines</p>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {weekStats.map((week) => (
+            <button key={week.week_start} type="button" onClick={() => { setExpandedWeek(week.week_start); setExpandedId(null); }} className={`shrink-0 rounded-2xl border px-4 py-3 text-left transition ${selectedWeek?.week_start === week.week_start ? "border-caramel bg-caramel text-white" : "border-border bg-background/70 text-espresso"}`}>
+              <span className="block text-xs font-bold uppercase tracking-wide opacity-70">{week.week_start === currentWeekKey ? "Semaine actuelle" : "Semaine"}</span>
+              <span className="block font-display font-black">{formatDate(week.week_start)}</span>
+              <span className="text-xs opacity-80">{week.total} participations</span>
+            </button>
+          ))}
         </div>
-      </div>
+      </section>
+
+      {selectedWeek && (
+        <section className="rounded-[1.75rem] border border-border/60 bg-white/80 p-4 shadow-sm">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-black uppercase tracking-wide text-caramel">{formatDate(selectedWeek.week_start)}</p>
+              <h3 className="font-display text-xl font-black text-espresso">Détail semaine</h3>
+            </div>
+            <Badge variant="outline" className="rounded-full">{filteredItems.length} affichés</Badge>
+          </div>
+
+          <div className="mb-4 grid grid-cols-4 gap-2">
+            <WeekMetric label="Total" value={selectedWeek.total} />
+            <WeekMetric label="Gagnés" value={selectedWeek.winners} />
+            <WeekMetric label="Utilisés" value={selectedWeek.claimed} />
+            <WeekMetric label="Perdus" value={selectedWeek.lost} />
+          </div>
+
+          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+            {([
+              ["all", "Tous"],
+              ["winners", "Gagnants"],
+              ["claimed", "Réclamés"],
+              ["invalidated", "Invalidés"],
+              ["lost", "Perdus"],
+            ] as [WeekFilter, string][]).map(([value, label]) => (
+              <Button key={value} size="sm" variant={weekFilter === value ? "default" : "outline"} onClick={() => setWeekFilter(value)} className="shrink-0 rounded-2xl">
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          <div className="space-y-2">
+            {filteredItems.length === 0 ? (
+              <div className="rounded-2xl bg-background/70 p-6 text-center text-sm text-muted-foreground">Aucune participation pour ce filtre.</div>
+            ) : (
+              filteredItems.map((item) => (
+                <ParticipationRow key={item.id} item={item} isOpen={expandedId === item.id} showSensitiveData={showSensitiveData} actionLoading={actionLoading === item.id} onToggle={() => setExpandedId(expandedId === item.id ? null : item.id)} onClaim={() => item.prize_code && handleMarkClaimed(item.id, item.prize_code)} onInvalidate={() => handleInvalidate(item.id)} />
+              ))
+            )}
+          </div>
+        </section>
+      )}
     </motion.div>
   );
 };
+
+const MiniStat = ({ label, value }: { label: string; value: number }) => (
+  <div className="rounded-3xl border border-caramel/15 bg-white/75 p-3 text-center">
+    <p className="font-display text-xl font-black text-espresso">{value}</p>
+    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+  </div>
+);
+
+const WeekMetric = ({ label, value }: { label: string; value: number }) => (
+  <div className="rounded-2xl bg-background/70 p-2 text-center">
+    <p className="font-display text-lg font-black text-espresso">{value}</p>
+    <p className="text-[9px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+  </div>
+);
+
+const StatusBadge = ({ participation }: { participation: Participation }) => {
+  const status = getStatus(participation);
+  const Icon = status.icon;
+  const className = status.tone === "winner" ? "bg-caramel/10 text-caramel border-caramel/20" : status.tone === "claimed" ? "bg-herb/10 text-herb border-herb/20" : "";
+  return (
+    <Badge variant={status.tone === "destructive" ? "destructive" : "outline"} className={`gap-1 rounded-full ${className}`}>
+      <Icon className="h-3 w-3" /> {status.label}
+    </Badge>
+  );
+};
+
+const ParticipationRow = ({ item, isOpen, showSensitiveData, actionLoading, onToggle, onClaim, onInvalidate }: { item: Participation; isOpen: boolean; showSensitiveData: boolean; actionLoading: boolean; onToggle: () => void; onClaim: () => void; onInvalidate: () => void }) => (
+  <article className={`overflow-hidden rounded-2xl border border-border/55 bg-background/70 ${item.status === "invalidated" ? "opacity-60" : ""}`}>
+    <button type="button" onClick={onToggle} className="w-full p-3 text-left">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-caramel/12 text-caramel">
+          <Trophy className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="truncate font-display text-base font-black text-espresso">{item.first_name || "Client"}</p>
+            <span className="shrink-0 font-mono text-xs font-black text-caramel">{item.score}/{item.total_questions}</span>
+          </div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className="truncate text-xs text-muted-foreground">{formatDateTime(item.created_at)}</span>
+            <StatusBadge participation={item} />
+          </div>
+        </div>
+        {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+      </div>
+    </button>
+
+    {isOpen && (
+      <div className="border-t border-border/50 p-3">
+        <div className="grid grid-cols-1 gap-2 text-sm">
+          <InfoLine label="Email" value={showSensitiveData ? item.email : maskEmail(item.email)} />
+          <InfoLine label="Téléphone" value={showSensitiveData ? item.phone : maskPhone(item.phone)} />
+          <InfoLine label="Gain" value={getPrizeLabel(item.prize_won)} />
+          {item.prize_code && <InfoLine label="Code" value={item.prize_code} mono />}
+        </div>
+
+        {item.prize_won && item.status !== "invalidated" && (
+          <div className="mt-3 flex gap-2">
+            {!item.prize_claimed && item.prize_code && (
+              <Button size="sm" className="flex-1 rounded-2xl" onClick={onClaim} disabled={actionLoading}>
+                {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><CheckCircle className="mr-1 h-4 w-4" /> Réclamé</>}
+              </Button>
+            )}
+            <Button size="sm" variant="destructive" className="rounded-2xl" onClick={onInvalidate} disabled={actionLoading}>
+              {actionLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Ban className="mr-1 h-4 w-4" /> Invalider</>}
+            </Button>
+          </div>
+        )}
+      </div>
+    )}
+  </article>
+);
+
+const InfoLine = ({ label, value, mono }: { label: string; value: string; mono?: boolean }) => (
+  <div className="rounded-xl bg-white/70 p-2">
+    <p className="text-[10px] font-bold uppercase tracking-wide text-muted-foreground">{label}</p>
+    <p className={`truncate text-espresso ${mono ? "font-mono font-black" : "font-semibold"}`}>{value || "—"}</p>
+  </div>
+);
 
 export default QuizParticipationsPanel;
