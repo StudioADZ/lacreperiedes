@@ -1,4 +1,4 @@
-project_id = "gwpycfojyekjjddzpqil"
+project_id = "kdpdwyrwijrphmlcrecg"
 
 [functions.quiz-session]
 verify_jwt = false
@@ -15,3 +15,6 @@ verify_jwt = false
 [functions.weekly-health-check]
 verify_jwt = false
 schedule = "30 0 * * 0"
+
+[functions.secret-menu-save]
+verify_jwt = false
