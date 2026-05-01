@@ -19,6 +19,7 @@ import {
   Ticket,
   Trophy,
   User,
+  Settings,
   WalletCards,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";

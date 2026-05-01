@@ -317,11 +317,11 @@ const SpecialCard = ({
   uploadMedia: (type: SpecialType, kind: "image" | "video", file: File) => void;
 }) => {
   const prefix = type === "galette" ? "galette_special" : "crepe_special";
-  const nameKey = prefix as keyof FormData;
-  const descriptionKey = `${prefix}_description` as keyof FormData;
-  const priceKey = `${prefix}_price` as keyof FormData;
-  const imageKey = `${prefix}_image_url` as keyof FormData;
-  const videoKey = `${prefix}_video_url` as keyof FormData;
+  const nameKey = prefix as "galette_special" | "crepe_special";
+  const descriptionKey = `${prefix}_description` as "galette_special_description" | "crepe_special_description";
+  const priceKey = `${prefix}_price` as "galette_special_price" | "crepe_special_price";
+  const imageKey = `${prefix}_image_url` as "galette_special_image_url" | "crepe_special_image_url";
+  const videoKey = `${prefix}_video_url` as "galette_special_video_url" | "crepe_special_video_url";
 
   return (
     <section className="rounded-[1.75rem] border border-border/60 bg-white/85 p-4 shadow-sm">
