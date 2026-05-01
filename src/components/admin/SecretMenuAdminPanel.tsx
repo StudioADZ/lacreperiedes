@@ -268,34 +268,6 @@ const SecretMenuAdminPanel = ({ adminPassword }: { adminPassword: string }) => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
-      <section className="relative overflow-hidden rounded-[1.75rem] border border-caramel/20 bg-gradient-to-br from-espresso via-[#2b1811] to-caramel p-5 text-white shadow-warm">
-        <div className="absolute -right-12 -top-12 h-32 w-32 rounded-full bg-white/10" />
-        <div className="relative flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-3xl bg-white/12 text-butter"><ChefHat className="h-7 w-7" /></div>
-          <div>
-            <p className="text-xs font-black uppercase tracking-[0.18em] text-white/70">Accès après quiz</p>
-            <h2 className="font-display text-2xl font-black">Menu secret</h2>
-            <p className="mt-1 text-sm leading-relaxed text-white/75">Le client peut le débloquer après une participation au quiz, même sans gagner.</p>
-          </div>
-        </div>
-      </section>
-
-      {dailyCode && (
-        <section className="rounded-[1.75rem] border border-caramel/20 bg-white/85 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"><Lock className="h-3 w-3" /> Code du jour</p>
-              <p className="font-mono text-3xl font-black tracking-widest text-caramel">{dailyCode}</p>
-              <p className="mt-1 text-xs text-muted-foreground">Il change automatiquement chaque jour pendant la période active.</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={copyDailyCode} className="rounded-2xl">
-              {dailyCodeCopied ? <Check className="mr-1 h-4 w-4" /> : <Copy className="mr-1 h-4 w-4" />}
-              {dailyCodeCopied ? "Copié" : "Copier"}
-            </Button>
-          </div>
-        </section>
-      )}
-
       <section className="rounded-[1.75rem] border border-caramel/15 bg-white/85 p-4 shadow-sm">
         <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-butter/25 p-3">
           <div>
@@ -309,14 +281,6 @@ const SecretMenuAdminPanel = ({ adminPassword }: { adminPassword: string }) => {
           <div className="space-y-2">
             <Label htmlFor="menu_name">Nom du menu</Label>
             <Input id="menu_name" value={formData.menu_name} onChange={(e) => updateForm({ menu_name: e.target.value })} placeholder="Menu secret du week-end" className="h-12 rounded-2xl" />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="secret_code">Code base</Label>
-            <div className="flex gap-2">
-              <Input id="secret_code" value={formData.secret_code} onChange={(e) => { const value = e.target.value.toUpperCase(); updateForm({ secret_code: value }); if (value.length >= 4) void fetchDailyCode(value); }} placeholder="CREPE2026" className="h-12 rounded-2xl font-mono" />
-              <Button variant="outline" size="icon" onClick={generateCode} className="h-12 w-12 shrink-0 rounded-2xl"><Sparkles className="h-4 w-4" /></Button>
-            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
