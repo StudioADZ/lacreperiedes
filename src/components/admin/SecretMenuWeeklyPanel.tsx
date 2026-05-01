@@ -48,7 +48,7 @@ type FormData = {
 };
 
 const emptyForm: FormData = {
-  menu_name: "",
+  menu_name: "Menu secret de la semaine",
   galette_special: "",
   galette_special_description: "",
   galette_special_price: "",
@@ -86,14 +86,21 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "get_secret_menu", adminPassword }),
       });
+
       if (!response.ok) throw new Error("Chargement impossible");
+
       const result = await response.json();
       const data = result.menu as SecretMenu | null;
-      if (!data) return;
+
+      if (!data) {
+        setMenu(null);
+        setFormData(emptyForm);
+        return;
+      }
 
       setMenu(data);
       setFormData({
-        menu_name: data.menu_name || "",
+        menu_name: data.menu_name || "Menu secret de la semaine",
         galette_special: data.galette_special || "",
         galette_special_description: data.galette_special_description || "",
         galette_special_price: data.galette_special_price || "",
@@ -116,21 +123,34 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
   };
 
   const handleSave = async () => {
-    if (!menu) return;
     setIsSaving(true);
     setMessage(null);
+
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/secret-menu-save`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "update_secret_menu", adminPassword, menuId: menu.id, menuData: formData }),
+        body: JSON.stringify({
+          adminPassword,
+          menuId: menu?.id,
+          menuData: formData,
+        }),
       });
+
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Erreur");
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Erreur de sauvegarde");
+      }
+
+      setMenu(result.menu);
       setMessage({ type: "success", text: "Menu secret de la semaine enregistré." });
       await fetchMenu();
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Erreur de sauvegarde" });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Erreur de sauvegarde",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -144,22 +164,35 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
   const uploadMedia = async (type: SpecialType, kind: "image" | "video", file: File) => {
     const key = `${type}-${kind}`;
     setUploading(key);
+
     try {
-      if (kind === "video" && file.size > 50 * 1024 * 1024) throw new Error("Vidéo trop volumineuse, maximum 50MB.");
+      if (kind === "video" && file.size > 50 * 1024 * 1024) {
+        throw new Error("Vidéo trop volumineuse, maximum 50MB.");
+      }
+
       const path = `secret-menu/${key}-${Date.now()}.${file.name.split(".").pop()}`;
       const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true });
+
       if (error) throw error;
+
       const { data } = supabase.storage.from("images").getPublicUrl(path);
       updateForm({ [mediaKeys(type)[kind]]: data.publicUrl } as Partial<FormData>);
     } catch (error) {
-      setMessage({ type: "error", text: error instanceof Error ? error.message : "Import impossible" });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Import impossible",
+      });
     } finally {
       setUploading(null);
     }
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-caramel" /></div>;
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-caramel" />
+      </div>
+    );
   }
 
   return (
@@ -176,8 +209,15 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="menu_name">Nom du menu</Label>
-            <Input id="menu_name" value={formData.menu_name} onChange={(e) => updateForm({ menu_name: e.target.value })} placeholder="Menu secret de la semaine" className="h-12 rounded-2xl" />
+            <Input
+              id="menu_name"
+              value={formData.menu_name}
+              onChange={(e) => updateForm({ menu_name: e.target.value })}
+              placeholder="Menu secret de la semaine"
+              className="h-12 rounded-2xl"
+            />
           </div>
+
           <div className="grid grid-cols-2 gap-3">
             <DateField id="valid_from" label="Début" value={formData.valid_from} onChange={(value) => updateForm({ valid_from: value })} />
             <DateField id="valid_to" label="Fin" value={formData.valid_to} onChange={(value) => updateForm({ valid_to: value })} />
@@ -185,26 +225,79 @@ const SecretMenuWeeklyPanel = ({ adminPassword }: { adminPassword: string }) => 
         </div>
       </section>
 
-      <SpecialCard type="galette" title="Galette secrète" formData={formData} updateForm={updateForm} uploading={uploading} uploadMedia={uploadMedia} />
-      <SpecialCard type="crepe" title="Crêpe secrète" formData={formData} updateForm={updateForm} uploading={uploading} uploadMedia={uploadMedia} />
+      <SpecialCard
+        type="galette"
+        title="Galette secrète"
+        formData={formData}
+        updateForm={updateForm}
+        uploading={uploading}
+        uploadMedia={uploadMedia}
+      />
 
-      {message && <div className={`rounded-2xl p-3 text-center text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 text-green-700" : "bg-destructive/10 text-destructive"}`}>{message.text}</div>}
+      <SpecialCard
+        type="crepe"
+        title="Crêpe secrète"
+        formData={formData}
+        updateForm={updateForm}
+        uploading={uploading}
+        uploadMedia={uploadMedia}
+      />
+
+      {message && (
+        <div className={`rounded-2xl p-3 text-center text-sm font-semibold ${message.type === "success" ? "bg-green-500/10 text-green-700" : "bg-destructive/10 text-destructive"}`}>
+          {message.text}
+        </div>
+      )}
 
       <Button onClick={handleSave} className="h-14 w-full rounded-2xl bg-caramel font-black text-white hover:bg-caramel/90" disabled={isSaving}>
-        {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer le menu secret</>}
+        {isSaving ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : (
+          <>
+            <Save className="mr-2 h-5 w-5" />
+            Enregistrer le menu secret
+          </>
+        )}
       </Button>
     </motion.div>
   );
 };
 
-const DateField = ({ id, label, value, onChange }: { id: string; label: string; value: string; onChange: (value: string) => void }) => (
+const DateField = ({
+  id,
+  label,
+  value,
+  onChange,
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) => (
   <div className="space-y-2">
-    <Label htmlFor={id} className="flex items-center gap-2"><Calendar className="h-4 w-4 text-caramel" />{label}</Label>
+    <Label htmlFor={id} className="flex items-center gap-2">
+      <Calendar className="h-4 w-4 text-caramel" />
+      {label}
+    </Label>
     <Input id={id} type="date" value={value} onChange={(e) => onChange(e.target.value)} className="h-12 rounded-2xl" />
   </div>
 );
 
-const SpecialCard = ({ type, title, formData, updateForm, uploading, uploadMedia }: { type: SpecialType; title: string; formData: FormData; updateForm: (patch: Partial<FormData>) => void; uploading: string | null; uploadMedia: (type: SpecialType, kind: "image" | "video", file: File) => void }) => {
+const SpecialCard = ({
+  type,
+  title,
+  formData,
+  updateForm,
+  uploading,
+  uploadMedia,
+}: {
+  type: SpecialType;
+  title: string;
+  formData: FormData;
+  updateForm: (patch: Partial<FormData>) => void;
+  uploading: string | null;
+  uploadMedia: (type: SpecialType, kind: "image" | "video", file: File) => void;
+}) => {
   const prefix = type === "galette" ? "galette_special" : "crepe_special";
   const nameKey = prefix as keyof FormData;
   const descriptionKey = `${prefix}_description` as keyof FormData;
@@ -215,7 +308,9 @@ const SpecialCard = ({ type, title, formData, updateForm, uploading, uploadMedia
   return (
     <section className="rounded-[1.75rem] border border-border/60 bg-white/85 p-4 shadow-sm">
       <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-caramel/10 text-caramel"><Sparkles className="h-5 w-5" /></div>
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-caramel/10 text-caramel">
+          <Sparkles className="h-5 w-5" />
+        </div>
         <div>
           <h3 className="font-display text-xl font-black text-espresso">{title}</h3>
           <p className="text-xs text-muted-foreground">Nom, description, prix, photo ou vidéo.</p>
@@ -223,14 +318,57 @@ const SpecialCard = ({ type, title, formData, updateForm, uploading, uploadMedia
       </div>
 
       <div className="space-y-3">
-        <Input value={formData[nameKey]} onChange={(e) => updateForm({ [nameKey]: e.target.value } as Partial<FormData>)} placeholder="Nom de la création" className="h-12 rounded-2xl" />
-        <Textarea value={formData[descriptionKey]} onChange={(e) => updateForm({ [descriptionKey]: e.target.value } as Partial<FormData>)} placeholder="Description, ingrédients, petite histoire..." rows={3} className="rounded-2xl" />
-        <div className="flex items-center gap-2"><Euro className="h-4 w-4 text-muted-foreground" /><Input value={formData[priceKey]} onChange={(e) => updateForm({ [priceKey]: e.target.value } as Partial<FormData>)} placeholder="Prix" className="h-12 rounded-2xl font-mono" /></div>
-        <MediaUploader label="Photo" icon="image" value={formData[imageKey]} uploading={uploading === `${type}-image`} accept="image/*" onUpload={(file) => uploadMedia(type, "image", file)} onClear={() => updateForm({ [imageKey]: "" } as Partial<FormData>)} />
-        <MediaUploader label="Vidéo" icon="video" value={formData[videoKey]} uploading={uploading === `${type}-video`} accept="video/mp4,video/webm" onUpload={(file) => uploadMedia(type, "video", file)} onClear={() => updateForm({ [videoKey]: "" } as Partial<FormData>)} />
+        <Input
+          value={formData[nameKey]}
+          onChange={(e) => updateForm({ [nameKey]: e.target.value } as Partial<FormData>)}
+          placeholder="Nom de la création"
+          className="h-12 rounded-2xl"
+        />
+
+        <Textarea
+          value={formData[descriptionKey]}
+          onChange={(e) => updateForm({ [descriptionKey]: e.target.value } as Partial<FormData>)}
+          placeholder="Description, ingrédients, petite histoire..."
+          rows={3}
+          className="rounded-2xl"
+        />
+
+        <div className="flex items-center gap-2">
+          <Euro className="h-4 w-4 text-muted-foreground" />
+          <Input
+            value={formData[priceKey]}
+            onChange={(e) => updateForm({ [priceKey]: e.target.value } as Partial<FormData>)}
+            placeholder="Prix"
+            className="h-12 rounded-2xl font-mono"
+          />
+        </div>
+
+        <MediaUploader
+          label="Photo"
+          icon="image"
+          value={formData[imageKey]}
+          uploading={uploading === `${type}-image`}
+          accept="image/*"
+          onUpload={(file) => uploadMedia(type, "image", file)}
+          onClear={() => updateForm({ [imageKey]: "" } as Partial<FormData>)}
+        />
+
+        <MediaUploader
+          label="Vidéo"
+          icon="video"
+          value={formData[videoKey]}
+          uploading={uploading === `${type}-video`}
+          accept="video/mp4,video/webm"
+          onUpload={(file) => uploadMedia(type, "video", file)}
+          onClear={() => updateForm({ [videoKey]: "" } as Partial<FormData>)}
+        />
+
         {(formData[nameKey] || formData[imageKey]) && (
           <div className="rounded-2xl border border-caramel/20 bg-butter/15 p-3">
-            <p className="mb-2 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground"><Eye className="h-3 w-3" /> Aperçu client</p>
+            <p className="mb-2 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              <Eye className="h-3 w-3" />
+              Aperçu client
+            </p>
             <div className="flex gap-3">
               {formData[imageKey] && <img src={formData[imageKey]} alt="Aperçu" className="h-16 w-16 rounded-2xl object-cover" />}
               <div className="min-w-0 flex-1">
@@ -246,17 +384,49 @@ const SpecialCard = ({ type, title, formData, updateForm, uploading, uploadMedia
   );
 };
 
-const MediaUploader = ({ label, icon, value, uploading, accept, onUpload, onClear }: { label: string; icon: "image" | "video"; value: string; uploading: boolean; accept: string; onUpload: (file: File) => void; onClear: () => void }) => {
+const MediaUploader = ({
+  label,
+  icon,
+  value,
+  uploading,
+  accept,
+  onUpload,
+  onClear,
+}: {
+  label: string;
+  icon: "image" | "video";
+  value: string;
+  uploading: boolean;
+  accept: string;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) => {
   const Icon = icon === "image" ? ImageIcon : FileVideo;
+
   return (
     <div className="space-y-2">
-      <Label className="flex items-center gap-1 text-xs"><Icon className="h-3 w-3" /> {label}</Label>
+      <Label className="flex items-center gap-1 text-xs">
+        <Icon className="h-3 w-3" />
+        {label}
+      </Label>
       <div className="flex gap-2">
         <Input value={value} readOnly placeholder={icon === "video" ? "Aucune vidéo" : "Aucune photo"} className="h-12 flex-1 rounded-2xl" />
-        {value && <Button type="button" variant="outline" size="icon" onClick={onClear} className="h-12 w-12 rounded-2xl text-destructive"><Trash2 className="h-4 w-4" /></Button>}
+        {value && (
+          <Button type="button" variant="outline" size="icon" onClick={onClear} className="h-12 w-12 rounded-2xl text-destructive">
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
         <label className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-border bg-background hover:bg-accent">
           {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-          <input type="file" accept={accept} className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) onUpload(file); }} />
+          <input
+            type="file"
+            accept={accept}
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onUpload(file);
+            }}
+          />
         </label>
       </div>
     </div>
