@@ -2,7 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { 
   corsHeaders, 
   isValidPrizeCode,
-  isValidName,
   errorResponse,
   successResponse,
   serverErrorResponse,
@@ -224,11 +223,6 @@ Deno.serve(async (req) => {
     if (action === 'update_secret_menu') {
       if (!menuData) {
         return errorResponse('missing_data', 'Données du menu requises')
-      }
-
-      // Validate menu data only if a custom name is provided.
-      if (menuData.menu_name && !isValidName(menuData.menu_name)) {
-        return errorResponse('invalid_menu_name', 'Nom de menu invalide')
       }
 
       let targetMenuId = menuId
