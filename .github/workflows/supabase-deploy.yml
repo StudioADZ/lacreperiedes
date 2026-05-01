@@ -98,3 +98,6 @@ jobs:
 
       - name: Deploy send-prize-email
         run: supabase functions deploy send-prize-email --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy secret-menu-save
+        run: supabase functions deploy secret-menu-save --project-ref "$SUPABASE_PROJECT_ID"
