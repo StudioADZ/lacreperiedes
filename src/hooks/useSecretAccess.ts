@@ -9,8 +9,8 @@ interface SecretAccessState {
   isAdminAccess: boolean;
 }
 
-// Session duration: 30 minutes max for regular users
-const SESSION_DURATION_MS = 30 * 60 * 1000;
+// Session duration: 1 hour max for regular users
+const SESSION_DURATION_MS = 60 * 60 * 1000;
 
 // Admin access key in localStorage
 const ADMIN_ACCESS_KEY = 'admin_secret_menu_access';
@@ -63,15 +63,10 @@ export const useSecretAccess = () => {
     }
 
     try {
-      // Verify token is still valid in database
-      const { data, error } = await supabase
-        .from('secret_access')
-        .select('access_token, secret_code, expires_at')
-        .eq('access_token', storedToken)
-        .gt('expires_at', new Date().toISOString())
-        .maybeSingle();
+      // Verify token through the protected database function (direct reads are blocked by RLS)
+      const { data: isValid, error } = await supabase.rpc('verify_secret_access', { p_token: storedToken });
 
-      if (error || !data) {
+      if (error || !isValid) {
         // Token expired or invalid
         clearLocalStorage();
         setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
@@ -80,12 +75,13 @@ export const useSecretAccess = () => {
 
       // Update timestamp to extend session (sliding window)
       localStorage.setItem('secret_access_timestamp', Date.now().toString());
+      const storedCode = localStorage.getItem('secret_access_code');
 
       setState({
         hasAccess: true,
         isLoading: false,
-        accessToken: data.access_token,
-        secretCode: data.secret_code,
+        accessToken: storedToken,
+        secretCode: storedCode,
         isAdminAccess: false,
       });
     } catch (error) {
@@ -98,6 +94,7 @@ export const useSecretAccess = () => {
   const clearLocalStorage = () => {
     localStorage.removeItem('secret_access_token');
     localStorage.removeItem('secret_access_timestamp');
+    localStorage.removeItem('secret_access_code');
   };
 
   const verifyCode = async (code: string): Promise<boolean> => {
@@ -115,29 +112,26 @@ export const useSecretAccess = () => {
         return false;
       }
 
-      // Code is valid - grant access with 30-min session
-      const token = crypto.randomUUID();
+      // Code is valid - grant access with 1-hour session via protected RPC
       const weekStart = getWeekStart();
 
-      const { error: insertError } = await supabase
-        .from('secret_access')
-        .insert({
-          email: 'anonymous@menu-secret.local',
-          phone: '0000000000',
-          first_name: 'Visiteur',
-          access_token: token,
-          secret_code: code.toUpperCase(),
-          week_start: weekStart,
-        });
+      const { data: token, error: grantError } = await supabase.rpc('grant_secret_access', {
+        p_email: 'anonymous@menu-secret.local',
+        p_phone: '0000000000',
+        p_first_name: 'Visiteur',
+        p_secret_code: code.toUpperCase(),
+        p_week_start: weekStart,
+      });
 
-      if (insertError) {
-        console.error('Error inserting access:', insertError);
+      if (grantError || !token) {
+        console.error('Error granting access:', grantError);
         return false;
       }
 
-      // Store token AND timestamp for 30-min session tracking
+      // Store token, timestamp and entered code for 1-hour session tracking
       localStorage.setItem('secret_access_token', token);
       localStorage.setItem('secret_access_timestamp', Date.now().toString());
+      localStorage.setItem('secret_access_code', code.toUpperCase());
       
       setState({
         hasAccess: true,
@@ -191,21 +185,15 @@ export const useSecretAccess = () => {
     try {
       const weekStart = getWeekStart();
 
-      // Always generate a new token for fresh 30-min session
-      const token = crypto.randomUUID();
+      const { data: token, error } = await supabase.rpc('grant_secret_access', {
+        p_email: email,
+        p_phone: phone,
+        p_first_name: firstName,
+        p_secret_code: secretCode,
+        p_week_start: weekStart,
+      });
 
-      const { error } = await supabase
-        .from('secret_access')
-        .insert({
-          email,
-          phone,
-          first_name: firstName,
-          access_token: token,
-          secret_code: secretCode,
-          week_start: weekStart,
-        });
-
-      if (error) {
+      if (error || !token) {
         console.error('Error granting access:', error);
         return null;
       }
@@ -213,6 +201,7 @@ export const useSecretAccess = () => {
       // Store token AND timestamp
       localStorage.setItem('secret_access_token', token);
       localStorage.setItem('secret_access_timestamp', Date.now().toString());
+      localStorage.setItem('secret_access_code', secretCode);
       
       setState({
         hasAccess: true,
