@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 interface SecretMenuLockedProps {
   onUnlock: (code: string) => Promise<boolean>;
   onAdminUnlock?: (password: string) => Promise<boolean>;
+  compact?: boolean;
 }
 
-const SecretMenuLocked = ({ onUnlock, onAdminUnlock }: SecretMenuLockedProps) => {
+const SecretMenuLocked = ({ onUnlock, onAdminUnlock, compact = false }: SecretMenuLockedProps) => {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
