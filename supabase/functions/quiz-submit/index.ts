@@ -152,6 +152,43 @@ async function generateUniquePrizeCode(supabase: ReturnType<typeof createClient>
   return null
 }
 
+async function generateUniqueLossSecretCode(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
+    const { data: code, error: codeError } = await supabase.rpc('generate_prize_code')
+
+    if (codeError || !code || typeof code !== 'string') {
+      console.error('Loss secret code generation error')
+      return null
+    }
+
+    const { data: existingAccess, error: accessLookupError } = await supabase
+      .from('secret_access')
+      .select('id')
+      .eq('secret_code', code)
+      .maybeSingle()
+
+    if (accessLookupError) {
+      console.error('Loss secret access uniqueness lookup error')
+      return null
+    }
+
+    const { data: existingPrize, error: prizeLookupError } = await supabase
+      .from('quiz_participations')
+      .select('id')
+      .eq('prize_code', code)
+      .maybeSingle()
+
+    if (prizeLookupError) {
+      console.error('Loss secret prize uniqueness lookup error')
+      return null
+    }
+
+    if (!existingAccess && !existingPrize) return code
+  }
+
+  return null
+}
+
 async function refundPrizeStock(
   supabase: ReturnType<typeof createClient>,
   prizeType: PrizeType | null,
