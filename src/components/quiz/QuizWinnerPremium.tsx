@@ -63,9 +63,9 @@ const QuizWinnerPremium = ({
   const [accessGranted, setAccessGranted] = useState(false);
   const { grantAccessFromQuiz } = useSecretAccess();
 
-  const secretMenu: SecretMenu | null = secretCode
+  const secretMenu: SecretMenu | null = prizeCode
     ? {
-        secret_code: secretCode,
+        secret_code: prizeCode,
         menu_name: null,
         galette_special: null,
         galette_special_description: null,
@@ -148,7 +148,7 @@ const QuizWinnerPremium = ({
         `Mon lot : ${prize}\n` +
         `Mon code caisse : ${prizeCode}\n` +
         `Téléphone associé : ${phone}\n\n` +
-        `${secretMenu?.secret_code ? `Code secret du menu : ${secretMenu.secret_code}\n\n` : ''}` +
+        `${secretMenu?.secret_code ? `Code Menu Secret : ${secretMenu.secret_code}\n\n` : ''}` +
         `À présenter à la caisse pour récupérer mon gain 🥞`,
     );
     window.open(`https://wa.me/33781246918?text=${message}`, '_blank');
@@ -266,7 +266,7 @@ const QuizWinnerPremium = ({
             </p>
 
             <div className="p-4 rounded-xl bg-caramel/10 mb-4">
-              <p className="text-xs text-muted-foreground mb-1">Ton code secret</p>
+              <p className="text-xs text-muted-foreground mb-1">Ton code Menu Secret</p>
               <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
                 {secretMenu.secret_code}
               </p>
