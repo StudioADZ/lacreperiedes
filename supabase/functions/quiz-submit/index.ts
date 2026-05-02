@@ -386,13 +386,35 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    let secretMenuCode = menuData?.secret_code || null
+
+    if (!prizeLabel) {
+      const lossCode = await generateUniqueLossSecretCode(supabase)
+
+      if (lossCode) {
+        const { error: grantLossAccessError } = await supabase.rpc('grant_secret_access', {
+          p_email: cleanEmail,
+          p_phone: cleanPhone,
+          p_first_name: cleanFirstName,
+          p_secret_code: lossCode,
+          p_week_start: weekStart,
+        })
+
+        if (grantLossAccessError) {
+          console.warn('Loss secret access grant failed')
+        } else {
+          secretMenuCode = lossCode
+        }
+      }
+    }
+
     await attachWinToProfile(supabase, {
       userId: authenticatedUserId,
       firstName: cleanFirstName,
       phone: cleanPhone,
       prizeLabel,
       prizeCode,
-      secretCode: menuData?.secret_code || null,
+      secretCode: secretMenuCode,
     })
 
     return successResponse({
@@ -404,7 +426,7 @@ Deno.serve(async (req) => {
       prizeCode,
       firstName: cleanFirstName,
       stock,
-      secretCode: menuData?.secret_code || null,
+      secretCode: secretMenuCode,
       attachedToProfile: !!authenticatedUserId,
     })
   } catch (error: unknown) {
