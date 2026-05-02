@@ -152,6 +152,43 @@ async function generateUniquePrizeCode(supabase: ReturnType<typeof createClient>
   return null
 }
 
+async function generateUniqueLossSecretCode(supabase: ReturnType<typeof createClient>): Promise<string | null> {
+  for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
+    const { data: code, error: codeError } = await supabase.rpc('generate_prize_code')
+
+    if (codeError || !code || typeof code !== 'string') {
+      console.error('Loss secret code generation error')
+      return null
+    }
+
+    const { data: existingAccess, error: accessLookupError } = await supabase
+      .from('secret_access')
+      .select('id')
+      .eq('secret_code', code)
+      .maybeSingle()
+
+    if (accessLookupError) {
+      console.error('Loss secret access uniqueness lookup error')
+      return null
+    }
+
+    const { data: existingPrize, error: prizeLookupError } = await supabase
+      .from('quiz_participations')
+      .select('id')
+      .eq('prize_code', code)
+      .maybeSingle()
+
+    if (prizeLookupError) {
+      console.error('Loss secret prize uniqueness lookup error')
+      return null
+    }
+
+    if (!existingAccess && !existingPrize) return code
+  }
+
+  return null
+}
+
 async function refundPrizeStock(
   supabase: ReturnType<typeof createClient>,
   prizeType: PrizeType | null,
@@ -349,13 +386,35 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle()
 
+    let secretMenuCode = menuData?.secret_code || null
+
+    if (!prizeLabel) {
+      const lossCode = await generateUniqueLossSecretCode(supabase)
+
+      if (lossCode) {
+        const { error: grantLossAccessError } = await supabase.rpc('grant_secret_access', {
+          p_email: cleanEmail,
+          p_phone: cleanPhone,
+          p_first_name: cleanFirstName,
+          p_secret_code: lossCode,
+          p_week_start: weekStart,
+        })
+
+        if (grantLossAccessError) {
+          console.warn('Loss secret access grant failed')
+        } else {
+          secretMenuCode = lossCode
+        }
+      }
+    }
+
     await attachWinToProfile(supabase, {
       userId: authenticatedUserId,
       firstName: cleanFirstName,
       phone: cleanPhone,
       prizeLabel,
       prizeCode,
-      secretCode: menuData?.secret_code || null,
+      secretCode: secretMenuCode,
     })
 
     return successResponse({
@@ -367,7 +426,7 @@ Deno.serve(async (req) => {
       prizeCode,
       firstName: cleanFirstName,
       stock,
-      secretCode: menuData?.secret_code || null,
+      secretCode: secretMenuCode,
       attachedToProfile: !!authenticatedUserId,
     })
   } catch (error: unknown) {
