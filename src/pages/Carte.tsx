@@ -131,10 +131,16 @@ const Carte = () => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", duration: 0.5 }}
+                className="space-y-6"
               >
                 <SecretMenuUnlocked 
                   justUnlocked={justUnlocked} 
                   isAdminAccess={isAdminAccess}
+                />
+                {/* Compact code input stays visible */}
+                <SecretMenuLocked
+                  onUnlock={handleUnlock}
+                  compact
                 />
               </motion.div>
             ) : (
