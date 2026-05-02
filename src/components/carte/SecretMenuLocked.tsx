@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 interface SecretMenuLockedProps {
   onUnlock: (code: string) => Promise<boolean>;
   onAdminUnlock?: (password: string) => Promise<boolean>;
+  compact?: boolean;
 }
 
-const SecretMenuLocked = ({ onUnlock, onAdminUnlock }: SecretMenuLockedProps) => {
+const SecretMenuLocked = ({ onUnlock, onAdminUnlock, compact = false }: SecretMenuLockedProps) => {
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,6 +40,50 @@ const SecretMenuLocked = ({ onUnlock, onAdminUnlock }: SecretMenuLockedProps) =>
       setIsLoading(false);
     }
   };
+
+  // ── Compact mode: small inline code input ──
+  if (compact) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="card-warm p-4 border border-caramel/20 bg-gradient-to-b from-background to-caramel/5 rounded-2xl"
+      >
+        <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <KeyRound className="w-5 h-5 text-caramel flex-shrink-0" />
+          <Input
+            type="text"
+            value={code}
+            onChange={(e) => { setCode(e.target.value.toUpperCase()); setError(null); }}
+            placeholder="CODE"
+            className="text-center text-sm font-mono tracking-widest h-10 uppercase bg-background/50 border border-caramel/30 focus:border-caramel"
+            autoComplete="off"
+            disabled={isLoading}
+          />
+          <Button
+            type="submit"
+            disabled={isLoading || !code.trim()}
+            size="sm"
+            className="bg-caramel hover:bg-caramel-dark text-white px-4 h-10 flex-shrink-0"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Unlock className="w-4 h-4" />}
+          </Button>
+        </form>
+        <AnimatePresence>
+          {error && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mt-2 text-xs text-destructive text-center"
+            >
+              {error}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div
