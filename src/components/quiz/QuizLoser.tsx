@@ -124,13 +124,13 @@ const QuizLoser = ({ firstName, email, phone, score, secretCode, stockRemaining,
           </div>
           
           <p className="text-sm text-muted-foreground mb-4">
-            Même sans gagner, tu débloques l'accès au Menu Secret de la semaine !
+            Même sans gagner, tu débloques l'accès au Menu Secret pendant 1 heure !
           </p>
 
           {!accessGranted ? (
             <>
               <div className="p-4 rounded-xl bg-caramel/10 mb-4">
-                <p className="text-xs text-muted-foreground mb-1">Ton code secret</p>
+                <p className="text-xs text-muted-foreground mb-1">Ton code Menu Secret • valable 1 heure</p>
                 <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
                   {secretCode}
                 </p>
