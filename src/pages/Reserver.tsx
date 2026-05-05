@@ -70,6 +70,12 @@ const toISODate = (date: Date) => {
   return `${year}-${month}-${day}`;
 };
 
+const normalizeDate = (date: Date) => {
+  const normalized = new Date(date);
+  normalized.setHours(12, 0, 0, 0);
+  return normalized;
+};
+
 const isSameCalendarDay = (a: Date, b: Date) => toISODate(a) === toISODate(b);
 
 const slotTimeToMinutes = (time: string) => {
@@ -100,16 +106,15 @@ const getAvailableSlots = (date: Date): ServiceSlot[] => {
 const dateHasAvailableSlot = (date: Date) => getAvailableSlots(date).some((slot) => slot.available);
 
 const buildBookableDays = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = normalizeDate(new Date());
 
-  const startDate = new Date(today);
+  const startDate = normalizeDate(today);
   if (!dateHasAvailableSlot(startDate)) startDate.setDate(startDate.getDate() + 1);
 
   return Array.from({ length: BOOKING_WINDOW_DAYS }, (_, index) => {
-    const date = new Date(startDate);
+    const date = normalizeDate(startDate);
     date.setDate(startDate.getDate() + index);
-    return date;
+    return normalizeDate(date);
   });
 };
 
@@ -117,7 +122,7 @@ const buildCalendarMonths = (days: Date[]): CalendarMonth[] => {
   const monthMap = new Map<string, CalendarMonth>();
 
   days.forEach((date) => {
-    const start = new Date(date.getFullYear(), date.getMonth(), 1);
+    const start = normalizeDate(new Date(date.getFullYear(), date.getMonth(), 1));
     const key = `${date.getFullYear()}-${date.getMonth()}`;
 
     if (!monthMap.has(key)) {
@@ -158,8 +163,9 @@ const Reserver = () => {
   const shouldPreferPhone = people >= 9;
 
   const handleDateChange = (date: Date) => {
-    setSelectedDate(date);
-    const nextSlots = getAvailableSlots(date);
+    const normalizedDate = normalizeDate(date);
+    setSelectedDate(normalizedDate);
+    const nextSlots = getAvailableSlots(normalizedDate);
     const stillAvailable = nextSlots.some((slot) => slot.id === selectedSlotId && slot.available);
     if (!stillAvailable) setSelectedSlotId(nextSlots.find((slot) => slot.available)?.id ?? "midi-12h00");
   };
@@ -175,7 +181,7 @@ const Reserver = () => {
         <Hero selectedDate={selectedDate} selectedSlot={selectedSlot} people={people} />
 
         <section className="card-warm space-y-5">
-          <SectionTitle eyebrow="1. Choisir le jour" title="Agenda annuel" />
+          <SectionTitle eyebrow="1. Choisir le jour" title="Agenda" />
           <div className="rounded-[1.75rem] border border-caramel/15 bg-white/70 p-3 shadow-sm">
             <div className="mb-3 flex items-center justify-between gap-3 px-1">
               <button type="button" onClick={() => handleMonthChange(visibleMonthIndex - 1)} disabled={visibleMonthIndex === 0} className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35" aria-label="Mois précédent">
@@ -184,7 +190,7 @@ const Reserver = () => {
 
               <div className="min-w-0 flex-1 text-center">
                 <p className="font-display text-lg font-black capitalize text-espresso">{visibleMonth.label}</p>
-                <p className="text-[11px] text-muted-foreground">Réservation possible sur 12 mois glissants</p>
+                <p className="text-[11px] text-muted-foreground">Choisissez votre date</p>
               </div>
 
               <button type="button" onClick={() => handleMonthChange(visibleMonthIndex + 1)} disabled={visibleMonthIndex === months.length - 1} className="rounded-full border border-border/70 bg-white/80 p-2 text-espresso transition hover:border-caramel/40 disabled:opacity-35" aria-label="Mois suivant">
@@ -222,7 +228,7 @@ const Reserver = () => {
               })}
             </div>
 
-            <p className="mt-3 text-center text-[11px] text-muted-foreground">Le point doré indique un service du soir disponible. Les mois avancent sur une année complète.</p>
+            <p className="mt-3 text-center text-[11px] text-muted-foreground">Le point doré indique un service du soir disponible.</p>
           </div>
         </section>
 
