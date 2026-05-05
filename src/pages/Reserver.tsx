@@ -139,7 +139,12 @@ const getMondayFirstDayIndex = (date: Date) => (date.getDay() + 6) % 7;
 
 const buildMonthCells = (month: CalendarMonth) => {
   const blanks = Array.from({ length: getMondayFirstDayIndex(month.start) }, () => null);
-  return [...blanks, ...month.days];
+  const lastDay = new Date(month.start.getFullYear(), month.start.getMonth() + 1, 0).getDate();
+  const fullMonthDays = Array.from({ length: lastDay }, (_, index) =>
+    normalizeDate(new Date(month.start.getFullYear(), month.start.getMonth(), index + 1)),
+  );
+
+  return [...blanks, ...fullMonthDays];
 };
 
 const buildWhatsAppText = (date: Date, slot: ServiceSlot, people: number) =>
@@ -215,11 +220,24 @@ const Reserver = () => {
                 if (!date) return <div key={`blank-${index}`} className="h-12" aria-hidden="true" />;
 
                 const active = toISODate(date) === selectedDateISO;
+                const bookable = visibleMonth.days.some((bookableDay) => isSameCalendarDay(bookableDay, date));
                 const today = isSameCalendarDay(date, new Date());
-                const hasEvening = getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
+                const hasEvening = bookable && getAvailableSlots(date).some((slot) => slot.period === "Soir" && slot.available);
 
                 return (
-                  <button key={toISODate(date)} type="button" onClick={() => handleDateChange(date)} className={`relative min-h-12 rounded-2xl border px-1 py-2 text-center transition ${active ? "border-caramel bg-caramel text-white shadow-warm" : "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"}`}>
+                  <button
+                    key={toISODate(date)}
+                    type="button"
+                    disabled={!bookable}
+                    onClick={() => bookable && handleDateChange(date)}
+                    className={`relative min-h-12 rounded-2xl border px-1 py-2 text-center transition disabled:cursor-not-allowed disabled:opacity-25 ${
+                      active
+                        ? "border-caramel bg-caramel text-white shadow-warm"
+                        : bookable
+                          ? "border-border/60 bg-background/70 text-espresso hover:border-caramel/40 hover:bg-white"
+                          : "border-border/30 bg-background/30 text-muted-foreground"
+                    }`}
+                  >
                     <span className="block font-display text-base font-black leading-none">{date.getDate()}</span>
                     {today && <span className={`mt-1 block text-[8px] font-bold uppercase ${active ? "text-white/80" : "text-caramel"}`}>auj.</span>}
                     {hasEvening && <span className={`mx-auto mt-1 block h-1.5 w-1.5 rounded-full ${active ? "bg-white" : "bg-caramel"}`} />}
