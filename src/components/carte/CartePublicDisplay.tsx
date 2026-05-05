@@ -17,7 +17,7 @@ type MenuItem = {
   description?: string;
   badge?: string;
   price?: string;
-  /** Prix utilisé pour classer la carte. Seules les formules affichent leur prix. */
+  /** Prix utilisé pour classer la carte. */
   sortPrice: number;
 };
 
@@ -71,8 +71,8 @@ const SECTIONS: MenuSection[] = [
       },
       {
         name: "Formule Gourmande",
-        description: "Pour les vrais gourmands · 1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
-        badge: "L’expérience gourmande",
+        description: "À découvrir au restaurant · 1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
+        badge: "Menu gourmand de la semaine",
         price: "16,90 €",
         sortPrice: 16.9,
       },
@@ -128,7 +128,8 @@ const SECTIONS: MenuSection[] = [
       },
       {
         name: "Ajoutez une touche gourmande",
-        description: "Chantilly : +0,80 € · 1 boule de glace : +2,00 €",
+        description: "Chantilly\n1 boule de glace",
+        price: "+0,80 €\n+2,00 €",
         sortPrice: 90,
       },
       {
@@ -146,14 +147,15 @@ const SECTIONS: MenuSection[] = [
     icon: Salad,
     tone: "fresh",
     items: sortItemsByPrice([
-      { name: "Salade Fermière", description: "Dés de fromage, dés de jambon, miel, noix.", sortPrice: 10 },
-      { name: "Salade Gasconne", description: "Gésiers de canard, dés de fromage, pommes de terre, tomates.", sortPrice: 10 },
-      { name: "Salade Nordique", description: "Saumon fumé, pommes de terre, tomates cerises, dés de fromage.", sortPrice: 10 },
-      { name: "Salade Campagnarde", description: "Lardons, œuf, pommes de terre, tomates cerises, dés de fromage, oignons rouges.", sortPrice: 12 },
+      { name: "Salade Fermière", description: "Dés de fromage, dés de jambon, miel, noix.", price: "10,00 €", sortPrice: 10 },
+      { name: "Salade Gasconne", description: "Gésiers de canard, dés de fromage, pommes de terre, tomates.", price: "10,00 €", sortPrice: 10 },
+      { name: "Salade Nordique", description: "Saumon fumé, pommes de terre, tomates cerises, dés de fromage.", price: "10,00 €", sortPrice: 10 },
+      { name: "Salade Campagnarde", description: "Lardons, œuf, pommes de terre, tomates cerises, dés de fromage, oignons rouges.", price: "12,00 €", sortPrice: 12 },
       {
         name: "Salade du chef",
         description: "Gésiers de canard, tomates cerises, dés de fromage, œuf, avocat.",
         badge: "chef",
+        price: "12,00 €",
         sortPrice: 12,
       },
     ]),
@@ -391,12 +393,12 @@ const MenuSectionCard = ({ section, sectionIndex, setSectionRef }: MenuSectionCa
                     </span>
                   )}
                 </div>
-                {item.description && <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">{item.description}</p>}
+                {item.description && <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-foreground/75">{item.description}</p>}
               </div>
               {item.price && (
                 <div className="shrink-0 rounded-2xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-caramel/10">
                   <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Prix</p>
-                  <p className="font-display text-xl font-black text-caramel">{item.price}</p>
+                  <p className="whitespace-pre-line font-display text-xl font-black leading-tight text-caramel">{item.price}</p>
                 </div>
               )}
             </div>
