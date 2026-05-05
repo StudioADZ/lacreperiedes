@@ -37,20 +37,21 @@ const SECTIONS: MenuSection[] = [
   {
     id: "formules",
     title: "Nos formules",
-    subtitle: "Des formules pensées pour choisir vite, bien manger et profiter d’un vrai moment crêperie.",
+    subtitle: "Des formules simples, efficaces et gourmandes, avec boissons incluses.",
     icon: Sparkles,
     tone: "signature",
     items: sortItemsByPrice([
       {
         name: "Formule Goûter",
-        description: "Crêpe gourmande de la semaine + 1 boisson sans alcool.",
+        description: "Idéal pause gourmande · Crêpe gourmande de la semaine + 1 boisson sans alcool.",
         badge: "dès juillet",
         price: "6,90 €",
         sortPrice: 6.9,
       },
       {
         name: "Formule Petite Faim",
-        description: "1 galette complète ou fromagère + 1 boisson sans alcool.",
+        description: "Composez votre galette (2 ingrédients) + boisson sans alcool.",
+        badge: "simple, rapide, efficace",
         price: "7,90 €",
         sortPrice: 7.9,
       },
@@ -64,63 +65,77 @@ const SECTIONS: MenuSection[] = [
       {
         name: "Formule Classique",
         description: "1 boisson + 1 galette classique + 1 crêpe classique.",
+        badge: "Le plus choisi – Le trio parfait",
         price: "14,90 €",
         sortPrice: 14.9,
       },
       {
         name: "Formule Gourmande",
-        description: "1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
-        badge: "menu secret",
-        price: "17,90 €",
-        sortPrice: 17.9,
+        description: "Pour les vrais gourmands · 1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.",
+        badge: "L’expérience gourmande",
+        price: "16,90 €",
+        sortPrice: 16.9,
       },
     ]),
   },
   {
     id: "galettes",
     title: "Galettes classiques",
-    subtitle: "Les incontournables maison : simples, généreuses et prêtes à rassurer les grands appétits.",
+    subtitle: "Les incontournables maison : simples, généreuses et faites minute.",
     icon: Flame,
     tone: "classic",
     items: sortItemsByPrice([
-      { name: "Complète", description: "Œuf, emmental, jambon.", sortPrice: 7 },
-      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", sortPrice: 10.5 },
-      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", sortPrice: 10.5 },
-      { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates.", sortPrice: 10.5 },
-      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené.", sortPrice: 12.5 },
+      { name: "Complète", description: "Œuf, emmental, jambon.", price: "8,50 €", sortPrice: 8.5 },
+      { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates.", price: "11,90 €", sortPrice: 11.9 },
+      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", price: "11,90 €", sortPrice: 11.9 },
+      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", price: "12,50 €", sortPrice: 12.5 },
+      { name: "Végétarienne", description: "Recette de saison, légumes du moment, fromage selon inspiration.", price: "12,90 €", sortPrice: 12.9 },
+      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené.", price: "13,90 €", sortPrice: 13.9 },
       {
         name: "Tête du chef",
         description: "Œuf, emmental, jambon, confit d’oignon, bœuf haché, sauce moutarde.",
         badge: "chef",
-        sortPrice: 14,
+        price: "15,90 €",
+        sortPrice: 15.9,
+      },
+      {
+        name: "Supplément salade",
+        description: "À ajouter à votre galette.",
+        price: "+1,50 €",
+        sortPrice: 99,
       },
     ]),
   },
   {
     id: "crepes",
     title: "Crêpes classiques",
-    subtitle: "Les douceurs simples et efficaces : le genre de crêpe qui ne négocie pas avec la gourmandise.",
+    subtitle: "Une sélection courte, lisible et gourmande : les valeurs sûres maison.",
     icon: Snowflake,
     tone: "sweet",
     items: sortItemsByPrice([
-      { name: "Beurre", sortPrice: 2 },
-      { name: "Sucre", sortPrice: 2 },
-      { name: "Beurre sucre", sortPrice: 2.5 },
-      { name: "Jus citron", sortPrice: 2.5 },
-      { name: "Amande grillée", sortPrice: 3 },
-      { name: "Confiture du jour", sortPrice: 3 },
-      { name: "Miel", sortPrice: 3 },
-      { name: "Amande jus citron", sortPrice: 3.5 },
-      { name: "Caramel beurre salé", sortPrice: 3.5 },
-      { name: "Chocolat maison", sortPrice: 3.5 },
-      { name: "Caramel beurre salé amande", sortPrice: 4 },
-      { name: "Chocaramel", sortPrice: 4 },
-      { name: "Chocolat maison amande", sortPrice: 4 },
+      { name: "Sucre", description: "La simplicité qui fonctionne à tous les coups.", price: "2,50 €", sortPrice: 2.5 },
+      { name: "Beurre sucre", description: "Fondante, chaude, incontournable.", price: "3,00 €", sortPrice: 3 },
+      { name: "Miel du moment", description: "Douce, naturelle, subtilement sucrée.", price: "3,50 €", sortPrice: 3.5 },
+      { name: "Confiture du jour", description: "Selon l’inspiration du moment.", price: "3,50 €", sortPrice: 3.5 },
+      { name: "Caramel beurre salé", description: "Onctueux, maison, irrésistible.", price: "4,00 €", sortPrice: 4 },
+      { name: "Chocolat maison", description: "Chocolat chaud, fondant et généreux.", price: "4,00 €", sortPrice: 4 },
+      { name: "Chocolat banane", description: "Chocolat chaud + banane fraîche.", price: "4,50 €", sortPrice: 4.5 },
       {
-        name: "Crêpe 3 ingrédients au choix",
-        description: "Beurre, sucre, amandes grillées, jus citron, miel, chocolat, gelée de cidre + 1 boule de glace + chantilly.",
-        badge: "sur-mesure",
-        sortPrice: 5,
+        name: "Le plus choisi – Formule Goûter",
+        description: "Crêpe gourmande de la semaine + boisson sans alcool.",
+        price: "6,90 €",
+        sortPrice: 6.9,
+      },
+      {
+        name: "Ajoutez une touche gourmande",
+        description: "Chantilly : +0,80 € · 1 boule de glace : +2,00 €",
+        sortPrice: 90,
+      },
+      {
+        name: "Formule Classique",
+        description: "Le réflexe malin – midi & soir · 1 galette classique + 1 crêpe classique + 1 boisson.",
+        price: "14,90 €",
+        sortPrice: 14.9,
       },
     ]),
   },
@@ -311,12 +326,12 @@ const MenuFilters = ({
               }}
               type="button"
               onClick={() => onChange(filter.id)}
-              aria-current={active ? "true" : undefined}
-              className={`min-w-fit rounded-full border px-4 py-2 text-sm font-bold transition ${
+              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all ${
                 active
-                  ? "border-caramel bg-caramel text-white shadow-sm"
-                  : "border-border/70 bg-white/70 text-muted-foreground hover:border-caramel/40 hover:text-foreground"
+                  ? "bg-caramel text-white shadow-md"
+                  : "bg-white/85 text-espresso/80 ring-1 ring-border hover:bg-caramel/10"
               }`}
+              aria-pressed={active}
             >
               {filter.label}
             </button>
@@ -327,73 +342,69 @@ const MenuFilters = ({
   );
 };
 
-const MenuSectionCard = ({
-  section,
-  sectionIndex,
-  setSectionRef,
-}: {
+type MenuSectionCardProps = {
   section: MenuSection;
   sectionIndex: number;
   setSectionRef: (element: HTMLElement | null) => void;
-}) => {
+};
+
+const MenuSectionCard = ({ section, sectionIndex, setSectionRef }: MenuSectionCardProps) => {
   const Icon = section.icon;
 
   return (
     <motion.section
       ref={setSectionRef}
       id={section.id}
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: sectionIndex * 0.05 }}
-      className={`scroll-mt-44 rounded-[2rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
+      initial={{ opacity: 0, y: 18 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      transition={{ delay: sectionIndex * 0.05, duration: 0.35 }}
+      className={`scroll-mt-32 rounded-[1.75rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
     >
       <div className="mb-4 flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-caramel shadow-sm">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-caramel shadow-sm">
           <Icon className="h-6 w-6" />
         </div>
-        <div className="min-w-0 flex-1">
-          <h3 className="font-display text-xl font-black leading-tight text-espresso">{section.title}</h3>
+        <div>
+          <h2 className="font-display text-2xl font-black text-espresso">{section.title}</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{section.subtitle}</p>
         </div>
       </div>
 
       <div className="space-y-3">
         {section.items.map((item, itemIndex) => (
-          <MenuItemCard key={`${section.id}-${item.name}`} item={item} itemIndex={itemIndex} />
+          <motion.article
+            key={`${section.id}-${item.name}`}
+            initial={{ opacity: 0, x: -10 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: itemIndex * 0.035 }}
+            className="rounded-2xl border border-caramel/18 bg-white/78 p-4 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-display text-xl font-black leading-tight text-espresso">{item.name}</h3>
+                  {item.badge && (
+                    <span className="rounded-full bg-butter/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.11em] text-caramel">
+                      {item.badge}
+                    </span>
+                  )}
+                </div>
+                {item.description && <p className="mt-1.5 text-sm leading-relaxed text-foreground/75">{item.description}</p>}
+              </div>
+              {item.price && (
+                <div className="shrink-0 rounded-2xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-caramel/10">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Prix</p>
+                  <p className="font-display text-xl font-black text-caramel">{item.price}</p>
+                </div>
+              )}
+            </div>
+          </motion.article>
         ))}
       </div>
     </motion.section>
   );
 };
-
-const MenuItemCard = ({ item, itemIndex }: { item: MenuItem; itemIndex: number }) => (
-  <motion.article
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: Math.min(itemIndex * 0.035, 0.22) }}
-    className="rounded-2xl border border-border/55 bg-background/65 p-4 shadow-sm transition hover:border-caramel/35 hover:bg-background/85"
-  >
-    <div className="flex items-start justify-between gap-3">
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h4 className="font-display text-base font-bold leading-tight text-espresso">{item.name}</h4>
-          {item.badge && (
-            <span className="rounded-full bg-caramel/12 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-caramel">
-              {item.badge}
-            </span>
-          )}
-        </div>
-        {item.description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{item.description}</p>}
-      </div>
-
-      {item.price && (
-        <div className="shrink-0 rounded-2xl border border-caramel/20 bg-white/80 px-3 py-2 text-right shadow-sm">
-          <p className="text-[10px] uppercase tracking-[0.14em] text-muted-foreground">Prix</p>
-          <p className="whitespace-nowrap font-display text-lg font-black text-caramel">{item.price}</p>
-        </div>
-      )}
-    </div>
-  </motion.article>
-);
 
 export default CartePublicDisplay;
