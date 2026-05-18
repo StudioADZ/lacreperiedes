@@ -25,6 +25,23 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    const adminPassword = Deno.env.get('ADMIN_PASSWORD')
+
+    // Require admin password (header or JSON body) to prevent public information leakage
+    let providedPassword = req.headers.get('x-admin-password') || ''
+    if (!providedPassword && req.method === 'POST') {
+      try {
+        const body = await req.clone().json()
+        providedPassword = typeof body?.adminPassword === 'string' ? body.adminPassword : ''
+      } catch (_) { /* ignore */ }
+    }
+    if (!adminPassword || providedPassword !== adminPassword) {
+      return new Response(
+        JSON.stringify({ error: 'unauthorized' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 401 }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // 1. Check database connection
