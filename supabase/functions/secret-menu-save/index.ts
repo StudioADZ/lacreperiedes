@@ -82,9 +82,22 @@ Deno.serve(async (req) => {
       )
     }
 
-    const { menuId, menuData } = body as {
+    const { menuId, menuData, adminPassword } = body as {
       menuId?: string
       menuData?: Record<string, unknown>
+      adminPassword?: string
+    }
+
+    const expectedPassword = Deno.env.get('ADMIN_PASSWORD')
+    if (!expectedPassword || adminPassword !== expectedPassword) {
+      return jsonResponse(
+        {
+          success: false,
+          error: 'unauthorized',
+          message: 'Authentification administrateur requise.',
+        },
+        401,
+      )
     }
 
     if (!menuData) {

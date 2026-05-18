@@ -12,9 +12,6 @@ interface SecretAccessState {
 // Session duration: 1 hour max for regular users
 const SESSION_DURATION_MS = 60 * 60 * 1000;
 
-// Admin access key in localStorage
-const ADMIN_ACCESS_KEY = 'admin_secret_menu_access';
-
 export const useSecretAccess = () => {
   const [state, setState] = useState<SecretAccessState>({
     hasAccess: false,
@@ -25,22 +22,12 @@ export const useSecretAccess = () => {
   });
 
   useEffect(() => {
+    // Clean up any legacy client-side admin flag that previously granted unverified access
+    try { localStorage.removeItem('admin_secret_menu_access'); } catch (_) { /* ignore */ }
     checkAccess();
   }, []);
 
   const checkAccess = async () => {
-    // First check for admin permanent access
-    const adminAccess = localStorage.getItem(ADMIN_ACCESS_KEY);
-    if (adminAccess === 'true') {
-      setState({
-        hasAccess: true,
-        isLoading: false,
-        accessToken: 'admin',
-        secretCode: 'ADMIN',
-        isAdminAccess: true,
-      });
-      return;
-    }
 
     const storedToken = localStorage.getItem('secret_access_token');
     const storedTimestamp = localStorage.getItem('secret_access_timestamp');
@@ -147,7 +134,8 @@ export const useSecretAccess = () => {
     }
   };
 
-  // Admin bypass: verify admin password and grant permanent access
+  // Admin verification: validate the password server-side, then grant a regular
+  // 1-hour secret-access token. No persistent client-side admin flag.
   const verifyAdminAccess = async (adminPassword: string): Promise<boolean> => {
     try {
       const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -157,19 +145,31 @@ export const useSecretAccess = () => {
         body: JSON.stringify({ action: 'stats', adminPassword }),
       });
 
-      if (response.ok) {
-        // Admin password valid - grant permanent access
-        localStorage.setItem(ADMIN_ACCESS_KEY, 'true');
-        setState({
-          hasAccess: true,
-          isLoading: false,
-          accessToken: 'admin',
-          secretCode: 'ADMIN',
-          isAdminAccess: true,
-        });
-        return true;
-      }
-      return false;
+      if (!response.ok) return false;
+
+      const weekStart = getWeekStart();
+      const { data: token, error } = await supabase.rpc('grant_secret_access', {
+        p_email: 'admin@menu-secret.local',
+        p_phone: '0000000000',
+        p_first_name: 'Admin',
+        p_secret_code: 'ADMIN',
+        p_week_start: weekStart,
+      });
+
+      if (error || !token) return false;
+
+      localStorage.setItem('secret_access_token', token);
+      localStorage.setItem('secret_access_timestamp', Date.now().toString());
+      localStorage.setItem('secret_access_code', 'ADMIN');
+
+      setState({
+        hasAccess: true,
+        isLoading: false,
+        accessToken: token,
+        secretCode: 'ADMIN',
+        isAdminAccess: true,
+      });
+      return true;
     } catch (error) {
       console.error('Error verifying admin access:', error);
       return false;
@@ -219,7 +219,7 @@ export const useSecretAccess = () => {
 
   const revokeAccess = () => {
     clearLocalStorage();
-    localStorage.removeItem(ADMIN_ACCESS_KEY);
+    try { localStorage.removeItem('admin_secret_menu_access'); } catch (_) { /* ignore */ }
     setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
   };
 
