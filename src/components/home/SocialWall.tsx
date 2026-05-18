@@ -97,7 +97,7 @@ const SocialWall = () => {
   const fetchInteractions = async (postId: string) => {
     try {
       const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/post_interactions?post_id=eq.${postId}&order=created_at.desc`,
+        `${SUPABASE_URL}/rest/v1/post_interactions_public?post_id=eq.${postId}&order=created_at.desc`,
         {
           headers: {
             apikey: SUPABASE_KEY,
@@ -113,10 +113,26 @@ const SocialWall = () => {
         // Count likes
         const likes = data.filter((i) => i.interaction_type === "like");
         setLikeCount(likes.length);
-        setHasLiked(likes.some((i) => i.device_fingerprint === deviceId));
 
         // Get comments
         setComments(data.filter((i) => i.interaction_type === "comment"));
+      }
+
+      // Check if this device has already liked, via privacy-preserving RPC
+      if (deviceId) {
+        const likedRes = await fetch(`${SUPABASE_URL}/rest/v1/rpc/has_liked_post`, {
+          method: "POST",
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ p_post_id: postId, p_fingerprint: deviceId }),
+        });
+        if (likedRes.ok) {
+          const liked = await likedRes.json();
+          setHasLiked(Boolean(liked));
+        }
       }
     } catch (err) {
       console.log("Could not fetch interactions");
