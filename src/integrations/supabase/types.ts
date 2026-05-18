@@ -837,6 +837,10 @@ export type Database = {
         }
         Returns: string
       }
+      has_liked_post: {
+        Args: { p_fingerprint: string; p_post_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
