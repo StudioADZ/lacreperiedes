@@ -189,11 +189,10 @@ Deno.serve(async (req) => {
       
       const count = unclaimed?.length || 0
       if (count > 5) {
-        results.push({ 
-          name: 'Unclaimed Prizes', 
-          status: 'warning', 
+        results.push({
+          name: 'Unclaimed Prizes',
+          status: 'warning',
           message: `${count} lots non réclamés (attention aux expirés)`,
-          details: unclaimed
         })
         if (overallStatus === 'ok') overallStatus = 'warning'
       } else {
