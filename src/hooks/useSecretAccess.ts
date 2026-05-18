@@ -12,9 +12,6 @@ interface SecretAccessState {
 // Session duration: 1 hour max for regular users
 const SESSION_DURATION_MS = 60 * 60 * 1000;
 
-// Admin access key in localStorage
-const ADMIN_ACCESS_KEY = 'admin_secret_menu_access';
-
 export const useSecretAccess = () => {
   const [state, setState] = useState<SecretAccessState>({
     hasAccess: false,
@@ -25,22 +22,12 @@ export const useSecretAccess = () => {
   });
 
   useEffect(() => {
+    // Clean up any legacy client-side admin flag that previously granted unverified access
+    try { localStorage.removeItem('admin_secret_menu_access'); } catch (_) { /* ignore */ }
     checkAccess();
   }, []);
 
   const checkAccess = async () => {
-    // First check for admin permanent access
-    const adminAccess = localStorage.getItem(ADMIN_ACCESS_KEY);
-    if (adminAccess === 'true') {
-      setState({
-        hasAccess: true,
-        isLoading: false,
-        accessToken: 'admin',
-        secretCode: 'ADMIN',
-        isAdminAccess: true,
-      });
-      return;
-    }
 
     const storedToken = localStorage.getItem('secret_access_token');
     const storedTimestamp = localStorage.getItem('secret_access_timestamp');
