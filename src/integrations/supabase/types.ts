@@ -624,6 +624,38 @@ export type Database = {
       }
     }
     Views: {
+      post_interactions_public: {
+        Row: {
+          comment_text: string | null
+          created_at: string | null
+          id: string | null
+          interaction_type: string | null
+          post_id: string | null
+        }
+        Insert: {
+          comment_text?: string | null
+          created_at?: string | null
+          id?: string | null
+          interaction_type?: string | null
+          post_id?: string | null
+        }
+        Update: {
+          comment_text?: string | null
+          created_at?: string | null
+          id?: string | null
+          interaction_type?: string | null
+          post_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_interactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_questions_public: {
         Row: {
           category: string | null
