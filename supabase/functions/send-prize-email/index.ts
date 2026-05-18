@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
 
     const emailResponse = await resend.emails.send({
       from: 'La Crêperie <noreply@resend.dev>',
-      to: [email],
+      to: [recipientEmail],
       subject: `🎉 ${firstName}, voici ton code gagnant`,
       html: `
         <!DOCTYPE html>
