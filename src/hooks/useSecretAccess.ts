@@ -219,7 +219,7 @@ export const useSecretAccess = () => {
 
   const revokeAccess = () => {
     clearLocalStorage();
-    localStorage.removeItem(ADMIN_ACCESS_KEY);
+    try { localStorage.removeItem('admin_secret_menu_access'); } catch (_) { /* ignore */ }
     setState({ hasAccess: false, isLoading: false, accessToken: null, secretCode: null, isAdminAccess: false });
   };
 
