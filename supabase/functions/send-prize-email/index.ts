@@ -18,10 +18,12 @@ Deno.serve(async (req) => {
 
   try {
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    
-    if (!resendApiKey) {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!resendApiKey || !supabaseUrl || !serviceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'RESEND_API_KEY not configured' }),
+        JSON.stringify({ error: 'server_not_configured' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
       );
     }
@@ -35,6 +37,26 @@ Deno.serve(async (req) => {
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       );
     }
+
+    // Verify the prize code actually exists in our database before sending an email,
+    // to prevent the endpoint from being abused to send arbitrary emails.
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data: participation, error: lookupError } = await supabase
+      .from('quiz_participations')
+      .select('id, email, prize_won')
+      .eq('prize_code', String(prizeCode).toUpperCase())
+      .maybeSingle();
+
+    if (lookupError || !participation || !participation.prize_won) {
+      return new Response(
+        JSON.stringify({ error: 'invalid_prize_code' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 403 }
+      );
+    }
+
+    // Force the recipient to be the email stored with the prize (caller cannot redirect emails).
+    const recipientEmail = participation.email;
 
     const emailResponse = await resend.emails.send({
       from: 'La Crêperie <noreply@resend.dev>',
