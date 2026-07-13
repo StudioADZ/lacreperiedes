@@ -75,7 +75,7 @@ const INFO_CARDS = [
   {
     icon: Clock,
     title: "Horaires",
-    text: ["Midi : lundi au dimanche", "12h00 – 14h00", "Soir : vendredi & samedi", "19h00 – 22h00"],
+    text: ["Ouvert tous les jours", "Du lundi au dimanche", "12h00 – 22h00", "Service continu"],
     href: HOURS_LINK,
     external: true,
   },
