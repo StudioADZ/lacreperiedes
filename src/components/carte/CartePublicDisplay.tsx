@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import {
   Flame,
   GlassWater,
@@ -37,57 +37,79 @@ const SECTIONS: MenuSection[] = [
   {
     id: "formules",
     title: "Nos formules",
-    subtitle: "Des formules simples, efficaces et gourmandes, avec boissons incluses.",
+    subtitle: "Des formules claires et généreuses pour chaque moment de la journée.",
     icon: Sparkles,
     tone: "signature",
     items: sortItemsByPrice([
-      { name: "Formule Goûter", description: "Idéal pause gourmande · Crêpe gourmande de la semaine + 1 boisson sans alcool.", badge: "dès juillet", price: "6,90 €", sortPrice: 6.9 },
-      { name: "Formule Petite Faim", description: "Composez votre galette (2 ingrédients) + boisson sans alcool.", badge: "simple, rapide, efficace", price: "7,90 €", sortPrice: 7.9 },
-      { name: "Formule Salade", description: "1 salade + 1 crêpe classique + 1 boisson.", badge: "dès juin", price: "12,90 €", sortPrice: 12.9 },
-      { name: "Formule Classique", description: "1 boisson + 1 galette classique + 1 crêpe classique.", badge: "Le plus choisi – Le trio parfait", price: "14,90 €", sortPrice: 14.9 },
-      { name: "Formule Gourmande", description: "À découvrir au restaurant · 1 boisson + galette gourmande de la semaine + crêpe gourmande de la semaine + café ou thé.", badge: "Menu gourmand de la semaine", price: "16,90 €", sortPrice: 16.9 },
+      {
+        name: "Formule Goûter",
+        description: "Une crêpe classique ou un dessert accompagné d’une boisson.",
+        badge: "pause gourmande",
+        price: "6,90 €",
+        sortPrice: 6.9,
+      },
+      {
+        name: "Formule Petite Faim",
+        description: "Une galette et une boisson pour une pause rapide et gourmande.",
+        badge: "rapide",
+        price: "7,90 €",
+        sortPrice: 7.9,
+      },
+      {
+        name: "Formule Salade",
+        description: "La salade de la semaine accompagnée d’un dessert.",
+        badge: "fraîcheur",
+        price: "12,90 €",
+        sortPrice: 12.9,
+      },
+      {
+        name: "Formule Classique",
+        description: "Une galette classique, un dessert et une boisson incluse.",
+        badge: "la plus choisie",
+        price: "14,90 €",
+        sortPrice: 14.9,
+      },
     ]),
   },
   {
     id: "galettes",
     title: "Galettes classiques",
-    subtitle: "Les incontournables maison : simples, généreuses et faites minute.",
+    subtitle: "Les incontournables maison, préparés minute et servis généreusement.",
     icon: Flame,
     tone: "classic",
     items: sortItemsByPrice([
-      { name: "Complète", description: "Œuf, emmental, jambon.", price: "8,50 €", sortPrice: 8.5 },
+      { name: "Complète", description: "Œuf, emmental, jambon.", badge: "incontournable", price: "8,50 €", sortPrice: 8.5 },
       { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates.", price: "11,90 €", sortPrice: 11.9 },
-      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", price: "11,90 €", sortPrice: 11.9 },
+      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", badge: "végétarienne", price: "11,90 €", sortPrice: 11.9 },
       { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", price: "12,50 €", sortPrice: 12.5 },
-      { name: "Végétarienne", description: "Recette de saison, légumes du moment, fromage selon inspiration.", price: "12,90 €", sortPrice: 12.9 },
-      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille Guémené.", price: "13,90 €", sortPrice: 13.9 },
-      { name: "Tête du chef", description: "Œuf, emmental, jambon, confit d’oignon, bœuf haché, sauce moutarde.", badge: "chef", price: "15,90 €", sortPrice: 15.9 },
-      { name: "Supplément salade", description: "À ajouter à votre galette.", price: "+1,50 €", sortPrice: 99 },
+      { name: "Végétarienne", description: "Recette de saison, légumes du moment et fromage selon inspiration.", badge: "de saison", price: "12,90 €", sortPrice: 12.9 },
+      { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille de Guémené.", price: "13,90 €", sortPrice: 13.9 },
+      { name: "Tête du chef", description: "Œuf, emmental, jambon, confit d’oignons, bœuf haché, sauce moutarde.", badge: "chef", price: "15,90 €", sortPrice: 15.9 },
+      { name: "Supplément salade", description: "Ajoutez une touche de fraîcheur à votre galette.", price: "+1,50 €", sortPrice: 99 },
     ]),
   },
   {
     id: "crepes",
     title: "Crêpes classiques",
-    subtitle: "Une sélection courte, lisible et gourmande : les valeurs sûres maison.",
+    subtitle: "Les valeurs sûres maison, à savourer seules ou avec une touche gourmande.",
     icon: Snowflake,
     tone: "sweet",
     items: sortItemsByPrice([
       { name: "Sucre", description: "La simplicité qui fonctionne à tous les coups.", price: "2,50 €", sortPrice: 2.5 },
-      { name: "Beurre sucre", description: "Fondante, chaude, incontournable.", price: "3,00 €", sortPrice: 3 },
-      { name: "Miel du moment", description: "Douce, naturelle, subtilement sucrée.", price: "3,50 €", sortPrice: 3.5 },
-      { name: "Confiture du jour", description: "Selon l’inspiration du moment.", price: "3,50 €", sortPrice: 3.5 },
-      { name: "Caramel beurre salé", description: "Onctueux, maison, irrésistible.", price: "4,00 €", sortPrice: 4 },
-      { name: "Chocolat maison", description: "Chocolat chaud, fondant et généreux.", price: "4,00 €", sortPrice: 4 },
-      { name: "Chocolat banane", description: "Chocolat chaud + banane fraîche.", price: "4,50 €", sortPrice: 4.5 },
-      { name: "Le plus choisi – Formule Goûter", description: "Crêpe gourmande de la semaine + boisson sans alcool.", price: "6,90 €", sortPrice: 6.9 },
-      { name: "Ajoutez une touche gourmande", description: "Chantilly\n1 boule de glace", price: "+0,80 €\n+2,00 €", sortPrice: 90 },
-      { name: "Formule Classique", description: "Le réflexe malin – midi & soir · 1 galette classique + 1 crêpe classique + 1 boisson.", price: "14,90 €", sortPrice: 14.9 },
+      { name: "Beurre sucre", description: "Fondante, chaude et incontournable.", price: "3,00 €", sortPrice: 3 },
+      { name: "Miel du moment", description: "Douce et subtilement sucrée.", price: "3,50 €", sortPrice: 3.5 },
+      { name: "Confiture du jour", description: "Selon l’inspiration et les disponibilités du moment.", price: "3,50 €", sortPrice: 3.5 },
+      { name: "Caramel beurre salé", description: "Onctueux, maison et généreux.", badge: "maison", price: "4,00 €", sortPrice: 4 },
+      { name: "Chocolat maison", description: "Chocolat chaud, fondant et généreux.", badge: "maison", price: "4,00 €", sortPrice: 4 },
+      { name: "Chocolat banane", description: "Chocolat chaud et banane fraîche.", price: "4,50 €", sortPrice: 4.5 },
+      { name: "Chantilly", description: "Pour compléter votre crêpe ou votre dessert.", price: "+0,80 €", sortPrice: 90 },
+      { name: "Boule de glace", description: "Le supplément frais et gourmand.", price: "+2,00 €", sortPrice: 91 },
     ]),
   },
   {
     id: "salades",
     title: "Salades",
-    subtitle: "Des assiettes fraîches et complètes pour manger plus léger sans tomber dans la feuille triste.",
+    subtitle: "Des assiettes fraîches et complètes pour une pause plus légère.",
     icon: Salad,
     tone: "fresh",
     items: sortItemsByPrice([
@@ -101,13 +123,13 @@ const SECTIONS: MenuSection[] = [
   {
     id: "boissons",
     title: "Boissons à la carte",
-    subtitle: "Boissons fraîches, cidres locaux, bières, vins et boissons chaudes selon vos envies.",
+    subtitle: "Boissons fraîches, cidres, bières, vins et boissons chaudes selon vos envies.",
     icon: GlassWater,
     tone: "drinks",
     items: [
       { name: "Boissons chaudes", description: "Café expresso\nCafé double\nChocolat chaud\nThé\nLait au verre", price: "2,00 €\n2,50 €\n3,00 €\n3,50 €\n2,50 €", sortPrice: 1 },
-      { name: "Sodas & sans alcool", description: "Sirop à l’eau\nSodas 33 cl · Coca-Cola, Coca-Cola zéro, Oasis, Tropico selon disponibilité\nJus de fruits · dont nectar d’abricot 25 cl\nPerrier bouteille", price: "2,00 €\n3,50 €\n3,50 €\n4,00 €", sortPrice: 2 },
-      { name: "Cidres", description: "Cidre brut 25 cl\nCidre pichet\nCidre bouteille\nSélection locale selon disponibilité · dont L’Insoumise du Domaine de la Mare", badge: "local", price: "4,50 €\n9,90 €\n16,90 €", sortPrice: 3 },
+      { name: "Sodas & sans alcool", description: "Sirop à l’eau\nSodas 33 cl selon disponibilité\nJus de fruits 25 cl\nPerrier bouteille", price: "2,00 €\n3,50 €\n3,50 €\n4,00 €", sortPrice: 2 },
+      { name: "Cidres", description: "Cidre brut 25 cl\nCidre pichet\nCidre bouteille\nSélection locale selon disponibilité", badge: "local", price: "4,50 €\n9,90 €\n16,90 €", sortPrice: 3 },
       { name: "Bières", description: "Bière du moment\nBière pression", price: "3,50 €\n4,00 €", sortPrice: 4 },
       { name: "Apéritifs", description: "Kir breton\nKir nantais\nKir des Saveurs", price: "5,90 €\n5,90 €\n5,90 €", sortPrice: 5 },
       { name: "Alcools & digestifs", description: "Porto\nJack Daniel’s\nRhum blanc\nGrand Marnier rouge\nCalvados\nFine Sarthe", price: "3,50 €\n5,00 €\n5,00 €\n5,50 €\n5,50 €\n5,50 €", sortPrice: 6 },
@@ -162,11 +184,11 @@ const CartePublicDisplay = () => {
       let current: SectionId = "formules";
       for (const section of SECTIONS) {
         const element = sectionRefs.current[section.id];
-        if (!element) continue;
-        if (element.getBoundingClientRect().top <= checkpoint) current = section.id;
+        if (element && element.getBoundingClientRect().top <= checkpoint) current = section.id;
       }
       setActiveSection(current);
     };
+
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     window.addEventListener("resize", handleScroll);
@@ -178,8 +200,7 @@ const CartePublicDisplay = () => {
 
   const scrollToElement = (element: HTMLElement | null) => {
     if (!element) return;
-    const offset = getHeaderOffset();
-    const targetTop = element.getBoundingClientRect().top + window.scrollY - offset;
+    const targetTop = element.getBoundingClientRect().top + window.scrollY - getHeaderOffset();
     isProgrammaticScrollRef.current = true;
     window.scrollTo({ top: Math.max(targetTop, 0), behavior: "smooth" });
     window.setTimeout(() => {
@@ -189,11 +210,7 @@ const CartePublicDisplay = () => {
 
   const handleFilterChange = (filter: SectionId) => {
     setActiveSection(filter);
-    if (filter === "all") {
-      scrollToElement(menuTopRef.current);
-      return;
-    }
-    scrollToElement(sectionRefs.current[filter]);
+    scrollToElement(filter === "all" ? menuTopRef.current : sectionRefs.current[filter]);
   };
 
   return (
@@ -219,12 +236,12 @@ const CartePublicDisplay = () => {
 const MenuHero = () => (
   <div className="rounded-[2rem] border border-caramel/20 bg-gradient-to-br from-butter/55 via-background to-caramel/10 p-5 text-center shadow-warm">
     <div className="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-caramel shadow-sm">
-      <UtensilsCrossed className="h-7 w-7" />
+      <UtensilsCrossed className="h-7 w-7" aria-hidden="true" />
     </div>
-    <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Carte maison</p>
-    <h2 className="mt-2 font-display text-2xl font-black text-espresso">Formules, galettes, crêpes, salades & boissons</h2>
+    <p className="text-xs font-bold uppercase tracking-[0.25em] text-caramel">Fait maison</p>
+    <h2 className="mt-2 font-display text-2xl font-black text-espresso">Choisissez selon votre envie</h2>
     <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-      Découvrez les recettes maison et notre sélection de boissons à la carte.
+      Utilisez les catégories pour trouver rapidement votre formule, votre plat ou votre boisson.
     </p>
   </div>
 );
@@ -245,10 +262,10 @@ const MenuFilters = ({ activeFilter, onChange }: { activeFilter: SectionId; onCh
   }, [activeFilter]);
 
   return (
-    <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80">
+    <div className="sticky top-16 z-20 -mx-4 border-y border-border/60 bg-background/95 px-4 py-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Vous consultez</span>
-        <span className="rounded-full bg-caramel/12 px-3 py-1 text-xs font-black text-caramel">{activeLabel}</span>
+        <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Catégorie</span>
+        <span className="rounded-full bg-caramel/12 px-3 py-1 text-xs font-black text-caramel" aria-live="polite">{activeLabel}</span>
       </div>
       <div className="flex gap-2 overflow-x-auto pb-1 [-webkit-overflow-scrolling:touch] sm:grid sm:grid-cols-6 sm:overflow-visible sm:pb-0">
         {FILTERS.map((filter) => {
@@ -261,7 +278,7 @@ const MenuFilters = ({ activeFilter, onChange }: { activeFilter: SectionId; onCh
               }}
               type="button"
               onClick={() => onChange(filter.id)}
-              className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all ${active ? "bg-caramel text-white shadow-md" : "bg-white/85 text-espresso/80 ring-1 ring-border hover:bg-caramel/10"}`}
+              className={`min-h-11 shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${active ? "bg-caramel text-white shadow-md" : "bg-white/85 text-espresso/80 ring-1 ring-border hover:bg-caramel/10"}`}
               aria-pressed={active}
             >
               {filter.label}
@@ -281,51 +298,50 @@ type MenuSectionCardProps = {
 
 const MenuSectionCard = ({ section, sectionIndex, setSectionRef }: MenuSectionCardProps) => {
   const Icon = section.icon;
+  const reduceMotion = useReducedMotion();
+
   return (
     <motion.section
       ref={setSectionRef}
       id={section.id}
-      initial={{ opacity: 0, y: 18 }}
+      initial={reduceMotion ? false : { opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: "-80px" }}
-      transition={{ delay: sectionIndex * 0.05, duration: 0.35 }}
+      viewport={{ once: true, margin: "-60px" }}
+      transition={{ delay: reduceMotion ? 0 : sectionIndex * 0.04, duration: 0.3 }}
       className={`scroll-mt-32 rounded-[1.75rem] border p-4 shadow-warm ${TONE_STYLES[section.tone]}`}
+      aria-labelledby={`${section.id}-title`}
     >
       <div className="mb-4 flex items-start gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-caramel shadow-sm">
-          <Icon className="h-6 w-6" />
+          <Icon className="h-6 w-6" aria-hidden="true" />
         </div>
         <div>
-          <h2 className="font-display text-2xl font-black text-espresso">{section.title}</h2>
+          <h2 id={`${section.id}-title`} className="font-display text-2xl font-black text-espresso">{section.title}</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{section.subtitle}</p>
         </div>
       </div>
+
       <div className="space-y-3">
-        {section.items.map((item, itemIndex) => (
-          <motion.article
-            key={`${section.id}-${item.name}`}
-            initial={{ opacity: 0, x: -10 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: itemIndex * 0.035 }}
-            className="rounded-2xl border border-caramel/18 bg-white/78 p-4 shadow-sm"
-          >
+        {section.items.map((item) => (
+          <article key={`${section.id}-${item.name}`} className="rounded-2xl border border-caramel/18 bg-white/80 p-4 shadow-sm">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-xl font-black leading-tight text-espresso">{item.name}</h3>
-                  {item.badge && <span className="rounded-full bg-butter/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.11em] text-caramel">{item.badge}</span>}
+                  <h3 className="font-display text-lg font-black leading-tight text-espresso">{item.name}</h3>
+                  {item.badge && (
+                    <span className="rounded-full bg-butter/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-caramel">{item.badge}</span>
+                  )}
                 </div>
                 {item.description && <p className="mt-1.5 whitespace-pre-line text-sm leading-relaxed text-foreground/75">{item.description}</p>}
               </div>
               {item.price && (
                 <div className="shrink-0 rounded-2xl bg-white px-3 py-2 text-right shadow-sm ring-1 ring-caramel/10">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">Prix</p>
-                  <p className="whitespace-pre-line font-display text-xl font-black leading-tight text-caramel">{item.price}</p>
+                  <span className="sr-only">Prix : </span>
+                  <p className="whitespace-pre-line font-display text-lg font-black leading-tight text-caramel">{item.price}</p>
                 </div>
               )}
             </div>
-          </motion.article>
+          </article>
         ))}
       </div>
     </motion.section>
