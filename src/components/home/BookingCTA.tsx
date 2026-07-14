@@ -1,52 +1,46 @@
-import { Calendar, ArrowRight, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-
-// Lien de réservation CORRIGÉ
-const BOOKING_LINK = "https://calendar.app.google/nZShjcjWUyTcGLR97";
+import { ArrowRight, Calendar, Clock3, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const BookingCTA = () => {
   return (
-    <section className="px-4 mt-12">
-      <div className="max-w-lg mx-auto">
-        <a
-          href={BOOKING_LINK}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block"
+    <section className="mt-12 px-4" aria-labelledby="home-booking-title">
+      <div className="mx-auto max-w-lg">
+        <Link
+          to="/reserver"
+          className="group block rounded-[2rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <div className="card-glow relative overflow-hidden group cursor-pointer">
-            {/* Background decoration */}
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-primary/10 blur-2xl group-hover:bg-primary/20 transition-colors" />
-            <div className="absolute -left-8 -bottom-8 w-24 h-24 rounded-full bg-caramel/10 blur-xl" />
-            
+          <div className="card-glow relative overflow-hidden">
+            <div className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-primary/10 blur-2xl transition-colors group-hover:bg-primary/20" />
+            <div className="absolute -bottom-8 -left-8 h-24 w-24 rounded-full bg-caramel/10 blur-xl" />
+
             <div className="relative flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-caramel-dark flex items-center justify-center flex-shrink-0 shadow-warm">
-                <Calendar className="w-7 h-7 text-white" />
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-caramel-dark shadow-warm">
+                <Calendar className="h-7 w-7 text-white" aria-hidden="true" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-display text-xl font-bold">📅 Réserver une table</h3>
-                <p className="text-muted-foreground text-sm mt-1">
-                  Samedi & Dimanche – Places limitées !
+
+              <div className="min-w-0 flex-1">
+                <p className="mb-1 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-primary">
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  Réservation rapide
+                </p>
+                <h2 id="home-booking-title" className="font-display text-xl font-bold text-foreground">
+                  Réserver une table
+                </h2>
+                <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+                  Choisissez votre créneau en quelques instants, tous les jours de 12h à 22h.
+                </p>
+                <p className="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-caramel">
+                  <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                  Service continu selon disponibilité
                 </p>
               </div>
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all duration-300">
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-0.5 transition-transform" />
-              </div>
+
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-all duration-300 group-hover:bg-primary group-hover:text-white">
+                <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </span>
             </div>
           </div>
-        </a>
-        {/* Fallback link */}
-        <div className="mt-2 text-center">
-          <a 
-            href={BOOKING_LINK}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-          >
-            <AlertCircle className="w-3 h-3" />
-            Si le calendrier ne s'ouvre pas, cliquez ici
-          </a>
-        </div>
+        </Link>
       </div>
     </section>
   );
