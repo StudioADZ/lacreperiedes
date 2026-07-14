@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useState } from "react";
+import { ArrowRight, Loader2, X } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -16,52 +16,30 @@ interface SplashSettings {
 }
 
 const DEFAULT_CONFIG: SplashSettings = {
-  event_title: "🎉 Quiz & Récompenses",
-  event_subtitle: "Crêpes & Galettes artisanales – Mamers",
-  game_line: "Jeu & récompenses en cours",
-  cta_text: "Entrer dans la Crêperie",
+  event_title: "Bienvenue à La Crêperie des Saveurs",
+  event_subtitle: "Crêpes et galettes artisanales à Mamers",
+  game_line: "Ouvert tous les jours · 12h–22h",
+  cta_text: "Découvrir la crêperie",
   background_image_url: null,
 };
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-type DoorRect = { x: number; y: number; w: number; h: number };
-
 const SplashScreen = ({ onComplete }: SplashScreenProps) => {
-  const [isEntering, setIsEntering] = useState(false);
-  const [logoReady, setLogoReady] = useState(false);
   const [config, setConfig] = useState<SplashSettings>(DEFAULT_CONFIG);
   const [isLoading, setIsLoading] = useState(true);
-  const [doorRect, setDoorRect] = useState<DoorRect | null>(null);
-
-  const logoWrapRef = useRef<HTMLDivElement | null>(null);
-
-  // ✅ Précharge logo
-  useEffect(() => {
-    let cancelled = false;
-
-    const img = new Image();
-    img.onload = () => !cancelled && setLogoReady(true);
-    img.onerror = () => !cancelled && setLogoReady(true);
-    img.src = logo;
-
-    const link = document.createElement("link");
-    link.rel = "preload";
-    link.as = "image";
-    link.href = logo;
-    document.head.appendChild(link);
-
-    return () => {
-      cancelled = true;
-      try {
-        document.head.removeChild(link);
-      } catch {}
-    };
-  }, []);
+  const [isLeaving, setIsLeaving] = useState(false);
 
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchSettings = async () => {
+      if (!SUPABASE_URL || !SUPABASE_KEY) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         const response = await fetch(
           `${SUPABASE_URL}/rest/v1/splash_settings?is_active=eq.true&limit=1`,
@@ -70,7 +48,8 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
               apikey: SUPABASE_KEY,
               Authorization: `Bearer ${SUPABASE_KEY}`,
             },
-          }
+            signal: controller.signal,
+          },
         );
 
         if (response.ok) {
@@ -78,442 +57,131 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
           if (data?.length) {
             setConfig({
               event_title: data[0].event_title || DEFAULT_CONFIG.event_title,
-              event_subtitle:
-                data[0].event_subtitle || DEFAULT_CONFIG.event_subtitle,
+              event_subtitle: data[0].event_subtitle || DEFAULT_CONFIG.event_subtitle,
               game_line: data[0].game_line || DEFAULT_CONFIG.game_line,
               cta_text: data[0].cta_text || DEFAULT_CONFIG.cta_text,
               background_image_url: data[0].background_image_url,
             });
           }
         }
-      } catch {
-        // keep defaults
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          // Keep the local fallback so entry is never blocked.
+        }
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSettings();
+    const safetyTimer = window.setTimeout(() => setIsLoading(false), 1600);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(safetyTimer);
+    };
   }, []);
 
-  const hasBackgroundImage = !!config.background_image_url;
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onComplete();
+    };
 
-  // Fond normal de la splash
-  const bgCss = useMemo(
-    () =>
-      hasBackgroundImage
-        ? `linear-gradient(rgba(0,0,0,0.20), rgba(0,0,0,0.45)), url(${config.background_image_url})`
-        : `linear-gradient(180deg,
-            hsl(40 33% 96%) 0%,
-            hsl(35 45% 92%) 30%,
-            hsl(32 50% 88%) 70%,
-            hsl(35 45% 90%) 100%
-          )`,
-    [hasBackgroundImage, config.background_image_url]
-  );
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onComplete]);
 
-  // ✅ Fond "hero" pendant l'anim (anti-blanc, plus caramel)
-  const heroBg = useMemo(
-    () =>
-      `radial-gradient(60% 60% at 50% 35%, rgba(205, 146, 73, 0.45) 0%, rgba(205, 146, 73, 0.10) 55%, rgba(0,0,0,0) 70%),
-       linear-gradient(180deg,
-        hsl(38 40% 92%) 0%,
-        hsl(34 44% 87%) 35%,
-        hsl(32 48% 82%) 75%,
-        hsl(34 42% 86%) 100%)`,
-    []
-  );
+  const leave = () => {
+    if (isLeaving) return;
 
-  const rootStyle: CSSProperties = hasBackgroundImage
-    ? { background: bgCss, backgroundSize: "cover", backgroundPosition: "center" }
-    : { background: bgCss };
-
-  const canEnter = !isLoading && logoReady && !isEntering;
-
-  const handleEnter = () => {
-    if (!canEnter) return;
-
-    const el = logoWrapRef.current;
-    if (el) {
-      const r = el.getBoundingClientRect();
-      setDoorRect({ x: r.left, y: r.top, w: r.width, h: r.height });
-    } else {
-      setDoorRect(null);
+    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) {
+      onComplete();
+      return;
     }
 
-    setIsEntering(true);
-
-    window.setTimeout(() => {
-      onComplete();
-    }, 2600);
+    setIsLeaving(true);
+    window.setTimeout(onComplete, 420);
   };
 
-  const doorVars: CSSProperties | undefined = doorRect
-    ? ({
-        ["--cx" as any]: `${doorRect.x + doorRect.w / 2}px`,
-        ["--cy" as any]: `${doorRect.y + doorRect.h / 2}px`,
-        ["--w" as any]: `${doorRect.w}px`,
-        ["--h" as any]: `${doorRect.h}px`,
-      } as CSSProperties)
+  const backgroundStyle = config.background_image_url
+    ? {
+        backgroundImage: `linear-gradient(rgba(39,23,13,.55), rgba(39,23,13,.72)), url(${config.background_image_url})`,
+        backgroundPosition: "center",
+        backgroundSize: "cover",
+      }
     : undefined;
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex flex-col items-center justify-center overflow-hidden"
-      style={rootStyle}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="splash-title"
+      aria-describedby="splash-description"
+      className={`fixed inset-0 z-[200] flex items-center justify-center overflow-hidden bg-gradient-to-b from-[hsl(40_45%_96%)] via-[hsl(35_48%_91%)] to-[hsl(31_48%_84%)] px-5 py-8 transition duration-500 ${
+        isLeaving ? "scale-[1.015] opacity-0" : "scale-100 opacity-100"
+      }`}
+      style={backgroundStyle}
     >
-      <style>{`
-        /* ===== CTA animé (gradient + pulse + glow) ===== */
-        @keyframes gradientShift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        @keyframes ctaPulse {
-          0%, 100% { transform: translateY(0) scale(1); filter: brightness(1); }
-          50% { transform: translateY(-2px) scale(1.045); filter: brightness(1.10); }
-        }
-        @keyframes ctaGlow {
-          0%, 100% {
-            box-shadow:
-              0 20px 70px -18px rgba(143, 90, 32, 0.95),
-              0 0 0 0 rgba(143, 90, 32, 0.00);
-          }
-          50% {
-            box-shadow:
-              0 34px 110px -26px rgba(143, 90, 32, 1.00),
-              0 0 0 20px rgba(143, 90, 32, 0.22);
-          }
-        }
-        .cta-animated {
-          background-size: 240% 240%;
-          animation:
-            gradientShift 4.8s ease-in-out infinite,
-            ctaPulse 1.7s ease-in-out infinite,
-            ctaGlow 1.7s ease-in-out infinite;
-          will-change: transform, filter, box-shadow, background-position;
-        }
+      <button
+        type="button"
+        onClick={onComplete}
+        className="absolute right-[calc(env(safe-area-inset-right)+1rem)] top-[calc(env(safe-area-inset-top)+1rem)] inline-flex min-h-11 items-center gap-2 rounded-full border border-white/40 bg-white/70 px-4 text-sm font-semibold text-espresso shadow-sm backdrop-blur-md transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        aria-label="Passer l’écran de bienvenue"
+      >
+        Passer
+        <X className="h-4 w-4" aria-hidden="true" />
+      </button>
 
-        /* ===== Logo + Glow animation ===== */
-        @keyframes logoFloat {
-          0%, 100% { transform: translateY(0) scale(1); }
-          50% { transform: translateY(-7px) scale(1.02); }
-        }
-        @keyframes glowBreath {
-          0%, 100% {
-            transform: scale(1.18);
-            opacity: 0.38;
-            filter: blur(24px);
-          }
-          50% {
-            transform: scale(1.42);
-            opacity: 0.60;
-            filter: blur(34px);
-          }
-        }
-        .logo-float {
-          animation: logoFloat 2.6s ease-in-out infinite;
-          will-change: transform;
-        }
-        .logo-glow-anim {
-          animation: glowBreath 2.6s ease-in-out infinite;
-          will-change: transform, opacity, filter;
-        }
-
-        /* ===== CINÉ : cadre grandit du logo => plein écran ===== */
-        @keyframes frameExpand {
-          0% {
-            left: var(--cx);
-            top: var(--cy);
-            width: var(--w);
-            height: var(--h);
-            border-radius: 9999px;
-          }
-          100% {
-            left: 50vw;
-            top: 50vh;
-            width: 100vw;
-            height: 100vh;
-            border-radius: 0px;
-          }
-        }
-
-        /* ===== Portes ===== */
-        @keyframes doorOpenLeft {
-          0%   { transform: rotateY(0deg); }
-          100% { transform: rotateY(85deg); }
-        }
-        @keyframes doorOpenRight {
-          0%   { transform: rotateY(0deg); }
-          100% { transform: rotateY(-85deg); }
-        }
-
-        .overlay-enter { pointer-events: none; }
-
-        .door-frame {
-          position: fixed;
-          transform: translate(-50%, -50%);
-          overflow: hidden;
-          z-index: 260;
-
-          /* ✅ IMPORTANT : fond direct sur le cadre -> aucun blanc pendant coins/expand */
-          background: var(--heroBg);
-
-          animation: frameExpand 1100ms cubic-bezier(0.18, 0.92, 0.22, 1) forwards;
-
-          perspective: 1200px;
-          transform-style: preserve-3d;
-          will-change: left, top, width, height, border-radius;
-          box-shadow: 0 30px 130px rgba(0,0,0,0.32);
-        }
-
-        .door-back {
-          position: absolute;
-          inset: 0;
-          background: var(--heroBg);
-        }
-
-        /* grand logo doux derrière + un peu plus visible */
-        .door-back::after {
-          content: "";
-          position: absolute;
-          inset: -10%;
-          background-image: url(${logo});
-          background-repeat: no-repeat;
-          background-position: center 30%;
-          background-size: min(78vmin, 560px);
-          opacity: 0.26;
-          filter: saturate(1.08) contrast(1.06);
-        }
-
-        /* Hero typo derrière les portes */
-        .door-hero {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          text-align: center;
-          padding: 24px;
-        }
-        .door-hero-inner {
-          width: min(520px, 92vw);
-          transform: translateY(2vh);
-        }
-        .door-hero h2 {
-          margin: 0;
-          font-family: inherit;
-          font-weight: 700;
-          line-height: 1.05;
-        }
-        .door-hero .kicker {
-          margin-top: 14px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-        }
-
-        .door-panels {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          transform-style: preserve-3d;
-        }
-
-        .door {
-          position: relative;
-          width: 50%;
-          height: 100%;
-          overflow: hidden;
-          backface-visibility: hidden;
-          transform-style: preserve-3d;
-          will-change: transform;
-          background: rgba(0,0,0,0); /* rien de blanc */
-        }
-
-        /* ✅ split PROPRE : même logo centré, coupé par overflow des 2 panneaux */
-        .door .door-logo {
-          position: absolute;
-          left: 50%;
-          top: 50%;
-          transform: translate(-50%, -50%);
-          width: min(78vmin, 560px);
-          height: auto;
-          user-select: none;
-          -webkit-user-drag: none;
-          filter: saturate(1.08) contrast(1.06);
-        }
-
-        .door.left {
-          transform-origin: left center;
-          animation: doorOpenLeft 980ms cubic-bezier(0.18, 0.92, 0.22, 1) forwards;
-          animation-delay: 1200ms;
-          box-shadow: inset -22px 0 36px rgba(0,0,0,0.22);
-          border-right: 1px solid rgba(255,255,255,0.10);
-        }
-
-        .door.right {
-          transform-origin: right center;
-          animation: doorOpenRight 980ms cubic-bezier(0.18, 0.92, 0.22, 1) forwards;
-          animation-delay: 1200ms;
-          box-shadow: inset 22px 0 36px rgba(0,0,0,0.22);
-          border-left: 1px solid rgba(0,0,0,0.06);
-        }
-      `}</style>
-
-      {!hasBackgroundImage && (
-        <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 2px 2px, hsl(32, 65%, 45%) 1px, transparent 0)",
-              backgroundSize: "40px 40px",
-            }}
-          />
-        </div>
-      )}
-
-      {!hasBackgroundImage && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div
-            className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[650px] h-[650px] rounded-full blur-3xl opacity-25"
-            style={{ background: "hsl(32 65% 45%)" }}
-          />
-        </div>
-      )}
-
-      {/* ===== Overlay cinématique au clic ===== */}
-      {isEntering && (
-        <div className="fixed inset-0 z-[250] overlay-enter">
-          {/* ✅ Pendant l'anim : on force le heroBg (pas de blanc) */}
-          <div
-            className="absolute inset-0"
-            style={{ background: heroBg }}
-          />
-
-          <div
-            className="door-frame"
-            style={
-              {
-                ...doorVars,
-                ["--heroBg" as any]: heroBg,
-              } as CSSProperties
-            }
-          >
-            <div className="door-back">
-              <div className="door-hero">
-                <div className="door-hero-inner">
-                  <h2
-                    className="font-display text-4xl md:text-5xl text-espresso"
-                    style={{ textShadow: "0 10px 30px rgba(0,0,0,0.12)" }}
-                  >
-                    La Crêperie <span className="text-caramel">des Saveurs</span>
-                  </h2>
-
-                  <p className="mt-4 text-base md:text-lg font-serif text-espresso/75">
-                    {config.event_subtitle}
-                  </p>
-
-                  <div className="kicker text-caramel mt-5 text-xs md:text-sm">
-                    {config.game_line}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="door-panels">
-              <div className="door left">
-                <img className="door-logo" src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
-              </div>
-              <div className="door right">
-                <img className="door-logo" src={logo} alt="" aria-hidden loading="eager" decoding="sync" />
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <div className="relative flex flex-col items-center text-center px-6 max-w-md">
-        <div className="relative mb-8">
-          <div
-            ref={logoWrapRef}
-            className={`w-40 h-40 md:w-52 md:h-52 rounded-full overflow-hidden border-4 border-butter/50 logo-float shadow-[0_10px_55px_-10px_hsl(32_65%_45%_/_0.55)]
-              ${isEntering ? "opacity-0" : "opacity-100"}`}
-          >
-            <img
-              src={logo}
-              alt="La Crêperie des Saveurs"
-              className="w-full h-full object-cover"
-              loading="eager"
-              decoding="sync"
-            />
-          </div>
-
-          <div
-            className={`absolute inset-0 rounded-full -z-10 scale-125 logo-glow-anim ${isEntering ? "opacity-0" : "opacity-100"}`}
-            style={{ background: "hsl(32 65% 45%)" }}
+      <div className="w-full max-w-md rounded-[2rem] border border-white/45 bg-white/72 p-6 text-center shadow-[0_28px_90px_rgba(66,38,18,.22)] backdrop-blur-xl sm:p-8">
+        <div className="mx-auto mb-5 h-32 w-32 overflow-hidden rounded-full border-4 border-white/70 shadow-[0_18px_55px_rgba(139,85,35,.28)] sm:h-36 sm:w-36">
+          <img
+            src={logo}
+            alt="Logo de La Crêperie des Saveurs"
+            width={144}
+            height={144}
+            loading="eager"
+            decoding="sync"
+            className="h-full w-full object-cover"
           />
         </div>
 
-        <h1
-          className={`font-display text-3xl md:text-4xl font-semibold mb-3 animate-fade-in ${
-            hasBackgroundImage ? "text-white drop-shadow-lg" : "text-espresso"
-          }`}
-        >
-          {isLoading ? (
-            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-          ) : (
-            config.event_title
-          )}
-        </h1>
-
-        <p
-          className={`text-base md:text-lg font-serif mb-2 animate-fade-in ${
-            hasBackgroundImage ? "text-white/90" : "text-muted-foreground"
-          }`}
-          style={{ animationDelay: "0.1s" }}
-        >
-          {config.event_subtitle}
-        </p>
-
-        <p
-          className={`text-sm font-medium uppercase tracking-wider mb-10 animate-fade-in ${
-            hasBackgroundImage ? "text-caramel-light" : "text-caramel"
-          }`}
-          style={{ animationDelay: "0.2s" }}
-        >
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-caramel">
           {config.game_line}
         </p>
 
+        <h1 id="splash-title" className="font-display text-3xl font-bold leading-tight text-espresso sm:text-4xl">
+          {config.event_title}
+        </h1>
+
+        <p id="splash-description" className="mx-auto mt-3 max-w-sm font-serif text-base leading-relaxed text-espresso/75 sm:text-lg">
+          {config.event_subtitle}
+        </p>
+
         <Button
-          onClick={handleEnter}
+          type="button"
           size="lg"
-          disabled={!(!isLoading && logoReady && !isEntering)}
-          className="text-base md:text-lg px-8 py-6 rounded-full animate-fade-in cta-animated
-                     shadow-[0_20px_75px_-20px_rgba(143,90,32,1)]
-                     hover:shadow-[0_34px_115px_-28px_rgba(143,90,32,1)]
-                     disabled:opacity-100 disabled:cursor-not-allowed"
-          style={{
-            animationDelay: "0.3s",
-            backgroundImage:
-              "linear-gradient(90deg, hsl(32 65% 45%), hsl(38 75% 58%), hsl(32 65% 45%))",
-          }}
+          onClick={leave}
+          disabled={isLeaving}
+          autoFocus
+          className="mt-7 min-h-14 w-full rounded-2xl bg-gradient-to-r from-caramel via-primary to-caramel px-5 text-base font-bold text-white shadow-[0_18px_45px_rgba(143,90,32,.28)] transition hover:brightness-105 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-primary disabled:opacity-80"
         >
-          {!logoReady || isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
+              Préparation de votre visite…
+            </>
           ) : (
-            config.cta_text
+            <>
+              {config.cta_text}
+              <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+            </>
           )}
         </Button>
-      </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
-        <div
-          className={`w-16 h-1 rounded-full ${
-            hasBackgroundImage ? "bg-white/30" : "bg-caramel/30"
-          }`}
-        />
+        <p className="mt-4 text-xs text-muted-foreground">
+          Accès direct à la carte, aux réservations et aux avantages clients.
+        </p>
       </div>
     </div>
   );
