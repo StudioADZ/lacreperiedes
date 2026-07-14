@@ -1,8 +1,6 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { RefreshCw, Gift, Clock, Sparkles, Lock, ExternalLink } from 'lucide-react';
-import { useSecretAccess } from '@/hooks/useSecretAccess';
+import { motion } from "framer-motion";
+import { Clock, RefreshCw, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface QuizLoserProps {
   firstName: string;
@@ -18,201 +16,46 @@ interface QuizLoserProps {
   onPlayAgain: () => void;
 }
 
-const QuizLoser = ({ firstName, email, phone, score, secretCode, stockRemaining, onPlayAgain }: QuizLoserProps) => {
-  const [accessGranted, setAccessGranted] = useState(false);
-  const { grantAccessFromQuiz } = useSecretAccess();
-
-  const totalRemaining = 
-    stockRemaining.formule_complete_remaining + 
-    stockRemaining.galette_remaining + 
-    stockRemaining.crepe_remaining;
-
-  const hasStockLeft = totalRemaining > 0;
-
-  const handleUnlockMenu = async () => {
-    if (!secretCode) return;
-    
-    const token = await grantAccessFromQuiz(email, phone, firstName, secretCode);
-    if (token) {
-      setAccessGranted(true);
-    }
-  };
+const QuizLoser = ({ firstName, score, stockRemaining, onPlayAgain }: QuizLoserProps) => {
+  const totalRemaining = stockRemaining.formule_complete_remaining + stockRemaining.galette_remaining + stockRemaining.crepe_remaining;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-6"
-    >
-      {/* Main Card */}
-      <motion.div
-        initial={{ scale: 0.95 }}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2 }}
-        className="card-warm text-center py-8"
-      >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.3, type: 'spring', stiffness: 200 }}
-          className="text-6xl mb-4"
-        >
-          {hasStockLeft ? '😊' : '😔'}
-        </motion.div>
-
-        <h2 className="font-display text-2xl font-bold mb-2">
-          Bien joué {firstName} !
-        </h2>
-
-        {/* Score display */}
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <section className="card-warm py-8 text-center">
+        <div className="mb-4 text-6xl">😊</div>
+        <h1 className="font-display text-3xl font-black">Bien joué {firstName} !</h1>
         {score !== undefined && (
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-butter/20 border border-primary/30 mb-4">
-            <span className="font-medium text-sm">Ton score :</span>
-            <span className="text-2xl font-bold text-primary">{score}</span>
-            <span className="text-muted-foreground">/10</span>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-5 py-2">
+            <span className="text-sm font-medium">Votre score</span>
+            <strong className="text-2xl text-primary">{score}/10</strong>
           </div>
         )}
-
-        <p className="text-muted-foreground mb-4">
-          {hasStockLeft 
-            ? "Pas de chance cette fois-ci, mais tu as quand même un cadeau !"
-            : "Les lots de cette semaine sont épuisés. Reviens dimanche prochain !"
-          }
+        <p className="mx-auto mt-4 max-w-sm text-muted-foreground">
+          Cette fois, le score n’atteint pas le seuil gagnant. Votre participation reste enregistrée dans votre espace client.
         </p>
+      </section>
 
-        {/* Stock remaining */}
-        {hasStockLeft && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="p-4 rounded-xl bg-gradient-to-r from-caramel/10 to-caramel/5 border border-caramel/20 mb-4"
-          >
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Gift className="w-5 h-5 text-caramel" />
-              <span className="font-semibold">Lots encore disponibles</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <div className="text-center">
-                <span className="text-xl font-bold text-herb">{stockRemaining.formule_complete_remaining}</span>
-                <p className="text-xs text-muted-foreground">Formules</p>
-              </div>
-              <div className="text-center">
-                <span className="text-xl font-bold text-herb">{stockRemaining.galette_remaining}</span>
-                <p className="text-xs text-muted-foreground">Galettes</p>
-              </div>
-              <div className="text-center">
-                <span className="text-xl font-bold text-herb">{stockRemaining.crepe_remaining}</span>
-                <p className="text-xs text-muted-foreground">Crêpes</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </motion.div>
-
-      {/* Secret Menu Unlock - BONUS for participants */}
-      {secretCode && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="card-glow border-2 border-dashed border-caramel/40 text-center"
-        >
-          <div className="flex items-center justify-center gap-2 mb-3">
-            <Sparkles className="w-5 h-5 text-caramel" />
-            <span className="font-display font-bold">Cadeau de consolation</span>
-          </div>
-          
-          <p className="text-sm text-muted-foreground mb-4">
-            Même sans gagner, tu débloques l'accès au Menu Secret pendant 1 heure !
-          </p>
-
-          {!accessGranted ? (
-            <>
-              <div className="p-4 rounded-xl bg-caramel/10 mb-4">
-                <p className="text-xs text-muted-foreground mb-1">Ton code Menu Secret • valable 1 heure</p>
-                <p className="font-mono text-2xl font-bold text-caramel tracking-wider">
-                  {secretCode}
-                </p>
-              </div>
-
-              <Button 
-                onClick={handleUnlockMenu}
-                className="w-full btn-hero"
-              >
-                <Lock className="w-5 h-5 mr-2" />
-                Débloquer le Menu Secret
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="p-4 rounded-xl bg-herb/10 border border-herb/30 mb-4">
-                <p className="text-herb font-semibold">✓ Accès débloqué !</p>
-              </div>
-
-              <a href="/carte" className="block">
-                <Button className="w-full btn-hero">
-                  <Sparkles className="w-5 h-5 mr-2" />
-                  Découvrir le Menu Secret
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </a>
-            </>
-          )}
-        </motion.div>
-      )}
-
-      {/* Replay button */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-      >
-        <Button 
-          onClick={onPlayAgain} 
-          variant="outline"
-          className="w-full py-6"
-          disabled={!hasStockLeft}
-        >
-          <RefreshCw className="w-5 h-5 mr-2" />
-          {hasStockLeft ? 'Rejouer pour tenter de gagner' : 'Lots épuisés'}
-        </Button>
-      </motion.div>
-
-      {/* Google Review CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.85 }}
-        className="card-warm text-center"
-      >
-        <p className="text-sm text-muted-foreground mb-3">Votre avis compte pour nous !</p>
-        <a
-          href="https://g.page/r/CVTqauGmET0TEAE/preview"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <button className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-50 border border-yellow-200 text-sm font-medium hover:bg-yellow-100 transition-colors">
-            ⭐ Laisser un avis Google
-          </button>
-        </a>
-        <p className="text-xs text-muted-foreground mt-2">
-          Merci, ça aide énormément une petite crêperie locale. 💛
-        </p>
-      </motion.div>
-
-      {/* Info */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.9 }}
-        className="card-warm text-center"
-      >
-        <div className="flex items-center justify-center gap-2 text-muted-foreground">
-          <Clock className="w-4 h-4" />
-          <span className="text-sm">1 gain maximum par personne et par semaine</span>
+      <section className="rounded-3xl border border-caramel/20 bg-white/75 p-5 text-center shadow-sm">
+        <h2 className="font-display text-xl font-bold">Lots encore disponibles cette semaine</h2>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-sm">
+          <div className="rounded-xl bg-butter/35 p-3"><strong className="text-xl text-herb">{stockRemaining.formule_complete_remaining}</strong><p className="text-xs text-muted-foreground">Formules</p></div>
+          <div className="rounded-xl bg-butter/35 p-3"><strong className="text-xl text-herb">{stockRemaining.galette_remaining}</strong><p className="text-xs text-muted-foreground">Galettes</p></div>
+          <div className="rounded-xl bg-butter/35 p-3"><strong className="text-xl text-herb">{stockRemaining.crepe_remaining}</strong><p className="text-xs text-muted-foreground">Crêpes</p></div>
         </div>
-      </motion.div>
+      </section>
+
+      <Button onClick={onPlayAgain} variant="outline" className="h-14 w-full rounded-2xl" disabled={totalRemaining <= 0}>
+        <RefreshCw className="mr-2 h-5 w-5" />
+        {totalRemaining > 0 ? "Rejouer pour le plaisir" : "Lots épuisés cette semaine"}
+      </Button>
+
+      <a href="https://g.page/r/CVTqauGmET0TEAE/preview" target="_blank" rel="noopener noreferrer" className="block">
+        <Button variant="outline" className="h-12 w-full rounded-2xl"><Star className="mr-2 h-5 w-5 text-caramel" />Laisser un avis Google</Button>
+      </a>
+
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Clock className="h-4 w-4" />Un gain maximum par compte et par semaine
+      </div>
     </motion.div>
   );
 };
