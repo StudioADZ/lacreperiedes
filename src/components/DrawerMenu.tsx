@@ -21,15 +21,18 @@ interface DrawerMenuProps {
   onOpenChange: (open: boolean) => void;
 }
 
+const primaryItems = [
+  { path: "/reserver", label: "Réserver une table", description: "Choisir votre créneau", icon: Calendar },
+  { path: "/carte", label: "Voir la carte", description: "Galettes, crêpes et formules", icon: UtensilsCrossed },
+];
+
 const menuItems = [
   { path: "/", label: "Accueil", icon: Home, end: true },
-  { path: "/client", label: "Mon compte", icon: User, aliases: ["/mon-compte"] },
-  { path: "/quiz", label: "Quiz", icon: HelpCircle },
-  { path: "/carte", label: "La carte", icon: UtensilsCrossed },
-  { path: "/reserver", label: "Réserver", icon: Calendar },
-  { path: "/avis", label: "Avis Google", icon: Star },
-  { path: "/social", label: "Réseaux", icon: Share2 },
-  { path: "/about", label: "À propos", icon: Heart },
+  { path: "/client", label: "Mon espace client", icon: User, aliases: ["/mon-compte"] },
+  { path: "/quiz", label: "Quiz & récompenses", icon: HelpCircle },
+  { path: "/avis", label: "Donner mon avis", icon: Star },
+  { path: "/social", label: "Actualités & réseaux", icon: Share2 },
+  { path: "/about", label: "Notre histoire", icon: Heart },
   { path: "/legal", label: "Mentions légales", icon: FileText },
 ];
 
@@ -59,34 +62,73 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="left"
-        className="h-dvh max-h-dvh w-[min(22rem,calc(100vw-2rem))] overflow-y-auto overscroll-contain border-r-0 bg-ivory p-0 [-webkit-overflow-scrolling:touch]"
+        className="h-dvh max-h-dvh w-[min(23rem,calc(100vw-1rem))] overflow-y-auto overscroll-contain border-r-0 bg-ivory p-0 [-webkit-overflow-scrolling:touch]"
         aria-label="Menu de navigation"
       >
         <div className="flex min-h-dvh flex-col">
-          <div className="border-b border-border/50 bg-butter/30 px-6 pb-5 pt-[calc(env(safe-area-inset-top)+1.5rem)]">
+          <div className="border-b border-border/50 bg-butter/30 px-5 pb-5 pt-[calc(env(safe-area-inset-top)+1.25rem)]">
             <Link
               to="/"
               onClick={closeMenu}
-              className="group flex flex-col items-center justify-center gap-3 rounded-2xl px-3 py-2 text-center transition-colors hover:bg-white/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              className="group flex items-center gap-3 rounded-2xl px-2 py-2 transition-colors hover:bg-white/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <span className="h-16 w-16 overflow-hidden rounded-full shadow-warm ring-1 ring-black/5">
+              <span className="h-14 w-14 shrink-0 overflow-hidden rounded-full shadow-warm ring-1 ring-black/5">
                 <img
                   src={logo}
                   alt="La Crêperie des Saveurs"
-                  width={64}
-                  height={64}
+                  width={56}
+                  height={56}
                   decoding="async"
                   className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
               </span>
-              <span className="text-sm font-semibold text-foreground">
-                La Crêperie des Saveurs
+              <span className="min-w-0 text-left">
+                <span className="block font-display text-base font-bold text-espresso">La Crêperie des Saveurs</span>
+                <span className="block text-xs text-muted-foreground">Mamers · Ouvert 12h–22h</span>
               </span>
             </Link>
           </div>
 
           <nav className="p-4" aria-label="Navigation principale">
-            <ul className="space-y-1.5">
+            <p className="mb-2 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-caramel">
+              Actions rapides
+            </p>
+            <ul className="grid gap-2">
+              {primaryItems.map((item) => {
+                const isActive = isActiveRoute(pathname, item);
+                const Icon = item.icon;
+
+                return (
+                  <li key={item.path}>
+                    <Link
+                      to={item.path}
+                      onClick={closeMenu}
+                      aria-current={isActive ? "page" : undefined}
+                      className={`flex min-h-16 items-center gap-3 rounded-2xl px-4 py-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-warm"
+                          : "border border-caramel/15 bg-white/65 text-foreground shadow-sm hover:bg-white"
+                      }`}
+                    >
+                      <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${isActive ? "bg-white/15" : "bg-caramel/10 text-caramel"}`}>
+                        <Icon className="h-5 w-5" aria-hidden="true" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-sm font-bold">{item.label}</span>
+                        <span className={`block text-xs ${isActive ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+                          {item.description}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+
+            <p className="mb-2 mt-5 px-1 text-[11px] font-bold uppercase tracking-[0.18em] text-caramel">
+              Découvrir
+            </p>
+            <ul className="space-y-1">
               {menuItems.map((item) => {
                 const isActive = isActiveRoute(pathname, item);
                 const Icon = item.icon;
@@ -97,7 +139,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
                       to={item.path}
                       onClick={closeMenu}
                       aria-current={isActive ? "page" : undefined}
-                      className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                      className={`group flex min-h-12 items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
                         isActive
                           ? "bg-primary text-primary-foreground shadow-warm"
                           : "text-foreground hover:bg-secondary/80"
@@ -107,6 +149,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
                         className={`h-5 w-5 shrink-0 transition-transform duration-200 group-hover:scale-105 ${
                           isActive ? "text-primary-foreground" : "text-caramel"
                         }`}
+                        aria-hidden="true"
                       />
                       <span className="font-medium">{item.label}</span>
                     </Link>
@@ -122,28 +165,27 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
                 href={businessMapsUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/45 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/55 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <MapPin className="h-4 w-4" />
-                Nous trouver
+                <MapPin className="h-4 w-4" aria-hidden="true" />
+                Itinéraire
               </a>
               <a
                 href="tel:+33259660176"
-                className="flex items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/45 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                className="flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-caramel/20 bg-white/55 px-3 py-2.5 text-xs font-semibold text-caramel transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <Phone className="h-4 w-4" />
+                <Phone className="h-4 w-4" aria-hidden="true" />
                 Appeler
               </a>
             </div>
 
-            <address className="space-y-1 text-center not-italic">
+            <address className="text-center not-italic">
               <a
                 href={directionsMapsUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="block text-[11px] leading-relaxed text-muted-foreground transition-colors hover:text-foreground"
               >
-                Itinéraire vers La crêperie des saveurs<br />
                 17 Place Carnot · 72600 Mamers
               </a>
             </address>
@@ -154,7 +196,7 @@ const DrawerMenu = ({ open, onOpenChange }: DrawerMenuProps) => {
               aria-current={isActiveRoute(pathname, adminItem) ? "page" : undefined}
               className="mx-auto mt-3 flex w-fit items-center gap-2 rounded-xl px-3 py-2 text-[11px] text-muted-foreground transition-colors hover:bg-secondary/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
-              <Settings className="h-3.5 w-3.5" />
+              <Settings className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{adminItem.label}</span>
             </Link>
           </div>
