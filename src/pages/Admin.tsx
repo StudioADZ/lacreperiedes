@@ -212,10 +212,10 @@ const Admin = () => {
     setAuthError("");
     setAuthLoading(true);
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-overview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stats", adminPassword: password }),
+        body: JSON.stringify({ adminPassword: password }),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
@@ -254,7 +254,8 @@ const Admin = () => {
   const adminRequest = useCallback(async (payload: Record<string, unknown>) => {
     if (!adminCredential) throw new Error("Session administrateur expirée");
     const passwordMode = authMode === "password";
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
+    const functionName = payload.action === "stats" ? "admin-overview" : "admin-scan";
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -441,7 +442,7 @@ const AdminLogin = ({ password, setPassword, authError, isLoading, onGoogleLogin
 const AccessDenied = ({ email, onLogout }: { email: string | null; onLogout: () => void }) => <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#23140f] via-[hsl(35_45%_92%)] to-background px-4 pb-24 pt-20"><motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm rounded-[2rem] border border-caramel/15 bg-white/95 p-6 text-center shadow-warm"><div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-destructive/10 text-destructive"><XCircle className="h-8 w-8" /></div><p className="text-xs font-black uppercase tracking-[0.18em] text-caramel">Accès refusé</p><h1 className="mt-2 font-display text-3xl font-black text-espresso">Compte non autorisé</h1><p className="mt-3 text-sm text-muted-foreground">Le compte {email ? <strong>{email}</strong> : "connecté"} ne possède pas le rôle administrateur.</p><Button type="button" onClick={onLogout} className="mt-6 h-12 w-full rounded-2xl bg-caramel font-black text-white">Changer de compte</Button></motion.div></main>;
 
 const ValidationPanel = ({ result, manualCode, isLoading, claimLoading, onManualCodeChange, onVerify, onClaim, onReset }: { result: VerifyResult | null; manualCode: string; isLoading: boolean; claimLoading: boolean; onManualCodeChange: (code: string) => void; onVerify: (code: string) => void; onClaim: () => void; onReset: () => void }) => (
-  <div className="space-y-5">{!result && <div className="rounded-3xl border border-border/55 bg-background/70 p-4"><Label htmlFor="code" className="mb-2 flex items-center gap-2 font-bold"><TicketCheck className="h-4 w-4 text-caramel" />Saisie manuelle</Label><div className="flex gap-2"><Input id="code" value={manualCode} onChange={(event) => onManualCodeChange(event.target.value.toUpperCase())} onKeyDown={(event) => event.key === "Enter" && onVerify(manualCode)} placeholder="XXXXXXXX" className="h-12 rounded-2xl font-mono text-lg tracking-wider" maxLength={8} /><Button onClick={() => onVerify(manualCode)} disabled={isLoading || !manualCode.trim()} className="h-12 rounded-2xl bg-caramel font-bold text-white">{isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Contrôler"}</Button></div></div>}<AnimatePresence mode="wait">{result && <ValidationResult result={result} claimLoading={claimLoading} onClaim={onClaim} onReset={onReset} />}</AnimatePresence></div>
+  <div className="space-y-5">{!result && <div className="rounded-3xl border border-border/55 bg-background/70 p-4"><Label htmlFor="code" className="mb-2 flex items-center gap-2 font-bold"><TicketCheck className="h-4 w-4 text-caramel" />Saisie manuelle</Label><div className="flex gap-2"><Input id="code" value={manualCode} onChange={(event) => onManualCodeChange(event.target.value.toUpperCase())} onKeyDown={(event) => event.key === "Enter" && onVerify(manualCode)} placeholder="XXXXXXXX" className="h-12 rounded-2xl font-mono text-lg tracking-wider" maxLength={8} /><Button onClick={() => onVerify(manualCode)} disabled={isLoading || !manualCode.trim()} className="h-12 rounded-2xl bg-caramel font-bold text-white">{isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Contrôler"}</Button></div></div>}<AnimatePresence mode="wait">{result && <ValidationResult result={result} claimLoading={claimLoading} onClaim={onClaim} onReset={handleReset} />}</AnimatePresence></div>
 );
 
 const ValidationResult = ({ result, claimLoading, onClaim, onReset }: { result: VerifyResult; claimLoading: boolean; onClaim: () => void; onReset: () => void }) => {
