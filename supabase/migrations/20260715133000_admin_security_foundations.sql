@@ -34,6 +34,24 @@ for select
 to authenticated
 using (user_id = auth.uid() or public.has_role(auth.uid(), 'admin'::public.app_role));
 
+-- Admin-only write access for settings edited from the authenticated dashboard.
+alter table public.splash_settings enable row level security;
+
+grant select, update on public.splash_settings to authenticated;
+
+create policy "Admins can read splash settings"
+on public.splash_settings
+for select
+to authenticated
+using (public.has_role(auth.uid(), 'admin'::public.app_role));
+
+create policy "Admins can update splash settings"
+on public.splash_settings
+for update
+to authenticated
+using (public.has_role(auth.uid(), 'admin'::public.app_role))
+with check (public.has_role(auth.uid(), 'admin'::public.app_role));
+
 -- Bootstrap the restaurant business account when it already exists.
 insert into public.user_roles (user_id, role)
 select id, 'admin'::public.app_role
