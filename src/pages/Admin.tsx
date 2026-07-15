@@ -58,11 +58,30 @@ type VerifyResult = {
   message?: string;
 };
 
-type DashboardStats = {
+export type DashboardStats = {
   weekStart: string | null;
   totalParticipations: number;
   totalWinners: number;
   totalClaimed: number;
+  totalClients: number;
+  reservationsToday: number;
+  upcomingReservations: number;
+  unreadMessages: number;
+  visibleSocialPosts: number;
+  totalSocialInteractions: number;
+  secretMenuActive: boolean;
+  secretMenuName: string | null;
+  secretMenuValidTo: string | null;
+  publicMenuActive: boolean;
+  splashActive: boolean;
+  stock: {
+    galetteRemaining: number;
+    galetteTotal: number;
+    crepeRemaining: number;
+    crepeTotal: number;
+    formuleRemaining: number;
+    formuleTotal: number;
+  } | null;
 };
 
 type AdminTabDefinition = {
@@ -73,7 +92,7 @@ type AdminTabDefinition = {
 };
 
 const ADMIN_TABS: AdminTabDefinition[] = [
-  { id: "dashboard", label: "Tableau de bord", description: "Vue KPI", icon: LayoutDashboard },
+  { id: "dashboard", label: "Tableau de bord", description: "Vue d’ensemble", icon: LayoutDashboard },
   { id: "scan", label: "Validation", description: "Contrôler les gains", icon: TicketCheck },
   { id: "messages", label: "Messages", description: "Demandes clients", icon: Mail },
   { id: "clients", label: "Clients", description: "Fiches clients", icon: Database },
@@ -83,6 +102,37 @@ const ADMIN_TABS: AdminTabDefinition[] = [
   { id: "payment", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
   { id: "splash", label: "Accueil", description: "Écran d’arrivée", icon: Sparkles },
 ];
+
+const numberValue = (value: unknown) => Number(value || 0);
+
+const normalizeDashboardStats = (data: Record<string, unknown>): DashboardStats => {
+  const rawStock = data.stock && typeof data.stock === "object" ? data.stock as Record<string, unknown> : null;
+  return {
+    weekStart: typeof data.weekStart === "string" ? data.weekStart : null,
+    totalParticipations: numberValue(data.totalParticipations),
+    totalWinners: numberValue(data.totalWinners),
+    totalClaimed: numberValue(data.totalClaimed),
+    totalClients: numberValue(data.totalClients),
+    reservationsToday: numberValue(data.reservationsToday),
+    upcomingReservations: numberValue(data.upcomingReservations),
+    unreadMessages: numberValue(data.unreadMessages),
+    visibleSocialPosts: numberValue(data.visibleSocialPosts),
+    totalSocialInteractions: numberValue(data.totalSocialInteractions),
+    secretMenuActive: data.secretMenuActive === true,
+    secretMenuName: typeof data.secretMenuName === "string" ? data.secretMenuName : null,
+    secretMenuValidTo: typeof data.secretMenuValidTo === "string" ? data.secretMenuValidTo : null,
+    publicMenuActive: data.publicMenuActive === true,
+    splashActive: data.splashActive === true,
+    stock: rawStock ? {
+      galetteRemaining: numberValue(rawStock.galette_remaining),
+      galetteTotal: numberValue(rawStock.galette_total),
+      crepeRemaining: numberValue(rawStock.crepe_remaining),
+      crepeTotal: numberValue(rawStock.crepe_total),
+      formuleRemaining: numberValue(rawStock.formule_complete_remaining),
+      formuleTotal: numberValue(rawStock.formule_complete_total),
+    } : null,
+  };
+};
 
 const Admin = () => {
   const [authLoading, setAuthLoading] = useState(true);
@@ -177,12 +227,7 @@ const Admin = () => {
       setAuthMode("password");
       setAccountEmail("Accès par mot de passe administrateur");
       setIsGoogleSignedIn(false);
-      setDashboardStats({
-        weekStart: data.weekStart || null,
-        totalParticipations: Number(data.totalParticipations || 0),
-        totalWinners: Number(data.totalWinners || 0),
-        totalClaimed: Number(data.totalClaimed || 0),
-      });
+      setDashboardStats(normalizeDashboardStats(data));
       setPassword("");
       toast.success("Accès administrateur ouvert");
     } catch {
@@ -224,7 +269,7 @@ const Admin = () => {
       throw new Error(data.message || "Accès administrateur refusé");
     }
     if (!response.ok) throw new Error(data.message || "Une erreur est survenue");
-    return data;
+    return data as Record<string, unknown>;
   }, [adminCredential, authMode]);
 
   const loadDashboard = useCallback(async () => {
@@ -233,12 +278,7 @@ const Admin = () => {
     setDashboardError("");
     try {
       const data = await adminRequest({ action: "stats" });
-      setDashboardStats({
-        weekStart: data.weekStart || null,
-        totalParticipations: Number(data.totalParticipations || 0),
-        totalWinners: Number(data.totalWinners || 0),
-        totalClaimed: Number(data.totalClaimed || 0),
-      });
+      setDashboardStats(normalizeDashboardStats(data));
     } catch (error) {
       setDashboardError(error instanceof Error ? error.message : "Tableau de bord indisponible");
     } finally {
@@ -259,7 +299,7 @@ const Admin = () => {
     setManualCode(normalized);
     try {
       const data = await adminRequest({ action: "verify", code: normalized });
-      setResult(data);
+      setResult(data as VerifyResult);
       if (data.valid && !data.claimed) confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
     } catch (error) {
       setResult({ valid: false, message: error instanceof Error ? error.message : "Erreur de connexion" });
@@ -277,7 +317,7 @@ const Admin = () => {
         setResult((previous) => previous ? { ...previous, claimed: true, claimedAt: new Date().toISOString() } : null);
         toast.success("Gain marqué comme utilisé");
         void loadDashboard();
-      } else toast.error(data.message || "Validation impossible");
+      } else toast.error(typeof data.message === "string" ? data.message : "Validation impossible");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Validation impossible");
     } finally {
@@ -345,14 +385,7 @@ const AdminSidebar = ({ open, onToggle, activeTab, setActiveTab }: { open: boole
           const Icon = tab.icon;
           const selected = tab.id === activeTab;
           return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              title={!open ? tab.label : undefined}
-              aria-current={selected ? "page" : undefined}
-              className={`group relative flex w-full items-center rounded-xl transition ${open ? "gap-2 px-2 py-2" : "justify-center p-2"} ${selected ? "bg-caramel text-white shadow-md" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
-            >
+            <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} title={!open ? tab.label : undefined} aria-current={selected ? "page" : undefined} className={`group relative flex w-full items-center rounded-xl transition ${open ? "gap-2 px-2 py-2" : "justify-center p-2"} ${selected ? "bg-caramel text-white shadow-md" : "text-white/65 hover:bg-white/10 hover:text-white"}`}>
               <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-white/15" : "bg-white/5 group-hover:bg-white/10"}`}><Icon className="h-4 w-4" /></span>
               {open && <span className="truncate text-left text-xs font-black">{tab.label}</span>}
               {selected && !open && <span className="absolute right-0 h-6 w-1 rounded-l-full bg-butter" />}
@@ -375,15 +408,8 @@ const AdminWorkspaceHeader = ({ currentTab, authMode, adminEmail, isLoading, onR
   return (
     <header className="flex flex-col gap-3 border-b border-caramel/10 bg-gradient-to-r from-butter/35 via-white to-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span className="font-bold">Administration</span>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="truncate font-black text-espresso">{currentTab.label}</span>
-        </div>
-        <div className="mt-1 flex items-center gap-2">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-caramel/10 text-caramel"><Icon className="h-4 w-4" /></span>
-          <div className="min-w-0"><h1 className="truncate font-display text-xl font-black text-espresso">{currentTab.label}</h1><p className="truncate text-xs text-muted-foreground">{currentTab.description}</p></div>
-        </div>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="font-bold">Administration</span><ChevronRight className="h-3.5 w-3.5" /><span className="truncate font-black text-espresso">{currentTab.label}</span></div>
+        <div className="mt-1 flex items-center gap-2"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-caramel/10 text-caramel"><Icon className="h-4 w-4" /></span><div className="min-w-0"><h1 className="truncate font-display text-xl font-black text-espresso">{currentTab.label}</h1><p className="truncate text-xs text-muted-foreground">{currentTab.description}</p></div></div>
       </div>
       <div className="flex items-center gap-2">
         <span className="hidden max-w-56 truncate text-[10px] text-muted-foreground lg:block">{adminEmail} · {authMode === "password" ? "Accès secours" : "Google"}</span>
