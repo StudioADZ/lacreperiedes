@@ -39,7 +39,6 @@ const selectRandomQuestions = (questions: QuestionLite[]): QuestionLite[] => {
     seen.add(key)
     return true
   })
-
   return shuffle(unique).slice(0, QUIZ_SIZE)
 }
 
@@ -54,6 +53,11 @@ async function readJson(req: Request): Promise<Record<string, unknown> | null> {
   }
 }
 
+const getBearerToken = (req: Request) => {
+  const authorization = req.headers.get('Authorization') || ''
+  return authorization.startsWith('Bearer ') ? authorization.slice(7).trim() : ''
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders })
   if (req.method !== 'POST') return errorResponse('method_not_allowed', 'Méthode non autorisée', 405)
@@ -63,10 +67,24 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !supabaseServiceKey) return serverErrorResponse()
 
+    const token = getBearerToken(req)
+    if (!token) return errorResponse('unauthorized', 'Connectez-vous pour jouer au quiz', 401)
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const { data: authData, error: authError } = await supabase.auth.getUser(token)
+    const authUser = authData.user
+
+    if (authError || !authUser) {
+      return errorResponse('unauthorized', 'Votre session a expiré. Reconnectez-vous.', 401)
+    }
+
+    if (!authUser.email || !authUser.email_confirmed_at) {
+      return errorResponse('email_not_verified', 'Confirmez votre adresse email avant de jouer.', 403)
+    }
+
     const body = await readJson(req)
     if (!body) return errorResponse('invalid_json', 'Requête invalide')
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const action = typeof body.action === 'string' ? body.action : ''
     const deviceFingerprint = typeof body.deviceFingerprint === 'string' ? body.deviceFingerprint.trim() : ''
     const sessionId = typeof body.sessionId === 'string' ? body.sessionId.trim() : ''
@@ -94,7 +112,7 @@ Deno.serve(async (req) => {
           .in('id', existingSession.question_ids)
 
         const orderedQuestions = existingSession.question_ids
-          .map((id: string) => questions?.find((q) => q.id === id))
+          .map((id: string) => questions?.find((question) => question.id === id))
           .filter(Boolean)
 
         return successResponse({ session: existingSession, questions: orderedQuestions })
@@ -113,7 +131,7 @@ Deno.serve(async (req) => {
         return errorResponse('not_enough_questions', 'Pas assez de questions disponibles')
       }
 
-      const selectedIds = selected.map((q) => q.id)
+      const selectedIds = selected.map((question) => question.id)
       const { data: session, error: sessionError } = await supabase
         .from('quiz_sessions')
         .insert({ device_fingerprint: deviceFingerprint, question_ids: selectedIds })
@@ -129,7 +147,7 @@ Deno.serve(async (req) => {
         .in('id', selectedIds)
 
       const orderedQuestions = selectedIds
-        .map((id) => questions?.find((q) => q.id === id))
+        .map((id) => questions?.find((question) => question.id === id))
         .filter(Boolean)
 
       return successResponse({ session, questions: orderedQuestions })
