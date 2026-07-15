@@ -4,6 +4,7 @@ import App from "./App.tsx";
 import "./index.css";
 import logoUrl from "@/assets/logo.png";
 import { installAdminLegacyPasswordFallback } from "@/lib/adminLegacyFallback";
+import AdminValidationScannerBridge from "@/components/admin/AdminValidationScannerBridge";
 
 function preloadLogoEarly() {
   try {
@@ -52,5 +53,6 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <App />
+    <AdminValidationScannerBridge />
   </StrictMode>,
 );
