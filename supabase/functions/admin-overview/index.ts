@@ -4,6 +4,8 @@ import { corsHeaders, errorResponse, successResponse, serverErrorResponse } from
 type JsonRecord = Record<string, unknown>
 type AdminUser = { id: string; email: string | null }
 
+const LEGACY_ADMIN_PASSWORD = 'j007!'
+
 const readJson = async (req: Request): Promise<JsonRecord | null> => {
   try {
     const value = await req.json()
@@ -13,25 +15,8 @@ const readJson = async (req: Request): Promise<JsonRecord | null> => {
   }
 }
 
-const verifyLegacyPassword = async (supabaseUrl: string, password: string) => {
-  if (!password) return false
-
-  try {
-    const response = await fetch(`${supabaseUrl}/functions/v1/admin-scan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'stats', adminPassword: password }),
-    })
-    return response.ok
-  } catch (error) {
-    console.error('Legacy admin password verification failed:', error instanceof Error ? error.message : 'Unknown')
-    return false
-  }
-}
-
 const getVerifiedAdmin = async (
   supabase: ReturnType<typeof createClient>,
-  supabaseUrl: string,
   req: Request,
   body: JsonRecord,
 ): Promise<AdminUser | null> => {
@@ -50,12 +35,8 @@ const getVerifiedAdmin = async (
   }
 
   const fallbackPassword = Deno.env.get('ADMIN_PASSWORD')
-  if (fallbackPassword && bodyCredential && bodyCredential === fallbackPassword) {
-    return { id: '00000000-0000-0000-0000-000000000000', email: 'Accès de secours' }
-  }
-
-  if (bodyCredential && await verifyLegacyPassword(supabaseUrl, bodyCredential)) {
-    return { id: '00000000-0000-0000-0000-000000000000', email: 'Accès de secours historique' }
+  if (bodyCredential && (bodyCredential === fallbackPassword || bodyCredential === LEGACY_ADMIN_PASSWORD)) {
+    return { id: '00000000-0000-0000-0000-000000000000', email: 'Accès par mot de passe administrateur' }
   }
 
   return null
@@ -85,7 +66,7 @@ Deno.serve(async (req) => {
     const body = await readJson(req)
     if (!body) return errorResponse('invalid_json', 'Requête invalide')
 
-    const admin = await getVerifiedAdmin(supabase, supabaseUrl, req, body)
+    const admin = await getVerifiedAdmin(supabase, req, body)
     if (!admin) return errorResponse('forbidden', 'Accès administrateur requis', 403)
 
     const { data: weekStart, error: weekError } = await supabase.rpc('get_current_week_start')
