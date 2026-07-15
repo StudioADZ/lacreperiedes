@@ -31,7 +31,7 @@ const menuItems = [
   { path: "/client", label: "Mon espace client", icon: User, aliases: ["/mon-compte"] },
   { path: "/quiz", label: "Quiz & récompenses", icon: HelpCircle },
   { path: "/avis", label: "Donner mon avis", icon: Star },
-  { path: "/social", label: "Actualités & réseaux", icon: Share2 },
+  { path: "/social", label: "Réseaux officiels", icon: Share2 },
   { path: "/about", label: "Notre histoire", icon: Heart },
   { path: "/legal", label: "Mentions légales", icon: FileText },
 ];
