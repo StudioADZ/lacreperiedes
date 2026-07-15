@@ -19,6 +19,8 @@ const About = lazy(() => import("./pages/About"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Verify = lazy(() => import("./pages/Verify"));
 const Client = lazy(() => import("./pages/Client"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -36,9 +38,9 @@ const queryClient = new QueryClient({
 });
 
 const RouteFallback = () => (
-  <div className="min-h-[40vh] flex flex-col items-center justify-center gap-3">
-    <div className="w-10 h-10 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-    <p className="text-sm text-muted-foreground">Chargement...</p>
+  <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3" role="status" aria-live="polite">
+    <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary/30 border-t-primary" aria-hidden="true" />
+    <p className="text-sm text-muted-foreground">Chargement…</p>
   </div>
 );
 
@@ -73,7 +75,6 @@ const App = () => {
             <Suspense fallback={<RouteFallback />}>
               <Routes>
                 <Route element={<Layout />}>
-                  {/* Public */}
                   <Route path="/" element={<Index />} />
                   <Route path="/carte" element={<Carte />} />
                   <Route path="/quiz" element={<Quiz />} />
@@ -81,16 +82,12 @@ const App = () => {
                   <Route path="/social" element={<Social />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/legal" element={<Legal />} />
-
-                  {/* Parcours métier */}
                   <Route path="/reserver" element={<Reserver />} />
                   <Route path="/verify/:code" element={<Verify />} />
-
-                  {/* Espace client : public landing, puis tableau de bord si connecté */}
                   <Route path="/client" element={<Client />} />
                   <Route path="/mon-compte" element={<Client />} />
-
-                  {/* Administration : accessible à l'URL, puis protégée par le mot de passe admin côté fonction Supabase */}
+                  <Route path="/mot-de-passe-oublie" element={<ForgotPassword />} />
+                  <Route path="/nouveau-mot-de-passe" element={<ResetPassword />} />
                   <Route path="/admin" element={<Admin />} />
                 </Route>
 
