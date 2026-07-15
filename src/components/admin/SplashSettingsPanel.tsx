@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
-import { Loader2, Save, Sparkles, Image as ImageIcon, Type, MessageSquare, MousePointer } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Image as ImageIcon, Loader2, MessageSquare, MousePointer, Save, Sparkles, Type } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SplashSettings {
   id: string;
@@ -15,10 +16,6 @@ interface SplashSettings {
   background_image_url: string | null;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-// Preset event themes
 const EVENT_PRESETS = [
   { title: "🎉 Quiz & Récompenses", gameLine: "Jeu & récompenses en cours" },
   { title: "🎄 Noël à la Crêperie", gameLine: "Magie de Noël en cours" },
@@ -30,294 +27,118 @@ const EVENT_PRESETS = [
   { title: "🍂 Automne Gourmand", gameLine: "Réconfort de saison" },
 ];
 
-interface SplashSettingsPanelProps {
-  adminPassword: string;
-}
-
-const SplashSettingsPanel = ({ adminPassword }: SplashSettingsPanelProps) => {
+const SplashSettingsPanel = ({ adminPassword: _adminToken }: { adminPassword: string }) => {
   const [settings, setSettings] = useState<SplashSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const fetchSettings = async () => {
-    try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/splash_settings?is_active=eq.true&limit=1`,
-        {
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.length > 0) {
-          setSettings(data[0]);
-        }
-      }
-    } catch (err) {
-      console.error("Could not fetch splash settings");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   useEffect(() => {
-    fetchSettings();
+    const load = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("splash_settings")
+        .select("id, event_title, event_subtitle, game_line, cta_text, background_image_url")
+        .eq("is_active", true)
+        .limit(1)
+        .maybeSingle();
+
+      if (error) toast.error("Impossible de charger le splash screen");
+      setSettings(data as SplashSettings | null);
+      setLoading(false);
+    };
+    void load();
   }, []);
 
-  const handleSave = async () => {
+  const save = async () => {
     if (!settings) return;
-
     setSaving(true);
-    setError("");
-    setSuccess(false);
+    const { error } = await supabase
+      .from("splash_settings")
+      .update({
+        event_title: settings.event_title.trim(),
+        event_subtitle: settings.event_subtitle.trim(),
+        game_line: settings.game_line.trim(),
+        cta_text: settings.cta_text.trim(),
+        background_image_url: settings.background_image_url?.trim() || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", settings.id);
 
-    try {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/splash_settings?id=eq.${settings.id}`,
-        {
-          method: "PATCH",
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
-            Prefer: "return=minimal",
-          },
-          body: JSON.stringify({
-            event_title: settings.event_title,
-            event_subtitle: settings.event_subtitle,
-            game_line: settings.game_line,
-            cta_text: settings.cta_text,
-            background_image_url: settings.background_image_url,
-            updated_at: new Date().toISOString(),
-          }),
-        }
-      );
-
-      if (!response.ok) throw new Error("Save failed");
-
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      setError("Erreur lors de la sauvegarde");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handlePresetClick = (preset: typeof EVENT_PRESETS[0]) => {
-    if (!settings) return;
-    setSettings({
-      ...settings,
-      event_title: preset.title,
-      game_line: preset.gameLine,
-    });
-  };
-
-  const handleImageUrlChange = (url: string) => {
-    if (!settings) return;
-    setSettings({ ...settings, background_image_url: url || null });
+    if (error) toast.error("Sauvegarde refusée ou impossible");
+    else toast.success("Splash screen mis à jour");
+    setSaving(false);
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex items-center justify-center py-8" role="status"><Loader2 className="h-6 w-6 animate-spin text-primary" /><span className="sr-only">Chargement du splash screen</span></div>;
   }
 
   if (!settings) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        Aucun paramètre trouvé
-      </div>
-    );
+    return <div className="rounded-2xl border border-border/60 bg-background/60 p-8 text-center text-muted-foreground">Aucun paramètre actif trouvé.</div>;
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center p-4 rounded-xl bg-gradient-to-r from-caramel/10 via-butter/20 to-caramel/10 border border-caramel/20">
-        <h2 className="font-display text-xl font-bold flex items-center justify-center gap-2">
-          <Sparkles className="w-5 h-5 text-primary" />
-          SPLASH SCREEN
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
-          Personnalisez l'écran d'accueil
-        </p>
+      <div className="rounded-xl border border-caramel/20 bg-gradient-to-r from-caramel/10 via-butter/20 to-caramel/10 p-4 text-center">
+        <h2 className="flex items-center justify-center gap-2 font-display text-xl font-bold"><Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />Splash screen</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Modification réservée aux comptes administrateurs authentifiés.</p>
       </div>
 
-      {/* Event Presets */}
       <div className="card-warm">
         <Label className="mb-3 block font-semibold">Thèmes prédéfinis</Label>
         <div className="grid grid-cols-2 gap-2">
-          {EVENT_PRESETS.map((preset, idx) => (
-            <button
-              key={idx}
-              onClick={() => handlePresetClick(preset)}
-              className={`text-left p-3 rounded-xl border-2 transition-all text-sm ${
-                settings.event_title === preset.title
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/30"
-              }`}
-            >
+          {EVENT_PRESETS.map((preset) => (
+            <button key={preset.title} type="button" onClick={() => setSettings({ ...settings, event_title: preset.title, game_line: preset.gameLine })} className={`rounded-xl border-2 p-3 text-left text-sm ${settings.event_title === preset.title ? "border-primary bg-primary/5" : "border-border"}`}>
               <span className="font-medium">{preset.title}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {/* Event Title */}
-      <div className="card-warm">
-        <Label className="mb-2 block font-semibold flex items-center gap-2">
-          <Type className="w-4 h-4 text-primary" />
-          Titre de l'événement
-        </Label>
-        <Input
-          value={settings.event_title}
-          onChange={(e) => setSettings({ ...settings, event_title: e.target.value })}
-          placeholder="🎉 Quiz & Récompenses"
-          className="text-lg"
-        />
-      </div>
+      <Field icon={Type} label="Titre de l'événement">
+        <Input value={settings.event_title} onChange={(event) => setSettings({ ...settings, event_title: event.target.value })} maxLength={100} />
+      </Field>
 
-      {/* Subtitle */}
-      <div className="card-warm">
-        <Label className="mb-2 block font-semibold flex items-center gap-2">
-          <MessageSquare className="w-4 h-4 text-primary" />
-          Sous-titre
-        </Label>
-        <Input
-          value={settings.event_subtitle}
-          onChange={(e) => setSettings({ ...settings, event_subtitle: e.target.value })}
-          placeholder="Crêpes & Galettes artisanales – Mamers"
-        />
-      </div>
+      <Field icon={MessageSquare} label="Sous-titre">
+        <Input value={settings.event_subtitle} onChange={(event) => setSettings({ ...settings, event_subtitle: event.target.value })} maxLength={180} />
+      </Field>
 
-      {/* Game Line */}
-      <div className="card-warm">
-        <Label className="mb-2 block font-semibold">Ligne d'accroche</Label>
-        <Input
-          value={settings.game_line}
-          onChange={(e) => setSettings({ ...settings, game_line: e.target.value })}
-          placeholder="Jeu & récompenses en cours"
-        />
-      </div>
+      <Field icon={Sparkles} label="Ligne d'accroche">
+        <Input value={settings.game_line} onChange={(event) => setSettings({ ...settings, game_line: event.target.value })} maxLength={120} />
+      </Field>
 
-      {/* CTA Text */}
-      <div className="card-warm">
-        <Label className="mb-2 block font-semibold flex items-center gap-2">
-          <MousePointer className="w-4 h-4 text-primary" />
-          Texte du bouton
-        </Label>
-        <Input
-          value={settings.cta_text}
-          onChange={(e) => setSettings({ ...settings, cta_text: e.target.value })}
-          placeholder="Entrer dans la Crêperie"
-        />
-      </div>
+      <Field icon={MousePointer} label="Texte du bouton">
+        <Input value={settings.cta_text} onChange={(event) => setSettings({ ...settings, cta_text: event.target.value })} maxLength={60} />
+      </Field>
 
-      {/* Background Image URL */}
-      <div className="card-warm">
-        <Label className="mb-2 block font-semibold flex items-center gap-2">
-          <ImageIcon className="w-4 h-4 text-primary" />
-          Image de fond (URL)
-        </Label>
-        <Input
-          value={settings.background_image_url || ""}
-          onChange={(e) => handleImageUrlChange(e.target.value)}
-          placeholder="https://example.com/image.jpg"
-        />
-        <p className="text-xs text-muted-foreground mt-2">
-          Laissez vide pour utiliser le dégradé par défaut
-        </p>
+      <Field icon={ImageIcon} label="Image de fond (URL)">
+        <Input type="url" value={settings.background_image_url || ""} onChange={(event) => setSettings({ ...settings, background_image_url: event.target.value || null })} placeholder="https://…" />
+      </Field>
 
-        {/* Preview */}
-        {settings.background_image_url && (
-          <div className="mt-4 rounded-xl overflow-hidden border border-border aspect-video relative">
-            <img
-              src={settings.background_image_url}
-              alt="Background preview"
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-espresso/60 to-transparent" />
-          </div>
-        )}
-      </div>
-
-      {/* Live Preview */}
       <div className="card-glow">
-        <Label className="mb-3 block font-semibold">Aperçu en direct</Label>
-        <div 
-          className="aspect-[9/16] max-h-[300px] rounded-xl overflow-hidden relative flex flex-col items-center justify-center p-4 text-center"
-          style={{
-            background: settings.background_image_url 
-              ? `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.5)), url(${settings.background_image_url}) center/cover`
-              : `linear-gradient(180deg, 
-                  hsl(40 33% 96%) 0%, 
-                  hsl(35 45% 92%) 30%,
-                  hsl(32 50% 88%) 70%,
-                  hsl(35 45% 90%) 100%
-                )`,
-          }}
-        >
-          <div className="w-16 h-16 rounded-full bg-secondary/80 border-2 border-caramel/50 mb-3" />
-          <h3 className={`font-display text-lg font-semibold mb-1 ${settings.background_image_url ? 'text-white' : 'text-espresso'}`}>
-            {settings.event_title}
-          </h3>
-          <p className={`text-sm mb-1 ${settings.background_image_url ? 'text-white/80' : 'text-muted-foreground'}`}>
-            {settings.event_subtitle}
-          </p>
-          <p className={`text-xs uppercase tracking-wider mb-4 ${settings.background_image_url ? 'text-caramel-light' : 'text-caramel'}`}>
-            {settings.game_line}
-          </p>
-          <div className="px-4 py-2 bg-primary text-primary-foreground text-sm rounded-full">
-            {settings.cta_text}
-          </div>
+        <Label className="mb-3 block font-semibold">Aperçu</Label>
+        <div className="relative flex aspect-[9/16] max-h-[320px] flex-col items-center justify-center overflow-hidden rounded-xl p-4 text-center" style={{ background: settings.background_image_url ? `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url(${settings.background_image_url}) center/cover` : "linear-gradient(180deg,hsl(40 33% 96%),hsl(35 45% 90%))" }}>
+          <h3 className={`font-display text-lg font-semibold ${settings.background_image_url ? "text-white" : "text-espresso"}`}>{settings.event_title}</h3>
+          <p className={`mt-1 text-sm ${settings.background_image_url ? "text-white/80" : "text-muted-foreground"}`}>{settings.event_subtitle}</p>
+          <p className={`mt-2 text-xs uppercase tracking-wider ${settings.background_image_url ? "text-white/75" : "text-caramel"}`}>{settings.game_line}</p>
+          <div className="mt-4 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">{settings.cta_text}</div>
         </div>
       </div>
 
-      {/* Save Button */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-      >
-        <Button
-          onClick={handleSave}
-          disabled={saving}
-          className={`w-full btn-hero ${success ? 'bg-herb hover:bg-herb' : ''}`}
-        >
-          {saving ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : success ? (
-            <>
-              <Save className="w-5 h-5 mr-2" />
-              Enregistré !
-            </>
-          ) : (
-            <>
-              <Save className="w-5 h-5 mr-2" />
-              Enregistrer les modifications
-            </>
-          )}
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <Button onClick={save} disabled={saving} className="btn-hero w-full">
+          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer les modifications</>}
         </Button>
-
-        {error && (
-          <p className="text-center text-sm text-destructive mt-3">{error}</p>
-        )}
       </motion.div>
     </div>
   );
 };
+
+const Field = ({ icon: Icon, label, children }: { icon: typeof Type; label: string; children: React.ReactNode }) => (
+  <div className="card-warm">
+    <Label className="mb-2 flex items-center gap-2 font-semibold"><Icon className="h-4 w-4 text-primary" aria-hidden="true" />{label}</Label>
+    {children}
+  </div>
+);
 
 export default SplashSettingsPanel;
