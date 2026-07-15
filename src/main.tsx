@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 import logoUrl from "@/assets/logo.png";
+import { installAdminLegacyPasswordFallback } from "@/lib/adminLegacyFallback";
 
 function preloadLogoEarly() {
   try {
@@ -40,6 +41,7 @@ function registerGlobalDiagnostics() {
 
 preloadLogoEarly();
 registerGlobalDiagnostics();
+installAdminLegacyPasswordFallback();
 
 const rootElement = document.getElementById("root");
 
