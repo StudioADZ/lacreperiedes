@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Gift,
+  KeyRound,
   Loader2,
   Lock,
   ShieldCheck,
@@ -133,6 +134,13 @@ const Client = () => {
         <Button variant="outline" className="h-13 w-full rounded-2xl bg-white/70 text-base font-bold" onClick={() => handleOpenAuth("signup")}>
           Créer mon espace client
         </Button>
+        <Link
+          to="/mot-de-passe-oublie"
+          className="flex min-h-11 items-center justify-center gap-2 rounded-2xl text-sm font-semibold text-caramel transition-colors hover:bg-caramel/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <KeyRound className="h-4 w-4" aria-hidden="true" />
+          Mot de passe oublié ?
+        </Link>
         <p className="px-2 text-center text-xs leading-relaxed text-muted-foreground">
           La création du compte est gratuite. Vos informations restent liées à votre expérience avec La Crêperie des Saveurs.
         </p>
