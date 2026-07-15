@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDeviceFingerprint } from "./useDeviceFingerprint";
+import { supabase } from "@/integrations/supabase/client";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -36,7 +37,7 @@ const getErrorMessage = (data: unknown, fallback: string) => {
   return fallback;
 };
 
-export const useQuizSession = (accessToken?: string | null) => {
+export const useQuizSession = () => {
   const deviceFingerprint = useDeviceFingerprint();
   const [state, setState] = useState<QuizState>({
     isLoading: false,
@@ -47,35 +48,35 @@ export const useQuizSession = (accessToken?: string | null) => {
     answers: [],
   });
 
-  const callQuizSession = useCallback(
-    async (payload: Record<string, unknown>) => {
-      if (!SUPABASE_URL) throw new Error("Configuration du quiz indisponible");
-      if (!accessToken) throw new Error("Reconnectez-vous pour jouer au quiz");
+  const callQuizSession = useCallback(async (payload: Record<string, unknown>) => {
+    if (!SUPABASE_URL) throw new Error("Configuration du quiz indisponible");
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-session`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
+    const { data: authData, error: authError } = await supabase.auth.getSession();
+    const accessToken = authData.session?.access_token;
+    if (authError || !accessToken) throw new Error("Reconnectez-vous pour jouer au quiz");
 
-      let data: any = null;
-      try {
-        data = await response.json();
-      } catch {
-        // The generic error below is clearer than a JSON parsing exception.
-      }
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/quiz-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
-      if (!response.ok) {
-        throw new Error(getErrorMessage(data, "Le quiz est momentanément indisponible"));
-      }
+    let data: any = null;
+    try {
+      data = await response.json();
+    } catch {
+      // The generic error below is clearer than a JSON parsing exception.
+    }
 
-      return data;
-    },
-    [accessToken],
-  );
+    if (!response.ok) {
+      throw new Error(getErrorMessage(data, "Le quiz est momentanément indisponible"));
+    }
+
+    return data;
+  }, []);
 
   const startSession = useCallback(async () => {
     if (!deviceFingerprint) return { success: false, error: "missing_fingerprint" };
@@ -83,11 +84,7 @@ export const useQuizSession = (accessToken?: string | null) => {
     setState((previous) => ({ ...previous, isLoading: true, error: null }));
 
     try {
-      const data = await callQuizSession({
-        action: "start",
-        deviceFingerprint,
-      });
-
+      const data = await callQuizSession({ action: "start", deviceFingerprint });
       setState((previous) => ({
         ...previous,
         isLoading: false,
@@ -101,7 +98,6 @@ export const useQuizSession = (accessToken?: string | null) => {
             correctAnswer: "",
           })) || [],
       }));
-
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Erreur de connexion";
@@ -110,52 +106,39 @@ export const useQuizSession = (accessToken?: string | null) => {
     }
   }, [callQuizSession, deviceFingerprint]);
 
-  const submitAnswer = useCallback(
-    async (answer: string) => {
-      if (!state.session || !deviceFingerprint) return { success: false, error: "invalid_session" };
+  const submitAnswer = useCallback(async (answer: string) => {
+    if (!state.session || !deviceFingerprint) return { success: false, error: "invalid_session" };
 
-      setState((previous) => ({ ...previous, isLoading: true, error: null }));
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
 
-      try {
-        const data = await callQuizSession({
-          action: "answer",
-          deviceFingerprint,
-          sessionId: state.session.id,
-          answer,
-          questionIndex: state.currentQuestionIndex,
-        });
+    try {
+      const data = await callQuizSession({
+        action: "answer",
+        deviceFingerprint,
+        sessionId: state.session.id,
+        answer,
+        questionIndex: state.currentQuestionIndex,
+      });
 
-        setState((previous) => ({
-          ...previous,
-          isLoading: false,
-          currentQuestionIndex: previous.currentQuestionIndex + 1,
-          answers: [
-            ...previous.answers,
-            {
-              answer,
-              isCorrect: data.isCorrect,
-              correctAnswer: data.correctAnswer,
-            },
-          ],
-        }));
+      setState((previous) => ({
+        ...previous,
+        isLoading: false,
+        currentQuestionIndex: previous.currentQuestionIndex + 1,
+        answers: [...previous.answers, { answer, isCorrect: data.isCorrect, correctAnswer: data.correctAnswer }],
+      }));
 
-        return { success: true, isCorrect: data.isCorrect, correctAnswer: data.correctAnswer };
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Erreur de connexion";
-        setState((previous) => ({ ...previous, isLoading: false, error: message }));
-        return { success: false, error: message };
-      }
-    },
-    [callQuizSession, deviceFingerprint, state.currentQuestionIndex, state.session],
-  );
+      return { success: true, isCorrect: data.isCorrect, correctAnswer: data.correctAnswer };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Erreur de connexion";
+      setState((previous) => ({ ...previous, isLoading: false, error: message }));
+      return { success: false, error: message };
+    }
+  }, [callQuizSession, deviceFingerprint, state.currentQuestionIndex, state.session]);
 
   const resetSession = useCallback(async () => {
-    if (deviceFingerprint && accessToken) {
+    if (deviceFingerprint) {
       try {
-        await callQuizSession({
-          action: "reset",
-          deviceFingerprint,
-        });
+        await callQuizSession({ action: "reset", deviceFingerprint });
       } catch (error) {
         console.warn("[useQuizSession] reset failed", error);
       }
@@ -169,7 +152,7 @@ export const useQuizSession = (accessToken?: string | null) => {
       currentQuestionIndex: 0,
       answers: [],
     });
-  }, [accessToken, callQuizSession, deviceFingerprint]);
+  }, [callQuizSession, deviceFingerprint]);
 
   const isComplete = state.currentQuestionIndex >= 10;
   const score = state.answers.filter((answer) => answer.isCorrect).length;
