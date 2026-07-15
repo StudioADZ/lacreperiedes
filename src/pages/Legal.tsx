@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
-  Award,
   ChevronRight,
   FileText,
   Gift,
@@ -19,6 +18,7 @@ const EMAIL = "dlacreperie@gmail.com";
 const PHONE = "02 59 66 01 76";
 const PHONE_LINK = "tel:0259660176";
 const MAPS_LINK = "https://maps.app.goo.gl/ShXSrr3XBsQTEYZ87?g_st=ac";
+const LAST_UPDATED = "15 juillet 2026";
 
 const quickLinks = [
   { href: "#identification", label: "Identification", icon: Scale },
@@ -50,10 +50,11 @@ const Legal = () => {
               <Sparkles className="h-3.5 w-3.5 text-butter" />
               Informations légales
             </div>
-            <h1 className="font-display text-3xl font-black leading-tight">Mentions légales</h1>
+            <h1 className="font-display text-3xl font-black leading-tight">Mentions légales et confidentialité</h1>
             <p className="mt-2 text-sm leading-relaxed text-white/82">
-              Les informations essentielles sur l’établissement, l’utilisation de l’application, la protection des données et le règlement du quiz.
+              Identification de l’établissement, règles d’utilisation, protection des données et fonctionnement du quiz.
             </p>
+            <p className="mt-4 text-xs text-white/60">Dernière mise à jour : {LAST_UPDATED}</p>
           </div>
         </section>
 
@@ -85,101 +86,107 @@ const Legal = () => {
 
         <LegalSection id="privacy" icon={Lock} eyebrow="Données personnelles" title="Politique de confidentialité">
           <Article title="1. Responsable du traitement">
-            La Crêperie des Saveurs, située au 17 Place Carnot – Galerie des Halles, 72600 Mamers, est responsable du traitement des données collectées via l’application.
+            La Crêperie des Saveurs est responsable des données collectées directement dans l’application. Pour toute demande liée à vos données, vous pouvez écrire à {EMAIL}.
           </Article>
 
-          <Article title="2. Données susceptibles d’être collectées">
-            <LegalList
-              items={[
-                "prénom, email et numéro de téléphone lorsque vous participez au quiz ou utilisez un formulaire ;",
-                "identifiant technique de session ou d’appareil, utilisé pour limiter la fraude au quiz ;",
-                "informations de compte client si vous vous connectez ;",
-                "historique lié aux gains, récompenses ou avantages fidélité lorsque ces fonctions sont utilisées.",
-              ]}
-            />
+          <Article title="2. Données collectées">
+            <LegalList items={[
+              "prénom, adresse email et numéro de téléphone lorsque vous créez un compte ou participez au quiz ;",
+              "données techniques de session, d’appareil ou de navigateur nécessaires à la sécurité et à la prévention de la fraude ;",
+              "historique des participations, gains, codes et avantages liés au compte client ;",
+              "informations transmises volontairement lors d’un contact ou d’une réservation.",
+            ]} />
           </Article>
 
-          <Article title="3. Finalités">
-            <LegalList
-              items={[
-                "gérer la participation au quiz et l’attribution des lots ;",
-                "sécuriser l’application et prévenir les abus ;",
-                "gérer l’espace client, les avantages et la fidélité ;",
-                "répondre aux demandes envoyées par email, téléphone ou formulaire ;",
-                "envoyer des communications uniquement lorsque le consentement est demandé et accepté.",
-              ]}
-            />
+          <Article title="3. Finalités et bases légales">
+            <LegalList items={[
+              "créer et sécuriser votre compte, sur la base de l’exécution du service demandé ;",
+              "gérer le quiz, attribuer les lots et limiter les abus, sur la base de l’exécution du règlement et de l’intérêt légitime de sécurité ;",
+              "répondre à vos demandes et gérer les réservations ;",
+              "envoyer des communications commerciales uniquement lorsque votre consentement a été recueilli.",
+            ]} />
           </Article>
 
-          <Article title="4. Base légale">
-            Selon le service utilisé, le traitement repose sur le consentement, l’exécution d’un service demandé, l’intérêt légitime de sécurisation, ou le respect d’obligations légales.
+          <Article title="4. Services techniques utilisés">
+            L’authentification et la base de données peuvent être opérées par Supabase. La réservation, l’itinéraire, les avis ou certains contenus peuvent ouvrir des services Google. Lorsque vous utilisez ces services tiers, leurs propres politiques de confidentialité s’appliquent également.
           </Article>
 
-          <Article title="5. Durée de conservation">
-            Les données sont conservées uniquement le temps nécessaire aux finalités indiquées. Les données liées au quiz et aux gains peuvent être conservées jusqu’à 1 an après la dernière interaction, sauf obligation ou demande légitime de conservation plus longue.
+          <Article title="5. Stockage local et traceurs techniques">
+            L’application peut utiliser le stockage local du navigateur et des éléments techniques strictement nécessaires pour conserver une session, mémoriser l’affichage de l’écran d’accueil, sécuriser le compte et assurer le fonctionnement du quiz. Aucun usage publicitaire n’est déclaré dans cette application.
           </Article>
 
-          <Article title="6. Vos droits">
-            Vous pouvez demander l’accès, la rectification, l’effacement, la limitation, l’opposition au traitement ou le retrait de votre consentement. Pour exercer vos droits, contactez {EMAIL}. Une réponse sera apportée dans les meilleurs délais et au plus tard dans le délai légal applicable.
+          <Article title="6. Durée de conservation">
+            Les données de compte sont conservées tant que le compte reste actif ou jusqu’à une demande de suppression, sous réserve des obligations légales. Les données liées au quiz, aux gains et à la prévention de la fraude peuvent être conservées jusqu’à un an après la dernière interaction, sauf nécessité légitime ou obligation plus longue.
           </Article>
 
-          <Article title="7. Sécurité et partage">
-            Les données ne sont pas vendues. Elles peuvent être traitées par les services techniques nécessaires au fonctionnement de l’application, notamment l’hébergement, l’authentification, la base de données ou les outils de réservation utilisés.
+          <Article title="7. Destinataires et transferts">
+            Les données ne sont pas vendues. Elles sont accessibles uniquement aux personnes autorisées de La Crêperie des Saveurs et aux prestataires techniques indispensables au fonctionnement du service. Certains prestataires peuvent traiter des données hors de l’Union européenne selon leurs garanties contractuelles et réglementaires.
+          </Article>
+
+          <Article title="8. Vos droits">
+            Vous pouvez demander l’accès, la rectification, l’effacement, la limitation, la portabilité lorsque celle-ci s’applique, l’opposition ou le retrait de votre consentement. Contactez {EMAIL}. Vous pouvez également introduire une réclamation auprès de la CNIL si vous estimez que vos droits ne sont pas respectés.
           </Article>
         </LegalSection>
 
         <LegalSection id="terms" icon={FileText} eyebrow="Utilisation" title="Conditions générales d’utilisation">
           <Article title="1. Objet">
-            Les présentes conditions encadrent l’utilisation du site et de l’application La Crêperie des Saveurs : carte, réservation, quiz, espace client, avis, réseaux sociaux et informations pratiques.
+            Ces conditions encadrent l’utilisation du site et de l’application La Crêperie des Saveurs : carte, réservation, quiz, espace client, avis, réseaux sociaux et informations pratiques.
           </Article>
 
-          <Article title="2. Accès">
-            L’accès est gratuit. Certains services peuvent nécessiter une connexion, une adresse email, un numéro de téléphone ou une validation sur une plateforme tierce.
+          <Article title="2. Accès et compte">
+            L’accès général est gratuit. Certaines fonctions, notamment le quiz et la conservation des gains, nécessitent un compte et une adresse email vérifiée. L’utilisateur est responsable de la confidentialité de ses identifiants.
           </Article>
 
-          <Article title="3. Exactitude des informations">
-            L’utilisateur s’engage à fournir des informations exactes. Toute fraude, tentative de contournement ou utilisation abusive peut entraîner l’annulation d’un gain, d’un avantage ou d’un accès.
+          <Article title="3. Informations fournies">
+            L’utilisateur s’engage à fournir des informations exactes. Toute fraude, usurpation, création de comptes multiples ou tentative de contournement peut entraîner l’annulation d’un gain ou la suspension de l’accès.
           </Article>
 
-          <Article title="4. Réservations et plateformes tierces">
-            La réservation peut s’appuyer sur Google ou d’autres services externes. Ces plateformes possèdent leurs propres règles, disponibilités et conditions d’utilisation.
+          <Article title="4. Réservations et services tiers">
+            La réservation peut être finalisée via Google ou un autre service externe. La sélection réalisée dans l’application ne constitue pas une confirmation tant que le service de réservation ou l’établissement ne l’a pas validée.
           </Article>
 
-          <Article title="5. Propriété intellectuelle">
+          <Article title="5. Disponibilité et responsabilité">
+            La Crêperie des Saveurs fait ses meilleurs efforts pour maintenir des informations exactes et un service disponible, sans garantir l’absence totale d’erreur, d’interruption ou d’indisponibilité temporaire.
+          </Article>
+
+          <Article title="6. Propriété intellectuelle">
             Les textes, images, logos, éléments graphiques et contenus de l’application sont protégés. Toute reproduction ou réutilisation non autorisée est interdite.
           </Article>
 
-          <Article title="6. Responsabilité">
-            La Crêperie des Saveurs fait ses meilleurs efforts pour proposer une application fiable, mais ne peut garantir l’absence totale d’interruption, d’erreur technique ou d’indisponibilité temporaire.
-          </Article>
-
           <Article title="7. Droit applicable">
-            Les présentes conditions sont soumises au droit français. En cas de litige, les juridictions compétentes seront déterminées selon les règles applicables.
+            Ces conditions sont soumises au droit français. En cas de différend, une solution amiable sera recherchée avant toute action devant la juridiction compétente.
           </Article>
         </LegalSection>
 
         <LegalSection id="quiz" icon={Gift} eyebrow="Jeu gratuit" title="Règlement du quiz">
           <Article title="1. Organisation">
-            La Crêperie des Saveurs organise un quiz gratuit, sans obligation d’achat. Le quiz peut être modifié, suspendu ou arrêté en cas de nécessité technique, de fraude ou de force majeure.
+            La Crêperie des Saveurs organise un quiz gratuit, sans obligation d’achat. Le quiz peut être modifié, suspendu ou arrêté en cas de nécessité technique, de fraude, d’indisponibilité des lots ou de force majeure.
           </Article>
 
-          <Article title="2. Participation">
-            <LegalList
-              items={[
-                "une seule participation gagnante par semaine et par personne ;",
-                "les informations demandées doivent être exactes ;",
-                "les lots sont personnels, non échangeables contre de l’argent et à retirer selon les conditions affichées dans l’application ;",
-                "toute tentative de fraude peut entraîner une disqualification.",
-              ]}
-            />
+          <Article title="2. Conditions de participation">
+            <LegalList items={[
+              "un compte personnel avec une adresse email vérifiée est nécessaire ;",
+              "les informations communiquées doivent être exactes ;",
+              "une seule participation gagnante est autorisée par semaine et par personne, sous réserve des contrôles techniques ;",
+              "les lots sont personnels, non cessibles et non échangeables contre de l’argent ;",
+              "toute tentative de fraude peut entraîner une disqualification.",
+            ]} />
           </Article>
 
-          <Article title="3. Attribution des lots">
-            Le résultat dépend du score obtenu et du stock disponible. À titre indicatif : 100 % peut donner droit à une Formule Complète, 90 % ou plus à une galette, 80 % ou plus à une crêpe. Si le stock hebdomadaire est épuisé, aucun lot ne peut être attribué même si le score est suffisant.
+          <Article title="3. Questions, score et stock">
+            Les questions sont sélectionnées aléatoirement dans la banque active. Le résultat dépend du score, des règles affichées au moment de la participation et du stock de lots disponible. Les récompenses peuvent évoluer ; seules les informations affichées dans le quiz au moment du jeu font foi.
           </Article>
 
-          <Article title="4. Validation du gain">
-            Un gain peut nécessiter un QR code, un code unique ou une vérification en restaurant. Le personnel peut refuser un gain expiré, déjà utilisé, falsifié ou ne correspondant pas aux règles.
+          <Article title="4. Attribution et conservation du gain">
+            Un gain valide est rattaché au compte client et peut être identifié par un code unique. L’utilisateur doit conserver l’accès à son compte et présenter le code selon les instructions affichées.
+          </Article>
+
+          <Article title="5. Validation en restaurant">
+            Le personnel peut refuser un code expiré, déjà utilisé, falsifié, obtenu en violation du règlement ou ne correspondant pas au compte du bénéficiaire. Les conditions de retrait et la date de validité affichées avec le gain doivent être respectées.
+          </Article>
+
+          <Article title="6. Non-affiliation">
+            Le quiz n’est ni sponsorisé, ni géré, ni organisé par Google, Meta, Instagram, Facebook, WhatsApp, TikTok, YouTube, Supabase ou toute autre plateforme tierce mentionnée dans l’application.
           </Article>
         </LegalSection>
 
@@ -189,23 +196,9 @@ const Legal = () => {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-black text-espresso">Protection des données</h2>
+              <h2 className="font-display text-lg font-black text-espresso">Vos données restent sous votre contrôle</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Cette page explique clairement les usages principaux. Pour toute question ou demande liée à vos données, contactez directement l’établissement par email.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-caramel/20 bg-butter/35 p-5">
-          <div className="flex gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-caramel">
-              <Award className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="font-display text-lg font-black text-espresso">Non-affiliation</h2>
-              <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Le quiz et les opérations de La Crêperie des Saveurs ne sont pas sponsorisés, gérés ou organisés par Google, Facebook, Instagram, WhatsApp, TikTok, YouTube ou toute autre plateforme tierce. Ces noms sont cités uniquement à titre informatif.
+                Pour toute demande d’accès, de correction ou de suppression, contactez l’établissement par email. Une vérification d’identité raisonnable peut être demandée avant de traiter la demande.
               </p>
             </div>
           </div>
@@ -218,13 +211,13 @@ const Legal = () => {
             <a href={`mailto:${EMAIL}`} className="block">
               <Button variant="outline" className="h-12 w-full rounded-2xl font-bold">
                 <Mail className="mr-2 h-4 w-4" />
-                Email
+                {EMAIL}
               </Button>
             </a>
             <a href={PHONE_LINK} className="block">
               <Button className="h-12 w-full rounded-2xl bg-caramel font-bold text-white hover:bg-caramel/90">
                 <Phone className="mr-2 h-4 w-4" />
-                Appeler
+                {PHONE}
               </Button>
             </a>
           </div>
