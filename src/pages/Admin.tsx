@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertCircle,
-  ArrowRight,
   BarChart3,
   CheckCircle,
   CreditCard,
@@ -16,13 +15,9 @@ import {
   LogOut,
   Mail,
   Newspaper,
-  RefreshCw,
-  ShieldCheck,
   Sparkles,
   TicketCheck,
-  Trophy,
   UtensilsCrossed,
-  Users,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -38,6 +33,7 @@ import CarteMenuPanel from "@/components/admin/CarteMenuPanel";
 import MessagesPanel from "@/components/admin/MessagesPanel";
 import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 import CustomerDirectoryPanel from "@/components/admin/CustomerDirectoryPanel";
+import AdminKPIDashboard from "@/components/admin/AdminKPIDashboard";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -66,7 +62,7 @@ type DashboardStats = {
 };
 
 const ADMIN_TABS: { id: AdminTab; group: AdminGroup; label: string; description: string; icon: LucideIcon }[] = [
-  { id: "dashboard", group: "Pilotage", label: "Tableau de bord", description: "Vue générale", icon: LayoutDashboard },
+  { id: "dashboard", group: "Pilotage", label: "Tableau de bord", description: "Vue KPI", icon: LayoutDashboard },
   { id: "scan", group: "Caisse", label: "Validation", description: "Contrôler les gains", icon: TicketCheck },
   { id: "messages", group: "Caisse", label: "Messages", description: "Demandes clients", icon: Mail },
   { id: "clients", group: "Données", label: "Clients", description: "Fiches clients", icon: Database },
@@ -310,7 +306,7 @@ const Admin = () => {
             </div>
           </div>
           <div className="p-4 sm:p-5">
-            {activeTab === "dashboard" && <DashboardPanel stats={dashboardStats} isLoading={dashboardLoading} error={dashboardError} onRefresh={loadDashboard} onNavigate={setActiveTab} />}
+            {activeTab === "dashboard" && <AdminKPIDashboard stats={dashboardStats} isLoading={dashboardLoading} error={dashboardError} onRefresh={loadDashboard} onNavigate={setActiveTab} />}
             {activeTab === "clients" && <CustomerDirectoryPanel adminPassword={adminCredential!} />}
             {activeTab === "quiz" && <QuizStatsPanel adminPassword={adminCredential!} />}
             {activeTab === "carte" && <CarteMenuPanel adminPassword={adminCredential!} />}
@@ -324,30 +320,6 @@ const Admin = () => {
       </div>
     </div>
   );
-};
-
-const DashboardPanel = ({ stats, isLoading, error, onRefresh, onNavigate }: { stats: DashboardStats | null; isLoading: boolean; error: string; onRefresh: () => void; onNavigate: (tab: AdminTab) => void }) => {
-  const weekLabel = stats?.weekStart ? new Date(`${stats.weekStart}T12:00:00`).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }) : "semaine en cours";
-  const remaining = Math.max((stats?.totalWinners || 0) - (stats?.totalClaimed || 0), 0);
-  const metrics = [
-    { label: "Participations", value: stats?.totalParticipations ?? 0, detail: `Depuis le ${weekLabel}`, icon: Users },
-    { label: "Gagnants", value: stats?.totalWinners ?? 0, detail: "Cette semaine", icon: Trophy },
-    { label: "Gains utilisés", value: stats?.totalClaimed ?? 0, detail: "Validés en caisse", icon: CheckCircle },
-    { label: "À utiliser", value: remaining, detail: "Gains encore actifs", icon: Gift },
-  ];
-  const quickActions: { tab: AdminTab; label: string; description: string; icon: LucideIcon }[] = [
-    { tab: "scan", label: "Valider un gain", description: "Contrôler un code client", icon: TicketCheck },
-    { tab: "messages", label: "Voir les messages", description: "Traiter les demandes", icon: Mail },
-    { tab: "clients", label: "Ouvrir les clients", description: "Consulter les profils", icon: Database },
-    { tab: "carte", label: "Menu secret", description: "Préparer la semaine", icon: UtensilsCrossed },
-  ];
-
-  return <div className="space-y-5">
-    <div className="flex flex-col gap-3 rounded-3xl border border-caramel/15 bg-gradient-to-br from-white via-butter/25 to-caramel/10 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-caramel">Cockpit opérationnel</p><h3 className="mt-1 font-display text-2xl font-black text-espresso">Bonjour, voici l’essentiel.</h3><p className="mt-1 text-sm text-muted-foreground">Les chiffres affichés proviennent directement de la base de la crêperie.</p></div><Button type="button" variant="outline" onClick={onRefresh} disabled={isLoading} className="rounded-2xl"><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />Actualiser</Button></div>
-    {error && <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm font-semibold text-destructive">{error}</div>}
-    <div className="grid grid-cols-2 gap-3">{metrics.map(({ label, value, detail, icon: Icon }) => <div key={label} className="rounded-3xl border border-caramel/12 bg-white p-4 shadow-sm"><div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-caramel/10 text-caramel"><Icon className="h-5 w-5" /></div><p className="font-display text-3xl font-black text-espresso">{isLoading && !stats ? "—" : value}</p><p className="mt-1 text-sm font-black text-espresso">{label}</p><p className="mt-1 text-xs text-muted-foreground">{detail}</p></div>)}</div>
-    <div><div className="mb-3 flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-caramel">Actions rapides</p><h3 className="font-display text-xl font-black text-espresso">Que veux-tu faire ?</h3></div><ShieldCheck className="h-6 w-6 text-herb" /></div><div className="grid gap-3 sm:grid-cols-2">{quickActions.map(({ tab, label, description, icon: Icon }) => <button key={tab} type="button" onClick={() => onNavigate(tab)} className="group flex items-center gap-3 rounded-3xl border border-border/60 bg-background/75 p-4 text-left transition hover:border-caramel/35 hover:bg-white"><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-caramel/10 text-caramel"><Icon className="h-5 w-5" /></div><div className="min-w-0 flex-1"><p className="font-display font-black text-espresso">{label}</p><p className="text-xs text-muted-foreground">{description}</p></div><ArrowRight className="h-4 w-4 text-muted-foreground" /></button>)}</div></div>
-  </div>;
 };
 
 const AdminLogin = ({ password, setPassword, authError, isLoading, onGoogleLogin, onPasswordLogin }: { password: string; setPassword: (value: string) => void; authError: string; isLoading: boolean; onGoogleLogin: () => void; onPasswordLogin: () => void }) => (
