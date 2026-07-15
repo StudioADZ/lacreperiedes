@@ -11,7 +11,7 @@ import Index from "./pages/Index";
 
 const Quiz = lazy(() => import("./pages/Quiz"));
 const Carte = lazy(() => import("./pages/Carte"));
-const Reserver = lazy(() => import("./pages/Reserver"));
+const Reserver = lazy(() => import("./pages/ReserverPremium"));
 const Avis = lazy(() => import("./pages/Avis"));
 const Social = lazy(() => import("./pages/Social"));
 const Legal = lazy(() => import("./pages/Legal"));
