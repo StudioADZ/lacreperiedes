@@ -2,8 +2,8 @@ import {
   CheckCircle2,
   ExternalLink,
   HeartHandshake,
-  Mail,
   MessageSquareHeart,
+  Phone,
   ShieldCheck,
   Sparkles,
   Star,
@@ -117,15 +117,15 @@ const Avis = () => {
         <section className="rounded-3xl border border-herb/15 bg-herb/5 p-5">
           <div className="flex items-start gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-herb/10 text-herb">
-              <Mail className="h-5 w-5" />
+              <Phone className="h-5 w-5" />
             </div>
             <div>
               <h2 className="font-display text-lg font-black text-espresso">Une remarque qui demande une réponse ?</h2>
               <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                Écrivez-nous directement. Ce contact est séparé de Google et ne remplace pas votre liberté de laisser un avis public.
+                Appelez-nous directement. Ce contact est séparé de Google et ne remplace pas votre liberté de laisser un avis public.
               </p>
-              <a href="mailto:contact@lacreperiedessaveurs.fr?subject=Retour%20client%20-%20La%20Cr%C3%AAperie%20des%20Saveurs" className="mt-3 inline-flex text-sm font-bold text-herb hover:underline">
-                Envoyer un message privé
+              <a href="tel:+33259660176" className="mt-3 inline-flex text-sm font-bold text-herb hover:underline">
+                Appeler le 02 59 66 01 76
               </a>
             </div>
           </div>
