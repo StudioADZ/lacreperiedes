@@ -3,7 +3,6 @@ import {
   BarChart3,
   CalendarDays,
   CheckCircle,
-  Database,
   Gift,
   Mail,
   MessageCircleMore,
@@ -16,9 +15,34 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { DashboardStats } from "@/pages/Admin";
 
 type AdminTab = "dashboard" | "scan" | "messages" | "clients" | "quiz" | "carte" | "actus" | "payment" | "splash";
+
+type DashboardStats = {
+  weekStart: string | null;
+  totalParticipations: number;
+  totalWinners: number;
+  totalClaimed: number;
+  totalClients: number;
+  reservationsToday: number;
+  upcomingReservations: number;
+  unreadMessages: number;
+  visibleSocialPosts: number;
+  totalSocialInteractions: number;
+  secretMenuActive: boolean;
+  secretMenuName: string | null;
+  secretMenuValidTo: string | null;
+  publicMenuActive: boolean;
+  splashActive: boolean;
+  stock: {
+    galetteRemaining: number;
+    galetteTotal: number;
+    crepeRemaining: number;
+    crepeTotal: number;
+    formuleRemaining: number;
+    formuleTotal: number;
+  } | null;
+};
 
 type Props = {
   stats: DashboardStats | null;
