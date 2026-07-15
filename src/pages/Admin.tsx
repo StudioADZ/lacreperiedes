@@ -21,9 +21,7 @@ import {
   RefreshCw,
   Sparkles,
   TicketCheck,
-  Trophy,
   UtensilsCrossed,
-  Users,
   XCircle,
   type LucideIcon,
 } from "lucide-react";
@@ -47,7 +45,6 @@ import { toast } from "sonner";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 type AdminTab = "dashboard" | "scan" | "messages" | "clients" | "quiz" | "carte" | "actus" | "payment" | "splash";
-type AdminGroup = "Pilotage" | "Caisse" | "Données" | "Contenu" | "Réglages";
 type AuthMode = "google" | "password" | null;
 
 type VerifyResult = {
@@ -70,26 +67,22 @@ type DashboardStats = {
 
 type AdminTabDefinition = {
   id: AdminTab;
-  group: AdminGroup;
   label: string;
   description: string;
   icon: LucideIcon;
 };
 
 const ADMIN_TABS: AdminTabDefinition[] = [
-  { id: "dashboard", group: "Pilotage", label: "Tableau de bord", description: "Vue KPI", icon: LayoutDashboard },
-  { id: "scan", group: "Caisse", label: "Validation", description: "Contrôler les gains", icon: TicketCheck },
-  { id: "messages", group: "Caisse", label: "Messages", description: "Demandes clients", icon: Mail },
-  { id: "clients", group: "Données", label: "Clients", description: "Fiches clients", icon: Database },
-  { id: "quiz", group: "Données", label: "Quiz", description: "Statistiques", icon: BarChart3 },
-  { id: "carte", group: "Contenu", label: "Menu secret", description: "Création & code", icon: UtensilsCrossed },
-  { id: "actus", group: "Contenu", label: "Actus & réseaux", description: "Publications", icon: Newspaper },
-  { id: "payment", group: "Réglages", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
-  { id: "splash", group: "Réglages", label: "Accueil", description: "Écran d’arrivée", icon: Sparkles },
+  { id: "dashboard", label: "Tableau de bord", description: "Vue KPI", icon: LayoutDashboard },
+  { id: "scan", label: "Validation", description: "Contrôler les gains", icon: TicketCheck },
+  { id: "messages", label: "Messages", description: "Demandes clients", icon: Mail },
+  { id: "clients", label: "Clients", description: "Fiches clients", icon: Database },
+  { id: "quiz", label: "Quiz", description: "Statistiques", icon: BarChart3 },
+  { id: "carte", label: "Menu secret", description: "Création & code", icon: UtensilsCrossed },
+  { id: "actus", label: "Actus & réseaux", description: "Publications", icon: Newspaper },
+  { id: "payment", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
+  { id: "splash", label: "Accueil", description: "Écran d’arrivée", icon: Sparkles },
 ];
-
-const ADMIN_GROUPS: AdminGroup[] = ["Pilotage", "Caisse", "Données", "Contenu", "Réglages"];
-const percentage = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
 
 const Admin = () => {
   const [authLoading, setAuthLoading] = useState(true);
@@ -311,144 +304,93 @@ const Admin = () => {
   const currentTab = ADMIN_TABS.find((tab) => tab.id === activeTab) ?? ADMIN_TABS[0];
 
   return (
-    <div className="min-h-screen bg-[hsl(35_35%_96%)] pb-12 pt-20">
-      <div className="mx-auto flex w-full max-w-[1500px] items-start gap-3 px-2 sm:gap-5 sm:px-4">
+    <div className="min-h-screen bg-[hsl(35_35%_96%)] pb-10 pt-20">
+      <div className="mx-auto flex w-full max-w-[1700px] items-start gap-2 px-2 sm:gap-3 sm:px-3">
         <AdminSidebar open={sidebarOpen} onToggle={() => setSidebarOpen((value) => !value)} activeTab={activeTab} setActiveTab={setActiveTab} />
 
-        <div className="min-w-0 flex-1 space-y-4">
-          <AdminHero
-            currentTab={currentTab}
-            adminEmail={accountEmail}
-            authMode={authMode}
-            stats={dashboardStats}
-            isLoading={dashboardLoading}
-            onRefresh={loadDashboard}
-            onLogout={handleLogout}
-          />
-
-          <section className="overflow-hidden rounded-[1.75rem] border border-caramel/15 bg-white shadow-warm">
-            <AdminBreadcrumb currentTab={currentTab} />
-            <div className="p-4 sm:p-6">
-              {activeTab === "dashboard" && <AdminKPIDashboard stats={dashboardStats} isLoading={dashboardLoading} error={dashboardError} onRefresh={loadDashboard} onNavigate={setActiveTab} />}
-              {activeTab === "clients" && <CustomerDirectoryPanel adminPassword={adminCredential!} />}
-              {activeTab === "quiz" && <QuizStatsPanel adminPassword={adminCredential!} />}
-              {activeTab === "carte" && <CarteMenuPanel adminPassword={adminCredential!} />}
-              {activeTab === "messages" && <MessagesPanel adminPassword={adminCredential!} />}
-              {activeTab === "payment" && <PaymentQRPanel adminPassword={adminCredential!} />}
-              {activeTab === "scan" && <ValidationPanel result={result} manualCode={manualCode} isLoading={isLoading} claimLoading={claimLoading} onManualCodeChange={setManualCode} onVerify={handleVerify} onClaim={handleClaim} onReset={handleReset} />}
-              {activeTab === "actus" && <ActusLivePanel adminPassword={adminCredential!} />}
-              {activeTab === "splash" && <SplashSettingsPanel adminPassword={adminCredential!} />}
-            </div>
-          </section>
-        </div>
+        <section className="min-w-0 flex-1 overflow-hidden rounded-[1.5rem] border border-caramel/15 bg-white shadow-warm">
+          <AdminWorkspaceHeader currentTab={currentTab} authMode={authMode} adminEmail={accountEmail} isLoading={dashboardLoading} onRefresh={loadDashboard} onLogout={handleLogout} />
+          <div className="p-3 sm:p-5">
+            {activeTab === "dashboard" && <AdminKPIDashboard stats={dashboardStats} isLoading={dashboardLoading} error={dashboardError} onRefresh={loadDashboard} onNavigate={setActiveTab} />}
+            {activeTab === "clients" && <CustomerDirectoryPanel adminPassword={adminCredential!} />}
+            {activeTab === "quiz" && <QuizStatsPanel adminPassword={adminCredential!} />}
+            {activeTab === "carte" && <CarteMenuPanel adminPassword={adminCredential!} />}
+            {activeTab === "messages" && <MessagesPanel adminPassword={adminCredential!} />}
+            {activeTab === "payment" && <PaymentQRPanel adminPassword={adminCredential!} />}
+            {activeTab === "scan" && <ValidationPanel result={result} manualCode={manualCode} isLoading={isLoading} claimLoading={claimLoading} onManualCodeChange={setManualCode} onVerify={handleVerify} onClaim={handleClaim} onReset={handleReset} />}
+            {activeTab === "actus" && <ActusLivePanel adminPassword={adminCredential!} />}
+            {activeTab === "splash" && <SplashSettingsPanel adminPassword={adminCredential!} />}
+          </div>
+        </section>
       </div>
     </div>
   );
 };
 
 const AdminSidebar = ({ open, onToggle, activeTab, setActiveTab }: { open: boolean; onToggle: () => void; activeTab: AdminTab; setActiveTab: (tab: AdminTab) => void }) => (
-  <aside className={`sticky top-20 z-30 h-[calc(100vh-6rem)] shrink-0 overflow-hidden rounded-[1.75rem] border border-caramel/15 bg-[#21140f] text-white shadow-elevated transition-[width] duration-300 ${open ? "w-64" : "w-[4.75rem]"}`} aria-label="Navigation de l’administration">
-    <div className="flex h-full flex-col">
-      <div className={`flex items-center border-b border-white/10 p-3 ${open ? "justify-between" : "flex-col gap-3"}`}>
-        <div className={`flex items-center ${open ? "gap-3" : "justify-center"}`}>
-          <img src={logo} alt="La Crêperie des Saveurs" className="h-11 w-11 rounded-full object-cover ring-2 ring-white/15" />
-          {open && <div><p className="font-display text-sm font-black">Administration</p><p className="text-[10px] uppercase tracking-[0.16em] text-white/50">Espace de travail</p></div>}
+  <aside className={`sticky top-20 z-30 shrink-0 overflow-hidden rounded-[1.4rem] border border-caramel/15 bg-[#21140f] text-white shadow-elevated transition-[width] duration-300 ${open ? "w-48" : "w-14"}`} aria-label="Navigation de l’administration">
+    <div className="flex flex-col">
+      <div className={`flex items-center border-b border-white/10 p-2 ${open ? "justify-between" : "flex-col gap-2"}`}>
+        <div className={`flex items-center ${open ? "gap-2" : "justify-center"}`}>
+          <img src={logo} alt="La Crêperie des Saveurs" className="h-9 w-9 rounded-full object-cover ring-1 ring-white/15" />
+          {open && <span className="font-display text-sm font-black">Administration</span>}
         </div>
-        <button type="button" onClick={onToggle} className="rounded-xl border border-white/10 bg-white/5 p-2 text-white/75 hover:bg-white/10 hover:text-white" aria-label={open ? "Réduire le menu admin" : "Ouvrir le menu admin"}>
+        <button type="button" onClick={onToggle} className="rounded-lg border border-white/10 bg-white/5 p-1.5 text-white/70 hover:bg-white/10 hover:text-white" aria-label={open ? "Réduire le menu admin" : "Ouvrir le menu admin"}>
           {open ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2">
-        {ADMIN_GROUPS.map((group) => (
-          <div key={group} className="mb-4">
-            {open && <p className="mb-2 px-3 text-[9px] font-black uppercase tracking-[0.2em] text-white/35">{group}</p>}
-            <div className="space-y-1">
-              {ADMIN_TABS.filter((tab) => tab.group === group).map((tab) => {
-                const Icon = tab.icon;
-                const selected = tab.id === activeTab;
-                return (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setActiveTab(tab.id)}
-                    title={!open ? tab.label : undefined}
-                    aria-current={selected ? "page" : undefined}
-                    className={`group relative flex w-full items-center rounded-2xl py-2.5 transition ${open ? "gap-3 px-3" : "justify-center px-2"} ${selected ? "bg-caramel text-white shadow-lg" : "text-white/65 hover:bg-white/8 hover:text-white"}`}
-                  >
-                    <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${selected ? "bg-white/15" : "bg-white/5 group-hover:bg-white/10"}`}><Icon className="h-4 w-4" /></span>
-                    {open && <span className="min-w-0 text-left"><span className="block truncate text-sm font-black">{tab.label}</span><span className={`block truncate text-[10px] ${selected ? "text-white/70" : "text-white/35"}`}>{tab.description}</span></span>}
-                    {selected && !open && <span className="absolute right-0 h-7 w-1 rounded-l-full bg-butter" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      <nav className="space-y-1 p-1.5">
+        {ADMIN_TABS.map((tab) => {
+          const Icon = tab.icon;
+          const selected = tab.id === activeTab;
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              title={!open ? tab.label : undefined}
+              aria-current={selected ? "page" : undefined}
+              className={`group relative flex w-full items-center rounded-xl transition ${open ? "gap-2 px-2 py-2" : "justify-center p-2"} ${selected ? "bg-caramel text-white shadow-md" : "text-white/65 hover:bg-white/10 hover:text-white"}`}
+            >
+              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${selected ? "bg-white/15" : "bg-white/5 group-hover:bg-white/10"}`}><Icon className="h-4 w-4" /></span>
+              {open && <span className="truncate text-left text-xs font-black">{tab.label}</span>}
+              {selected && !open && <span className="absolute right-0 h-6 w-1 rounded-l-full bg-butter" />}
+            </button>
+          );
+        })}
       </nav>
 
-      <div className="border-t border-white/10 p-2">
-        <Button asChild variant="ghost" className={`h-11 w-full rounded-2xl text-white/65 hover:bg-white/10 hover:text-white ${open ? "justify-start" : "justify-center px-0"}`}>
-          <Link to="/" title={!open ? "Retour au site" : undefined}><Home className={`h-4 w-4 ${open ? "mr-3" : ""}`} />{open && "Retour au site"}</Link>
+      <div className="border-t border-white/10 p-1.5">
+        <Button asChild variant="ghost" className={`h-10 w-full rounded-xl text-white/65 hover:bg-white/10 hover:text-white ${open ? "justify-start px-2" : "justify-center px-0"}`}>
+          <Link to="/" title={!open ? "Retour au site" : undefined}><Home className={`h-4 w-4 ${open ? "mr-2" : ""}`} />{open && "Retour au site"}</Link>
         </Button>
       </div>
     </div>
   </aside>
 );
 
-const AdminHero = ({ currentTab, adminEmail, authMode, stats, isLoading, onRefresh, onLogout }: { currentTab: AdminTabDefinition; adminEmail: string | null; authMode: AuthMode; stats: DashboardStats | null; isLoading: boolean; onRefresh: () => void; onLogout: () => void }) => {
-  const participations = stats?.totalParticipations ?? 0;
-  const winners = stats?.totalWinners ?? 0;
-  const claimed = stats?.totalClaimed ?? 0;
-  const remaining = Math.max(winners - claimed, 0);
-  const winnerRate = percentage(winners, participations);
-  const claimRate = percentage(claimed, winners);
-  const metrics = [
-    { label: "Participations", value: participations, icon: Users },
-    { label: "Taux gagnants", value: `${winnerRate}%`, icon: Trophy },
-    { label: "Utilisation", value: `${claimRate}%`, icon: CheckCircle },
-    { label: "À utiliser", value: remaining, icon: Gift },
-  ];
-
-  return (
-    <header className="overflow-hidden rounded-[2rem] bg-gradient-to-br from-espresso via-[#2b1811] to-caramel text-white shadow-elevated">
-      <div className="p-5 sm:p-6">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em]"><LayoutDashboard className="h-3.5 w-3.5 text-butter" />Gestion premium</div>
-            <h1 className="mt-3 font-display text-3xl font-black sm:text-4xl">Pilotage de la crêperie</h1>
-            <p className="mt-2 text-sm text-white/65">{currentTab.group} · {currentTab.label}</p>
-            <p className="mt-1 text-xs text-white/45">{adminEmail} · {authMode === "password" ? "Accès secours" : "Google"}</p>
-          </div>
-          <div className="flex gap-2">
-            <button type="button" onClick={onRefresh} className="rounded-2xl border border-white/15 bg-white/10 p-3 text-white/75 hover:bg-white/15 hover:text-white" aria-label="Actualiser les KPI"><RefreshCw className={`h-5 w-5 ${isLoading ? "animate-spin" : ""}`} /></button>
-            <button type="button" onClick={onLogout} className="rounded-2xl border border-white/15 bg-white/10 p-3 text-white/75 hover:bg-white/15 hover:text-white" aria-label="Déconnexion administrateur"><LogOut className="h-5 w-5" /></button>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 gap-2 lg:grid-cols-4">
-          {metrics.map(({ label, value, icon: Icon }) => (
-            <div key={label} className="rounded-2xl border border-white/10 bg-white/8 p-3 backdrop-blur-sm">
-              <div className="flex items-center justify-between gap-2"><p className="text-[9px] font-black uppercase tracking-[0.14em] text-white/45">{label}</p><Icon className="h-4 w-4 text-butter" /></div>
-              <p className="mt-2 font-display text-2xl font-black">{isLoading && !stats ? "—" : value}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </header>
-  );
-};
-
-const AdminBreadcrumb = ({ currentTab }: { currentTab: AdminTabDefinition }) => {
+const AdminWorkspaceHeader = ({ currentTab, authMode, adminEmail, isLoading, onRefresh, onLogout }: { currentTab: AdminTabDefinition; authMode: AuthMode; adminEmail: string | null; isLoading: boolean; onRefresh: () => void; onLogout: () => void }) => {
   const Icon = currentTab.icon;
   return (
-    <div className="flex items-center gap-2 border-b border-caramel/10 bg-gradient-to-r from-butter/35 via-white to-white px-4 py-3 sm:px-6">
-      <span className="text-xs font-bold text-muted-foreground">Administration</span>
-      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="text-xs font-bold text-muted-foreground">{currentTab.group}</span>
-      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-      <span className="inline-flex min-w-0 items-center gap-2 text-sm font-black text-espresso"><Icon className="h-4 w-4 shrink-0 text-caramel" /><span className="truncate">{currentTab.label}</span></span>
-    </div>
+    <header className="flex flex-col gap-3 border-b border-caramel/10 bg-gradient-to-r from-butter/35 via-white to-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="font-bold">Administration</span>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="truncate font-black text-espresso">{currentTab.label}</span>
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-caramel/10 text-caramel"><Icon className="h-4 w-4" /></span>
+          <div className="min-w-0"><h1 className="truncate font-display text-xl font-black text-espresso">{currentTab.label}</h1><p className="truncate text-xs text-muted-foreground">{currentTab.description}</p></div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="hidden max-w-56 truncate text-[10px] text-muted-foreground lg:block">{adminEmail} · {authMode === "password" ? "Accès secours" : "Google"}</span>
+        <button type="button" onClick={onRefresh} className="rounded-xl border border-caramel/15 bg-white p-2.5 text-caramel hover:bg-caramel/5" aria-label="Actualiser"><RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`} /></button>
+        <button type="button" onClick={onLogout} className="rounded-xl border border-caramel/15 bg-white p-2.5 text-espresso hover:bg-caramel/5" aria-label="Déconnexion administrateur"><LogOut className="h-4 w-4" /></button>
+      </div>
+    </header>
   );
 };
 
