@@ -74,7 +74,8 @@ Deno.serve(async (req) => {
     const userEmails = new Map((usersResult.data?.users || []).map((user) => [user.id, normalizeEmail(user.email)]))
     type Customer = {
       id: string; name: string; email: string | null; phone: string | null; city: string | null; userId: string | null;
-      loyaltyPoints: number; declaredVisits: number; quizParticipations: number; reservations: number; messages: number;
+      loyaltyPoints: number; declaredVisits: number; quizParticipations: number; winningParticipations: number;
+      losingParticipations: number; bestScore: number | null; reservations: number; messages: number;
       secretAccesses: number; wins: number; activeRewards: number; firstSeen: string; lastSeen: string; rgpdConsent: boolean;
       sources: Set<string>; activity: Record<string, unknown>[];
     }
@@ -90,7 +91,8 @@ Deno.serve(async (req) => {
       const current = customers.get(key) || {
         id: key, name: cleanText(input.name) || email || phone || 'Client sans nom', email: email || null, phone: phone || null,
         city: cleanText(input.city), userId: userId || null, loyaltyPoints: 0, declaredVisits: 0, quizParticipations: 0,
-        reservations: 0, messages: 0, secretAccesses: 0, wins: 0, activeRewards: 0, firstSeen: input.date,
+        winningParticipations: 0, losingParticipations: 0, bestScore: null, reservations: 0, messages: 0,
+        secretAccesses: 0, wins: 0, activeRewards: 0, firstSeen: input.date,
         lastSeen: input.date, rgpdConsent: input.rgpd === true, sources: new Set<string>(), activity: [],
       }
       if (!current.email && email) current.email = email
@@ -115,9 +117,16 @@ Deno.serve(async (req) => {
       upsert({ source: 'Profil', rowId: String(row.id), date: String(row.updated_at || row.created_at || new Date().toISOString()), name: [row.first_name, row.last_name].filter(Boolean).join(' '), email: userEmails.get(userId), phone: row.phone, city: row.city, userId, points: Number(row.loyalty_points || 0), visits: Number(row.total_visits || 0), activity: { type: 'profile', date: row.updated_at || row.created_at, label: 'Profil client', details: row.secret_menu_unlocked ? 'Menu secret débloqué' : null } })
     }
     for (const row of participations) {
-      const customer = upsert({ source: 'Quiz', rowId: String(row.id), date: String(row.created_at), name: row.first_name, email: row.email, phone: row.phone, rgpd: row.rgpd_consent === true, activity: { type: 'quiz', date: row.created_at, label: 'Participation quiz', score: row.score, totalQuestions: row.total_questions, prize: row.prize_won, claimed: row.prize_claimed, status: row.status, code: row.prize_code } })
+      const score = typeof row.score === 'number' ? row.score : Number(row.score || 0)
+      const customer = upsert({ source: 'Quiz', rowId: String(row.id), date: String(row.created_at), name: row.first_name, email: row.email, phone: row.phone, rgpd: row.rgpd_consent === true, activity: { type: 'quiz', date: row.created_at, label: row.prize_won ? 'Participation gagnante' : 'Participation perdante', score: row.score, totalQuestions: row.total_questions, prize: row.prize_won, claimed: row.prize_claimed, status: row.status, code: row.prize_code } })
       customer.quizParticipations += 1
-      if (row.prize_won) customer.wins += 1
+      customer.bestScore = Math.max(customer.bestScore ?? 0, score)
+      if (row.prize_won) {
+        customer.winningParticipations += 1
+        customer.wins += 1
+      } else {
+        customer.losingParticipations += 1
+      }
       if (row.prize_won && row.prize_claimed !== true && row.status !== 'invalidated') customer.activeRewards += 1
     }
     for (const row of messages) {
@@ -151,7 +160,28 @@ Deno.serve(async (req) => {
     })).sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime())
 
     const rawRecords = profiles.length + participations.length + messages.length + secretAccess.length + reservations.length + prizes.length
-    return json({ customers: result, meta: { uniqueCustomers: result.length, rawRecords, duplicateRecordsMerged: Math.max(0, rawRecords - result.length), sourceCounts: { profiles: profiles.length, participations: participations.length, messages: messages.length, secretAccess: secretAccess.length, reservations: reservations.length, prizes: prizes.length } } })
+    const winningParticipations = participations.filter((row) => Boolean(row.prize_won)).length
+    const losingParticipations = participations.length - winningParticipations
+
+    return json({
+      customers: result,
+      meta: {
+        uniqueCustomers: result.length,
+        rawRecords,
+        duplicateRecordsMerged: Math.max(0, rawRecords - result.length),
+        totalQuizParticipations: participations.length,
+        winningParticipations,
+        losingParticipations,
+        sourceCounts: {
+          profiles: profiles.length,
+          participations: participations.length,
+          messages: messages.length,
+          secretAccess: secretAccess.length,
+          reservations: reservations.length,
+          prizes: prizes.length,
+        },
+      },
+    })
   } catch (error) {
     console.error('admin-customers error', error)
     return json({ message: error instanceof Error ? error.message : 'Erreur interne' }, 500)
