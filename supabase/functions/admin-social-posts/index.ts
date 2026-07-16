@@ -21,8 +21,18 @@ const isValidUrl = (url: unknown): url is string => {
   }
 };
 
-const isValidNetwork = (network: unknown): network is "instagram" | "facebook" =>
-  network === "instagram" || network === "facebook";
+type SocialNetwork = "instagram" | "facebook" | "tiktok" | "youtube" | "google";
+
+const SOCIAL_NETWORKS = new Set<SocialNetwork>([
+  "instagram",
+  "facebook",
+  "tiktok",
+  "youtube",
+  "google",
+]);
+
+const isValidNetwork = (network: unknown): network is SocialNetwork =>
+  typeof network === "string" && SOCIAL_NETWORKS.has(network as SocialNetwork);
 
 const isValidUUID = (id: unknown): id is string =>
   typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
