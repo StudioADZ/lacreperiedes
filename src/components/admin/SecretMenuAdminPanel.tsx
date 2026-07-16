@@ -1,1 +1,1 @@
-export { default } from './SecretMenuWeeklyPanel';
+export { default } from './WeeklyProposalAdminPanel';
