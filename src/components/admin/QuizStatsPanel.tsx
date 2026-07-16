@@ -1,13 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { BarChart3, Gift, Scan, Loader2 } from 'lucide-react';
-import QuizStatsHero from './QuizStatsHero';
-import QuizParticipationsPanel from './QuizParticipationsPanel';
+import { useCallback, useEffect, useState } from "react";
+import { BarChart3, Gift, Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import QuizStatsHero from "./QuizStatsHero";
+import QuizParticipationsPanel from "./QuizParticipationsPanel";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-interface Stats {
+type Stats = {
   weekStart: string;
   stock: {
     formule_complete_remaining: number;
@@ -20,14 +19,10 @@ interface Stats {
   totalParticipations: number;
   totalWinners: number;
   totalClaimed: number;
-}
+};
 
-interface QuizStatsPanelProps {
-  adminPassword: string;
-}
-
-const QuizStatsPanel = ({ adminPassword }: QuizStatsPanelProps) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'participations'>('overview');
+const QuizStatsPanel = ({ adminPassword }: { adminPassword: string }) => {
+  const [activeTab, setActiveTab] = useState<"overview" | "participations">("participations");
   const [stats, setStats] = useState<Stats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -35,58 +30,34 @@ const QuizStatsPanel = ({ adminPassword }: QuizStatsPanelProps) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'stats', adminPassword }),
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "stats", adminPassword }),
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
+      if (!response.ok) throw new Error("Statistiques indisponibles");
+      setStats(await response.json());
     } catch (error) {
-      console.error('Stats fetch error:', error);
+      console.error("Quiz stats fetch error:", error);
     } finally {
       setIsLoading(false);
     }
   }, [adminPassword]);
 
-  useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+  useEffect(() => { void fetchStats(); }, [fetchStats]);
+
+  if (isLoading && !stats) {
+    return <div className="flex justify-center py-16"><Loader2 className="h-7 w-7 animate-spin text-caramel" /></div>;
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-5"
-    >
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'overview' | 'participations')}>
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="overview" className="gap-2">
-            <BarChart3 className="w-4 h-4" />
-            Vue d'ensemble
-          </TabsTrigger>
-          <TabsTrigger value="participations" className="gap-2">
-            <Gift className="w-4 h-4" />
-            Participations
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="mt-4">
-          <QuizStatsHero 
-            stats={stats} 
-            onRefresh={fetchStats}
-            isLoading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="participations" className="mt-4">
-          <QuizParticipationsPanel adminPassword={adminPassword} />
-        </TabsContent>
-      </Tabs>
-    </motion.div>
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "overview" | "participations")} className="space-y-3">
+      <TabsList className="grid h-11 w-full grid-cols-2 rounded-2xl bg-muted/60 p-1">
+        <TabsTrigger value="participations" className="gap-2 rounded-xl font-bold"><Gift className="h-4 w-4" />Participations</TabsTrigger>
+        <TabsTrigger value="overview" className="gap-2 rounded-xl font-bold"><BarChart3 className="h-4 w-4" />Stocks & statistiques</TabsTrigger>
+      </TabsList>
+      <TabsContent value="participations" className="mt-0"><QuizParticipationsPanel adminPassword={adminPassword} /></TabsContent>
+      <TabsContent value="overview" className="mt-0"><QuizStatsHero stats={stats} onRefresh={fetchStats} isLoading={isLoading} /></TabsContent>
+    </Tabs>
   );
 };
 
