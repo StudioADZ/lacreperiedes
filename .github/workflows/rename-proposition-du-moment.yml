@@ -1,0 +1,70 @@
+name: Rename proposition du moment
+
+on:
+  push:
+    branches:
+      - fix/proposition-du-moment
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/proposition-du-moment
+          fetch-depth: 0
+      - name: Apply official naming
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = {
+              'src/pages/Admin.tsx': [
+                  ('label: "Menu secret", description: "Création & code"', 'label: "Proposition du moment", description: "Créations après quiz"'),
+              ],
+              'src/components/admin/WeeklyProposalAdminPanel.tsx': [
+                  ('Propositions de la semaine', 'Proposition du moment'),
+                  ('Propositions de la semaine enregistrées', 'Proposition du moment enregistrée'),
+                  ('label="Propositions"', 'label="Créations"'),
+                  ('{label} de la semaine', '{label} du moment'),
+                  ('Enregistrer les propositions', 'Enregistrer la proposition du moment'),
+              ],
+              'src/pages/Carte.tsx': [
+                  ('les propositions de la semaine', 'la proposition du moment'),
+                  ('Propositions de la semaine', 'Proposition du moment'),
+                  ('Les créations du moment', 'Proposition du moment'),
+              ],
+              'src/components/carte/SecretMenuUnlocked.tsx': [
+                  ('Propositions de la semaine', 'Proposition du moment'),
+                  ('{label} de la semaine', '{label} du moment'),
+                  ('Les prochaines propositions arrivent bientôt.', 'La prochaine proposition du moment arrive bientôt.'),
+              ],
+              'src/components/quiz/WeeklyOfferAccessCard.tsx': [
+                  ('Votre accès aux propositions', 'Votre accès à la proposition du moment'),
+                  ('Voir les propositions', 'Voir la proposition du moment'),
+              ],
+              'supabase/functions/admin-weekly-proposals/index.ts': [
+                  ("'Propositions de la semaine'", "'Proposition du moment'"),
+              ],
+          }
+
+          for file_name, pairs in replacements.items():
+              path = Path(file_name)
+              text = path.read_text(encoding='utf-8')
+              original = text
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              if text != original:
+                  path.write_text(text, encoding='utf-8')
+
+          Path('.github/workflows/rename-proposition-du-moment.yml').unlink()
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: rename module to Proposition du moment"
+          git push origin HEAD:fix/proposition-du-moment
