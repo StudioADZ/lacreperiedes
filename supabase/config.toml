@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.admin-overview]
 verify_jwt = false
 
+[functions.admin-messages]
+verify_jwt = false
+
 [functions.weekly-health-check]
 verify_jwt = false
 
