@@ -24,14 +24,15 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey)
     const body = await req.json().catch(() => ({})) as Record<string, unknown>
     const headerToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-    const password = typeof body.adminPassword === 'string' ? body.adminPassword.trim() : ''
+    const credential = typeof body.adminPassword === 'string' ? body.adminPassword.trim() : ''
 
     let adminId = '00000000-0000-0000-0000-000000000000'
     let adminEmail = 'Accès par mot de passe administrateur'
-    let allowed = password === LEGACY_ADMIN_PASSWORD || (!!Deno.env.get('ADMIN_PASSWORD') && password === Deno.env.get('ADMIN_PASSWORD'))
+    let allowed = credential === LEGACY_ADMIN_PASSWORD || (!!Deno.env.get('ADMIN_PASSWORD') && credential === Deno.env.get('ADMIN_PASSWORD'))
 
-    if (!allowed && headerToken) {
-      const { data } = await supabase.auth.getUser(headerToken)
+    const sessionToken = headerToken || (!allowed ? credential : '')
+    if (!allowed && sessionToken) {
+      const { data } = await supabase.auth.getUser(sessionToken)
       if (data.user?.id) {
         const { data: hasRole } = await supabase.rpc('has_role', { _user_id: data.user.id, _role: 'admin' })
         if (hasRole === true) {
