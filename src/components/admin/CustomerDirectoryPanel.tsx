@@ -85,6 +85,7 @@ const daysSince = (value: string) => Math.floor((Date.now() - new Date(value).ge
 const csvCell = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
 const normalizeEmail = (value: string | null) => value?.trim().toLowerCase() || "";
 const normalizePhone = (value: string | null) => value?.replace(/\D/g, "") || "";
+const alphabeticSort = (a: Customer, b: Customer) => a.name.localeCompare(b.name, "fr", { sensitivity: "base", numeric: true });
 
 const legacyToCustomers = (rows: LegacyParticipation[]): { customers: Customer[]; meta: Meta } => {
   const map = new Map<string, Customer>();
@@ -142,7 +143,7 @@ const legacyToCustomers = (rows: LegacyParticipation[]): { customers: Customer[]
 
   const customers = Array.from(map.values())
     .map((customer) => ({ ...customer, activity: customer.activity.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()) }))
-    .sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
+    .sort(alphabeticSort);
 
   return {
     customers,
@@ -187,9 +188,10 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
       if (!response.ok || !Array.isArray(data.customers) || data.customers.length === 0) {
         throw new Error(data.message || "CRM enrichi momentanément indisponible");
       }
-      setCustomers(data.customers);
+      const sortedCustomers = [...data.customers].sort(alphabeticSort);
+      setCustomers(sortedCustomers);
       setMeta(data.meta || null);
-      setSelectedId((current) => current && data.customers.some((customer: Customer) => customer.id === current) ? current : data.customers[0]?.id || null);
+      setSelectedId((current) => current && sortedCustomers.some((customer: Customer) => customer.id === current) ? current : sortedCustomers[0]?.id || null);
     } catch (crmError) {
       try {
         const fallback = await loadLegacyCustomers();
@@ -209,16 +211,18 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return customers.filter((customer) => {
-      const matchesSearch = !needle || [customer.name, customer.email, customer.phone, customer.city, ...customer.sources].filter(Boolean).join(" ").toLowerCase().includes(needle);
-      if (!matchesSearch) return false;
-      if (filter === "recent") return daysSince(customer.firstSeen) <= 30;
-      if (filter === "vip") return customer.effectiveVisits >= 5 || customer.loyaltyPoints >= 100;
-      if (filter === "reward") return customer.activeRewards > 0;
-      if (filter === "inactive") return daysSince(customer.lastSeen) > 60;
-      if (filter === "consent") return customer.rgpdConsent;
-      return true;
-    });
+    return customers
+      .filter((customer) => {
+        const matchesSearch = !needle || [customer.name, customer.email, customer.phone, customer.city, ...customer.sources].filter(Boolean).join(" ").toLowerCase().includes(needle);
+        if (!matchesSearch) return false;
+        if (filter === "recent") return daysSince(customer.firstSeen) <= 30;
+        if (filter === "vip") return customer.effectiveVisits >= 5 || customer.loyaltyPoints >= 100;
+        if (filter === "reward") return customer.activeRewards > 0;
+        if (filter === "inactive") return daysSince(customer.lastSeen) > 60;
+        if (filter === "consent") return customer.rgpdConsent;
+        return true;
+      })
+      .sort(alphabeticSort);
   }, [customers, query, filter]);
 
   const selected = customers.find((customer) => customer.id === selectedId) || null;
@@ -227,8 +231,8 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
   const recentCount = customers.filter((customer) => daysSince(customer.firstSeen) <= 30).length;
 
   const exportCsv = () => {
-    const headers = ["Client", "Email", "Téléphone", "Ville", "Visites", "Quiz", "Réservations", "Messages", "Points", "Gains", "Gains actifs", "Première activité", "Dernière activité", "RGPD", "Sources"];
-    const lines = filtered.map((customer) => [customer.name, customer.email, customer.phone, customer.city, customer.effectiveVisits, customer.quizParticipations, customer.reservations, customer.messages, customer.loyaltyPoints, customer.wins, customer.activeRewards, formatDate(customer.firstSeen), formatDate(customer.lastSeen), customer.rgpdConsent ? "Oui" : "Non", customer.sources.join(" · ")].map(csvCell).join(";"));
+    const headers = ["N°", "Client", "Email", "Téléphone", "Ville", "Visites", "Quiz", "Réservations", "Messages", "Points", "Gains", "Gains actifs", "Première activité", "Dernière activité", "RGPD", "Sources"];
+    const lines = filtered.map((customer, index) => [index + 1, customer.name, customer.email, customer.phone, customer.city, customer.effectiveVisits, customer.quizParticipations, customer.reservations, customer.messages, customer.loyaltyPoints, customer.wins, customer.activeRewards, formatDate(customer.firstSeen), formatDate(customer.lastSeen), customer.rgpdConsent ? "Oui" : "Non", customer.sources.join(" · ")].map(csvCell).join(";"));
     const blob = new Blob(["\ufeff", headers.map(csvCell).join(";"), "\n", lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
@@ -242,8 +246,8 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
   const printReport = () => {
     const report = window.open("", "_blank", "noopener,noreferrer");
     if (!report) return toast.error("Autorise les fenêtres pour générer le PDF");
-    const rows = filtered.map((customer) => `<tr><td><strong>${customer.name}</strong><small>${customer.email || customer.phone || "Contact non renseigné"}</small></td><td>${customer.effectiveVisits}</td><td>${customer.quizParticipations}</td><td>${customer.reservations}</td><td>${customer.activeRewards}</td><td>${formatDate(customer.lastSeen)}</td></tr>`).join("");
-    report.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport clients</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#3b251b;margin:0}.hero{padding:24px;border-radius:18px;background:linear-gradient(135deg,#2d1a13,#8b5a34);color:white}.hero h1{margin:0;font-size:28px}.hero p{margin:7px 0 0;opacity:.8}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.kpi{padding:13px;border:1px solid #d9c7b7;border-radius:12px}.kpi b{display:block;font-size:24px}.kpi span{font-size:10px;text-transform:uppercase;color:#7a6557}table{width:100%;border-collapse:collapse;font-size:10px}th{background:#f1e6db;text-align:left;padding:9px}td{border-bottom:1px solid #e8ddd4;padding:9px;vertical-align:top}td small{display:block;color:#7d6d62;margin-top:3px}</style></head><body><section class="hero"><h1>La Crêperie des Saveurs — Rapport clients</h1><p>Export sans doublons · ${new Date().toLocaleString("fr-FR")}</p></section><section class="kpis"><div class="kpi"><b>${filtered.length}</b><span>Clients exportés</span></div><div class="kpi"><b>${activeRewards}</b><span>Gains actifs</span></div><div class="kpi"><b>${vipCount}</b><span>Clients VIP</span></div><div class="kpi"><b>${meta?.duplicateRecordsMerged || 0}</b><span>Doublons fusionnés</span></div></section><table><thead><tr><th>Client</th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Gains actifs</th><th>Dernière activité</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`);
+    const rows = filtered.map((customer, index) => `<tr><td>${index + 1}</td><td><strong>${customer.name}</strong></td><td>${customer.phone || "—"}</td><td>${customer.email || "—"}</td><td>${customer.effectiveVisits}</td><td>${customer.quizParticipations}</td><td>${customer.reservations}</td><td>${customer.activeRewards}</td><td>${formatDate(customer.lastSeen)}</td></tr>`).join("");
+    report.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Rapport clients</title><style>@page{size:A4 landscape;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#3b251b;margin:0}.hero{padding:24px;border-radius:18px;background:linear-gradient(135deg,#2d1a13,#8b5a34);color:white}.hero h1{margin:0;font-size:28px}.hero p{margin:7px 0 0;opacity:.8}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:16px 0}.kpi{padding:13px;border:1px solid #d9c7b7;border-radius:12px}.kpi b{display:block;font-size:24px}.kpi span{font-size:10px;text-transform:uppercase;color:#7a6557}table{width:100%;border-collapse:collapse;font-size:9px}th{background:#f1e6db;text-align:left;padding:8px}td{border-bottom:1px solid #e8ddd4;padding:8px;vertical-align:top}</style></head><body><section class="hero"><h1>La Crêperie des Saveurs — Rapport clients</h1><p>Classement alphabétique · ${new Date().toLocaleString("fr-FR")}</p></section><section class="kpis"><div class="kpi"><b>${filtered.length}</b><span>Clients exportés</span></div><div class="kpi"><b>${activeRewards}</b><span>Gains actifs</span></div><div class="kpi"><b>${vipCount}</b><span>Clients VIP</span></div><div class="kpi"><b>${meta?.duplicateRecordsMerged || 0}</b><span>Doublons fusionnés</span></div></section><table><thead><tr><th>N°</th><th>Client</th><th>Téléphone</th><th>E-mail</th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Gains actifs</th><th>Dernière activité</th></tr></thead><tbody>${rows}</tbody></table><script>window.onload=()=>window.print()</script></body></html>`);
     report.document.close();
   };
 
@@ -262,14 +266,31 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
 
       <section className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-          <div><p className="text-xs font-black uppercase tracking-[0.16em] text-caramel">CRM Clients</p><h2 className="font-display text-2xl font-black text-espresso">Toutes les données clients, une seule fiche</h2><p className="mt-1 text-sm text-muted-foreground">{meta?.rawRecords || 0} enregistrements analysés · {customers.length} personnes uniques.</p></div>
+          <div><p className="text-xs font-black uppercase tracking-[0.16em] text-caramel">CRM Clients</p><h2 className="font-display text-2xl font-black text-espresso">Toutes les données clients, une seule fiche</h2><p className="mt-1 text-sm text-muted-foreground">{meta?.rawRecords || 0} enregistrements analysés · {customers.length} personnes uniques · tri alphabétique A → Z.</p></div>
           <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={loadCustomers}><RefreshCw className="mr-2 h-4 w-4" />Actualiser</Button><Button variant="outline" onClick={exportCsv} disabled={!filtered.length}><FileSpreadsheet className="mr-2 h-4 w-4" />Excel / CSV</Button><Button className="bg-espresso text-white" onClick={printReport} disabled={!filtered.length}><Printer className="mr-2 h-4 w-4" />PDF premium</Button></div>
         </div>
         <div className="mt-4 flex flex-col gap-3 xl:flex-row"><div className="relative flex-1"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Rechercher nom, e-mail, téléphone, ville ou source…" className="h-12 rounded-2xl pl-10" /></div><div className="flex flex-wrap gap-2">{([['all','Tous'],['recent','Nouveaux'],['vip','VIP'],['reward','Gain actif'],['inactive','Inactifs'],['consent','RGPD OK']] as const).map(([value,label]) => <button key={value} onClick={() => setFilter(value)} className={`rounded-2xl px-4 py-2 text-xs font-black ${filter === value ? 'bg-caramel text-white' : 'bg-muted text-muted-foreground'}`}>{label}</button>)}</div></div>
       </section>
 
-      <section className="grid min-h-[640px] overflow-hidden rounded-3xl border border-caramel/15 bg-white shadow-warm xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,.65fr)]">
-        <div className="min-w-0 overflow-auto border-b xl:border-b-0 xl:border-r"><table className="w-full min-w-[820px] text-left text-sm"><thead className="sticky top-0 z-10 bg-butter/80 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur"><tr><th className="p-4">Client</th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Messages</th><th>Points</th><th>Gains</th><th>Dernière activité</th></tr></thead><tbody>{filtered.length === 0 ? <tr><td colSpan={8} className="p-12 text-center text-muted-foreground">Aucun client ne correspond à cette vue.</td></tr> : filtered.map((customer) => <tr key={customer.id} onClick={() => setSelectedId(customer.id)} className={`cursor-pointer border-t transition hover:bg-butter/20 ${selectedId === customer.id ? 'bg-caramel/10' : ''}`}><td className="p-4"><div className="flex items-center gap-3"><span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-caramel/12 font-display font-black text-caramel">{customer.name.slice(0,2).toUpperCase()}</span><div><strong className="block text-espresso">{customer.name}</strong><small className="text-muted-foreground">{customer.email || customer.phone || 'Contact non renseigné'}</small></div></div></td><td className="font-black">{customer.effectiveVisits}</td><td>{customer.quizParticipations}</td><td>{customer.reservations}</td><td>{customer.messages}</td><td>{customer.loyaltyPoints}</td><td className={customer.activeRewards ? 'font-black text-herb' : ''}>{customer.activeRewards}</td><td>{formatDate(customer.lastSeen)}</td></tr>)}</tbody></table></div>
+      <section className="grid min-h-[640px] overflow-hidden rounded-3xl border border-caramel/15 bg-white shadow-warm xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,.45fr)]">
+        <div className="min-w-0 overflow-auto border-b xl:border-b-0 xl:border-r">
+          <table className="w-full min-w-[1180px] text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-butter/80 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
+              <tr><th className="w-14 p-4">N°</th><th>Client</th><th><span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-herb" />Téléphone</span></th><th><span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-herb" />E-mail</span></th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Messages</th><th>Points</th><th>Gains</th><th>Dernière activité</th></tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? <tr><td colSpan={11} className="p-12 text-center text-muted-foreground">Aucun client ne correspond à cette vue.</td></tr> : filtered.map((customer, index) => (
+                <tr key={customer.id} onClick={() => setSelectedId(customer.id)} className={`cursor-pointer border-t transition hover:bg-butter/20 ${selectedId === customer.id ? 'bg-caramel/10' : ''}`}>
+                  <td className="p-4 font-black text-espresso">{index + 1}</td>
+                  <td><strong className="block whitespace-nowrap text-espresso">{customer.name}</strong></td>
+                  <td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Phone className="h-4 w-4 shrink-0 text-herb" />{customer.phone || 'Non renseigné'}</span></td>
+                  <td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Mail className="h-4 w-4 shrink-0 text-herb" />{customer.email || 'Non renseigné'}</span></td>
+                  <td className="font-black">{customer.effectiveVisits}</td><td>{customer.quizParticipations}</td><td>{customer.reservations}</td><td>{customer.messages}</td><td>{customer.loyaltyPoints}</td><td className={customer.activeRewards ? 'font-black text-herb' : ''}>{customer.activeRewards}</td><td className="whitespace-nowrap">{formatDate(customer.lastSeen)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
 
         <aside className="min-w-0 bg-muted/10 p-4">{!selected ? <div className="flex h-full items-center justify-center text-center text-sm text-muted-foreground"><UserRound className="mr-2 h-5 w-5" />Sélectionne un client</div> : <div className="space-y-4"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-black uppercase tracking-wider text-caramel">Fiche client</p><h3 className="font-display text-2xl font-black text-espresso">{selected.name}</h3><p className="mt-1 text-xs text-muted-foreground">Dernière activité · {formatDateTime(selected.lastSeen)}</p></div><button onClick={() => setSelectedId(null)} className="rounded-xl border p-2"><X className="h-4 w-4" /></button></div><div className="grid grid-cols-2 gap-2"><Detail label="Visites" value={selected.effectiveVisits} /><Detail label="Points" value={selected.loyaltyPoints} /><Detail label="Gains" value={selected.wins} /><Detail label="Actifs" value={selected.activeRewards} /></div><div className="rounded-2xl border bg-white p-3 text-sm"><p className="mb-2 text-xs font-black uppercase text-caramel">Coordonnées</p><p className="flex items-center gap-2"><Mail className="h-4 w-4 text-caramel" />{selected.email || 'E-mail non renseigné'}</p><p className="mt-2 flex items-center gap-2"><Phone className="h-4 w-4 text-caramel" />{selected.phone || 'Téléphone non renseigné'}</p></div><div className="rounded-2xl border bg-white p-3"><p className="mb-2 text-xs font-black uppercase text-caramel">Historique</p><div className="max-h-[330px] space-y-2 overflow-y-auto">{selected.activity.length === 0 ? <p className="text-sm text-muted-foreground">Aucune activité détaillée.</p> : selected.activity.map((item, index) => <div key={`${item.type}-${item.date}-${index}`} className="rounded-xl bg-muted/30 p-2 text-xs"><div className="flex justify-between gap-2"><strong>{item.label || item.type}</strong><span>{formatDateTime(item.date)}</span></div>{item.score !== undefined && <p className="mt-1 text-muted-foreground">Score : {item.score}/{item.totalQuestions ?? '—'}</p>}</div>)}</div></div></div>}</aside>
       </section>
