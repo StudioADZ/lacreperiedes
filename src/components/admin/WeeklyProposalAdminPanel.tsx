@@ -20,7 +20,7 @@ type TypeKey = typeof TYPES[number][0];
 type Proposal = Record<string, string | boolean | null> & { id?: string };
 
 const emptyProposal: Proposal = {
-  menu_name: "Propositions de la semaine",
+  menu_name: "Proposition du moment",
   valid_from: "",
   valid_to: "",
   is_active: true,
@@ -99,7 +99,7 @@ const WeeklyProposalAdminPanel = ({ adminPassword }: { adminPassword: string }) 
     try {
       const data = await request({ action: "save", proposalId: proposal.id || null, proposal });
       setProposal((current) => ({ ...current, ...(data.proposal as Proposal) }));
-      toast.success("Propositions de la semaine enregistrées");
+      toast.success("Proposition du moment enregistrées");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Sauvegarde impossible");
     } finally {
@@ -112,7 +112,7 @@ const WeeklyProposalAdminPanel = ({ adminPassword }: { adminPassword: string }) 
   return (
     <div className="space-y-4">
       <section className="grid grid-cols-3 gap-2">
-        <Mini label="Propositions" value={`${filledCount}/4`} />
+        <Mini label="Créations" value={`${filledCount}/4`} />
         <Mini label="Statut" value={proposal.is_active ? "Publié" : "Masqué"} />
         <Mini label="Accès" value="Après quiz" />
       </section>
@@ -137,7 +137,7 @@ const WeeklyProposalAdminPanel = ({ adminPassword }: { adminPassword: string }) 
       <section className="grid gap-3 xl:grid-cols-2">
         {TYPES.map(([type, label, emoji]) => (
           <article key={type} className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm">
-            <div className="mb-4 flex items-center gap-3"><span className="text-3xl">{emoji}</span><div><h3 className="font-display text-xl font-black text-espresso">{label} de la semaine</h3><p className="text-xs text-muted-foreground">Nom, description, prix et visuel.</p></div></div>
+            <div className="mb-4 flex items-center gap-3"><span className="text-3xl">{emoji}</span><div><h3 className="font-display text-xl font-black text-espresso">{label} du moment</h3><p className="text-xs text-muted-foreground">Nom, description, prix et visuel.</p></div></div>
             <div className="space-y-3">
               <Input value={String(proposal[`${type}_special`] || "")} onChange={(e) => update(`${type}_special`, e.target.value)} placeholder={`Nom du ${label.toLowerCase()}`} className="h-11 rounded-xl" />
               <Textarea value={String(proposal[`${type}_special_description`] || "")} onChange={(e) => update(`${type}_special_description`, e.target.value)} placeholder="Description courte et gourmande" className="min-h-24 rounded-xl" />
@@ -156,7 +156,7 @@ const WeeklyProposalAdminPanel = ({ adminPassword }: { adminPassword: string }) 
       </section>
 
       <Button onClick={save} disabled={saving} className="h-14 w-full rounded-2xl bg-caramel font-black text-white">
-        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer les propositions</>}
+        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer la proposition du moment</>}
       </Button>
     </div>
   );

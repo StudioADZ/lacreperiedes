@@ -48,16 +48,16 @@ const Carte = () => {
         <motion.header initial={reduceMotion ? false : { opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6 text-center">
           <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 px-4 py-1.5 text-sm font-semibold text-primary"><UtensilsCrossed className="h-4 w-4" aria-hidden="true" />Carte artisanale · Mamers</span>
           <h1 className="font-display text-3xl font-black text-espresso">Notre carte</h1>
-          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">Parcourez nos formules, galettes, crêpes, salades et boissons, puis découvrez les propositions de la semaine après votre participation au quiz.</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">Parcourez nos formules, galettes, crêpes, salades et boissons, puis découvrez la proposition du moment après votre participation au quiz.</p>
         </motion.header>
 
         <section className="mb-12" aria-labelledby="carte-publique-title"><h2 id="carte-publique-title" className="sr-only">Carte publique</h2><CartePublicDisplay /></section>
 
-        <div className="relative my-12" aria-hidden="true"><div className="flex items-center gap-4"><div className="h-px flex-1 bg-gradient-to-r from-transparent via-caramel/50 to-caramel" /><div className="flex items-center gap-2 rounded-full border border-caramel/20 bg-caramel/10 px-4 py-2"><Sparkles className="h-4 w-4 text-caramel" /><span className="text-xs font-bold uppercase tracking-[0.16em] text-caramel">Propositions de la semaine</span></div><div className="h-px flex-1 bg-gradient-to-l from-transparent via-caramel/50 to-caramel" /></div></div>
+        <div className="relative my-12" aria-hidden="true"><div className="flex items-center gap-4"><div className="h-px flex-1 bg-gradient-to-r from-transparent via-caramel/50 to-caramel" /><div className="flex items-center gap-2 rounded-full border border-caramel/20 bg-caramel/10 px-4 py-2"><Sparkles className="h-4 w-4 text-caramel" /><span className="text-xs font-bold uppercase tracking-[0.16em] text-caramel">Proposition du moment</span></div><div className="h-px flex-1 bg-gradient-to-l from-transparent via-caramel/50 to-caramel" /></div></div>
 
         <section aria-labelledby="weekly-proposals-title">
           <motion.div initial={reduceMotion ? false : { opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mb-7 text-center">
-            <h2 id="weekly-proposals-title" className="font-display text-2xl font-black text-espresso">Les créations du moment</h2>
+            <h2 id="weekly-proposals-title" className="font-display text-2xl font-black text-espresso">Proposition du moment</h2>
             <p className="mt-2 text-sm text-muted-foreground">{hasAccess ? "Votre accès personnel est actif." : "Participez au quiz pour recevoir votre code et votre QR personnels."}</p>
           </motion.div>
 

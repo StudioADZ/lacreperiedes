@@ -30,7 +30,7 @@ const SecretMenuUnlocked = ({ justUnlocked = false, isAdminAccess = false }: { j
   }, [justUnlocked]);
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-caramel" /></div>;
-  if (!proposal || !TYPES.some(([type]) => proposal[`${type}_special`])) return <div className="rounded-3xl border bg-white/75 p-8 text-center text-muted-foreground">Les prochaines propositions arrivent bientôt.</div>;
+  if (!proposal || !TYPES.some(([type]) => proposal[`${type}_special`])) return <div className="rounded-3xl border bg-white/75 p-8 text-center text-muted-foreground">La prochaine proposition du moment arrive bientôt.</div>;
 
   const date = (value: unknown) => typeof value === "string" && value ? format(new Date(value), "dd MMM yyyy", { locale: fr }) : null;
 
@@ -41,7 +41,7 @@ const SecretMenuUnlocked = ({ justUnlocked = false, isAdminAccess = false }: { j
 
       <header className="text-center">
         <span className="inline-flex items-center gap-2 rounded-full bg-caramel/10 px-4 py-2 text-sm font-bold text-caramel"><Sparkles className="h-4 w-4" />Exclusif après le quiz</span>
-        <h2 className="mt-3 font-display text-2xl font-black text-espresso">{String(proposal.menu_name || "Propositions de la semaine")}</h2>
+        <h2 className="mt-3 font-display text-2xl font-black text-espresso">{String(proposal.menu_name || "Proposition du moment")}</h2>
         {(proposal.valid_from || proposal.valid_to) && <p className="mt-2 flex items-center justify-center gap-2 text-sm text-muted-foreground"><Calendar className="h-4 w-4" />{date(proposal.valid_from)}{proposal.valid_from && proposal.valid_to ? " → " : ""}{date(proposal.valid_to)}</p>}
       </header>
 
@@ -56,7 +56,7 @@ const SecretMenuUnlocked = ({ justUnlocked = false, isAdminAccess = false }: { j
             <article key={type} className="overflow-hidden rounded-3xl border border-caramel/20 bg-white shadow-sm">
               {typeof image === "string" && image && <img src={image} alt={String(name)} className="aspect-[4/3] w-full object-cover" />}
               <div className="p-4">
-                <p className="text-xs font-black uppercase tracking-wider text-caramel">{emoji} {label} de la semaine</p>
+                <p className="text-xs font-black uppercase tracking-wider text-caramel">{emoji} {label} du moment</p>
                 <h3 className="mt-2 font-display text-xl font-black text-espresso">{String(name)}</h3>
                 {description && <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{String(description)}</p>}
                 {price && <p className="mt-4 font-display text-2xl font-black text-primary">{String(price)} €</p>}

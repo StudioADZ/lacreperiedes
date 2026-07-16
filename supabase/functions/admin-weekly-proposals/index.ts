@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
 
       const payload: Record<string, unknown> = {
         week_start: weekStart,
-        menu_name: cleanText(proposal.menu_name, 100) || 'Propositions de la semaine',
+        menu_name: cleanText(proposal.menu_name, 100) || 'Proposition du moment',
         secret_code: 'PERSONAL',
         valid_from: cleanDate(proposal.valid_from),
         valid_to: cleanDate(proposal.valid_to),

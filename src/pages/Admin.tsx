@@ -97,7 +97,7 @@ const ADMIN_TABS: AdminTabDefinition[] = [
   { id: "messages", label: "Messages", description: "Demandes clients", icon: Mail },
   { id: "clients", label: "Clients", description: "Fiches clients", icon: Database },
   { id: "quiz", label: "Quiz", description: "Statistiques", icon: BarChart3 },
-  { id: "carte", label: "Menu secret", description: "Création & code", icon: UtensilsCrossed },
+  { id: "carte", label: "Proposition du moment", description: "Créations après quiz", icon: UtensilsCrossed },
   { id: "actus", label: "Actus & réseaux", description: "Publications", icon: Newspaper },
   { id: "payment", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
   { id: "splash", label: "Accueil", description: "Écran d’arrivée", icon: Sparkles },
