@@ -6,6 +6,7 @@ import {
   Salad,
   Snowflake,
   Sparkles,
+  Star,
   UtensilsCrossed,
   type LucideIcon,
 } from "lucide-react";
@@ -19,6 +20,7 @@ type MenuItem = {
   badge?: string;
   price?: string;
   sortPrice: number;
+  includedInClassicFormula?: boolean;
 };
 
 type MenuSection = {
@@ -64,7 +66,7 @@ const SECTIONS: MenuSection[] = [
       },
       {
         name: "Formule Classique",
-        description: "Une galette classique, un dessert et une boisson incluse.",
+        description: "Une galette marquée ★, un dessert et une boisson incluse.",
         badge: "la plus choisie",
         price: "14,90 €",
         sortPrice: 14.9,
@@ -78,10 +80,10 @@ const SECTIONS: MenuSection[] = [
     icon: Flame,
     tone: "classic",
     items: sortItemsByPrice([
-      { name: "Complète", description: "Œuf, emmental, jambon.", badge: "incontournable", price: "8,50 €", sortPrice: 8.5 },
+      { name: "Complète", description: "Œuf, emmental, jambon.", badge: "incontournable", price: "8,50 €", sortPrice: 8.5, includedInClassicFormula: true },
       { name: "Super complète", description: "Œuf, emmental, jambon, champignons, compotée de tomates.", price: "11,90 €", sortPrice: 11.9 },
-      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", badge: "végétarienne", price: "11,90 €", sortPrice: 11.9 },
-      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", price: "12,50 €", sortPrice: 12.5 },
+      { name: "Fromagère", description: "Œuf, emmental, tome, chèvre, compotée de tomates.", badge: "végétarienne", price: "11,90 €", sortPrice: 11.9, includedInClassicFormula: true },
+      { name: "Bergère", description: "Tapenade, œuf, chèvre, bacon, compotée de tomates.", price: "12,50 €", sortPrice: 12.5, includedInClassicFormula: true },
       { name: "Végétarienne", description: "Recette de saison, légumes du moment et fromage selon inspiration.", badge: "de saison", price: "12,90 €", sortPrice: 12.9 },
       { name: "Bretonne", description: "Pommes de terre, saucisse, confit d’oignons, sauce moutarde, andouille de Guémené.", price: "13,90 €", sortPrice: 13.9 },
       { name: "Tête du chef", description: "Œuf, emmental, jambon, confit d’oignons, bœuf haché, sauce moutarde.", badge: "chef", price: "15,90 €", sortPrice: 15.9 },
@@ -318,6 +320,12 @@ const MenuSectionCard = ({ section, sectionIndex, setSectionRef }: MenuSectionCa
         <div>
           <h2 id={`${section.id}-title`} className="font-display text-2xl font-black text-espresso">{section.title}</h2>
           <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{section.subtitle}</p>
+          {section.id === "galettes" && (
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-caramel/12 px-3 py-1.5 text-xs font-bold text-caramel">
+              <Star className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
+              Galette incluse dans la Formule Classique à 14,90 €
+            </div>
+          )}
         </div>
       </div>
 
@@ -327,7 +335,10 @@ const MenuSectionCard = ({ section, sectionIndex, setSectionRef }: MenuSectionCa
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="font-display text-lg font-black leading-tight text-espresso">{item.name}</h3>
+                  <h3 className="flex items-center gap-1.5 font-display text-lg font-black leading-tight text-espresso">
+                    {item.includedInClassicFormula && <Star className="h-4 w-4 shrink-0 fill-caramel text-caramel" aria-label="Incluse dans la Formule Classique" />}
+                    {item.name}
+                  </h3>
                   {item.badge && (
                     <span className="rounded-full bg-butter/55 px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.1em] text-caramel">{item.badge}</span>
                   )}
