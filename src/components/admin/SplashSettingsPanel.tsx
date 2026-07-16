@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { Image as ImageIcon, Loader2, MessageSquare, MousePointer, Save, Sparkles, Type } from "lucide-react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, ImagePlus, Loader2, MonitorSmartphone, Save, Sparkles, Type } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -16,21 +16,20 @@ interface SplashSettings {
   background_image_url: string | null;
 }
 
-const EVENT_PRESETS = [
-  { title: "🎉 Quiz & Récompenses", gameLine: "Jeu & récompenses en cours" },
-  { title: "🎄 Noël à la Crêperie", gameLine: "Magie de Noël en cours" },
-  { title: "👑 La Crêpe des Rois", gameLine: "Épiphanie gourmande" },
-  { title: "❤️ Saint-Valentin Gourmande", gameLine: "L'amour se déguste" },
-  { title: "🐰 Pâques Gourmand", gameLine: "Chasse aux douceurs" },
-  { title: "🌸 Printemps Gourmand", gameLine: "Fraîcheur de saison" },
-  { title: "☀️ Été Breton", gameLine: "Saveurs estivales" },
-  { title: "🍂 Automne Gourmand", gameLine: "Réconfort de saison" },
-];
+const THEMES = [
+  { label: "Quiz", emoji: "🎉", title: "Quiz & Récompenses", subtitle: "Tentez votre chance et découvrez votre surprise.", gameLine: "Jeu gourmand en cours", cta: "Participer au quiz" },
+  { label: "Saison", emoji: "🌿", title: "Les saveurs du moment", subtitle: "Découvrez nos créations artisanales et nos nouveautés.", gameLine: "Créations du moment", cta: "Découvrir" },
+  { label: "Été", emoji: "☀️", title: "Un été gourmand", subtitle: "Galettes, crêpes, milkshakes et smoothies à savourer.", gameLine: "Fraîcheur estivale", cta: "Voir la carte" },
+  { label: "Noël", emoji: "🎄", title: "Noël à la Crêperie", subtitle: "Une parenthèse chaleureuse, festive et gourmande.", gameLine: "Magie de Noël", cta: "Découvrir l'événement" },
+  { label: "Saint-Valentin", emoji: "❤️", title: "Saint-Valentin gourmande", subtitle: "Un moment à partager autour de créations généreuses.", gameLine: "L'amour se déguste", cta: "Réserver" },
+  { label: "Pâques", emoji: "🐰", title: "Pâques gourmand", subtitle: "Des douceurs à découvrir en famille.", gameLine: "Chasse aux douceurs", cta: "Participer" },
+] as const;
 
 const SplashSettingsPanel = ({ adminPassword: _adminToken }: { adminPassword: string }) => {
   const [settings, setSettings] = useState<SplashSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -42,12 +41,47 @@ const SplashSettingsPanel = ({ adminPassword: _adminToken }: { adminPassword: st
         .limit(1)
         .maybeSingle();
 
-      if (error) toast.error("Impossible de charger le splash screen");
+      if (error) toast.error("Impossible de charger l'accueil");
       setSettings(data as SplashSettings | null);
       setLoading(false);
     };
     void load();
   }, []);
+
+  const completeness = useMemo(() => {
+    if (!settings) return 0;
+    return [settings.event_title, settings.event_subtitle, settings.game_line, settings.cta_text, settings.background_image_url]
+      .filter(Boolean).length;
+  }, [settings]);
+
+  const applyTheme = (theme: typeof THEMES[number]) => {
+    if (!settings) return;
+    setSettings({
+      ...settings,
+      event_title: `${theme.emoji} ${theme.title}`,
+      event_subtitle: theme.subtitle,
+      game_line: theme.gameLine,
+      cta_text: theme.cta,
+    });
+  };
+
+  const uploadImage = async (file: File) => {
+    if (!settings) return;
+    setUploading(true);
+    try {
+      const extension = file.name.split(".").pop() || "jpg";
+      const path = `splash/${settings.id}-${Date.now()}.${extension}`;
+      const { error } = await supabase.storage.from("images").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("images").getPublicUrl(path);
+      setSettings({ ...settings, background_image_url: data.publicUrl });
+      toast.success("Image d'accueil ajoutée");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Import impossible");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const save = async () => {
     if (!settings) return;
@@ -65,80 +99,90 @@ const SplashSettingsPanel = ({ adminPassword: _adminToken }: { adminPassword: st
       .eq("id", settings.id);
 
     if (error) toast.error("Sauvegarde refusée ou impossible");
-    else toast.success("Splash screen mis à jour");
+    else toast.success("Accueil de l'application mis à jour");
     setSaving(false);
   };
 
-  if (loading) {
-    return <div className="flex items-center justify-center py-8" role="status"><Loader2 className="h-6 w-6 animate-spin text-primary" /><span className="sr-only">Chargement du splash screen</span></div>;
-  }
-
-  if (!settings) {
-    return <div className="rounded-2xl border border-border/60 bg-background/60 p-8 text-center text-muted-foreground">Aucun paramètre actif trouvé.</div>;
-  }
+  if (loading) return <div className="flex justify-center py-20"><Loader2 className="h-8 w-8 animate-spin text-caramel" /></div>;
+  if (!settings) return <div className="rounded-3xl border bg-white p-10 text-center text-muted-foreground">Aucun accueil actif trouvé.</div>;
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-xl border border-caramel/20 bg-gradient-to-r from-caramel/10 via-butter/20 to-caramel/10 p-4 text-center">
-        <h2 className="flex items-center justify-center gap-2 font-display text-xl font-bold"><Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />Splash screen</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Modification réservée aux comptes administrateurs authentifiés.</p>
-      </div>
+    <div className="space-y-3">
+      <section className="grid grid-cols-3 gap-2">
+        <Metric label="Contenu" value={`${completeness}/5`} />
+        <Metric label="Format" value="Mobile" />
+        <Metric label="Statut" value="Actif" />
+      </section>
 
-      <div className="card-warm">
-        <Label className="mb-3 block font-semibold">Thèmes prédéfinis</Label>
-        <div className="grid grid-cols-2 gap-2">
-          {EVENT_PRESETS.map((preset) => (
-            <button key={preset.title} type="button" onClick={() => setSettings({ ...settings, event_title: preset.title, game_line: preset.gameLine })} className={`rounded-xl border-2 p-3 text-left text-sm ${settings.event_title === preset.title ? "border-primary bg-primary/5" : "border-border"}`}>
-              <span className="font-medium">{preset.title}</span>
-            </button>
-          ))}
+      <section className="grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(330px,.85fr)]">
+        <div className="space-y-3">
+          <div className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-caramel">Ambiance</p>
+                <h2 className="font-display text-xl font-black text-espresso">Thèmes rapides</h2>
+              </div>
+              <Sparkles className="h-5 w-5 text-caramel" />
+            </div>
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {THEMES.map((theme) => (
+                <button key={theme.label} type="button" onClick={() => applyTheme(theme)} className="rounded-2xl border border-caramel/15 bg-butter/20 p-3 text-center transition hover:border-caramel/40 hover:bg-butter/40">
+                  <span className="block text-2xl">{theme.emoji}</span>
+                  <span className="mt-1 block text-[10px] font-black uppercase text-espresso">{theme.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center gap-2"><Type className="h-5 w-5 text-caramel" /><h2 className="font-display text-xl font-black text-espresso">Contenu de l'accueil</h2></div>
+            <div className="grid gap-3">
+              <Field label="Titre principal" count={`${settings.event_title.length}/100`}><Input value={settings.event_title} onChange={(event) => setSettings({ ...settings, event_title: event.target.value })} maxLength={100} className="h-11 rounded-xl" /></Field>
+              <Field label="Sous-titre" count={`${settings.event_subtitle.length}/180`}><Textarea value={settings.event_subtitle} onChange={(event) => setSettings({ ...settings, event_subtitle: event.target.value })} maxLength={180} className="min-h-24 rounded-xl" /></Field>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Accroche" count={`${settings.game_line.length}/120`}><Input value={settings.game_line} onChange={(event) => setSettings({ ...settings, game_line: event.target.value })} maxLength={120} className="h-11 rounded-xl" /></Field>
+                <Field label="Bouton" count={`${settings.cta_text.length}/60`}><Input value={settings.cta_text} onChange={(event) => setSettings({ ...settings, cta_text: event.target.value })} maxLength={60} className="h-11 rounded-xl" /></Field>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm">
+            <div className="mb-3 flex items-center gap-2"><ImagePlus className="h-5 w-5 text-caramel" /><h2 className="font-display text-xl font-black text-espresso">Visuel principal</h2></div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+              <Input type="url" value={settings.background_image_url || ""} onChange={(event) => setSettings({ ...settings, background_image_url: event.target.value || null })} placeholder="URL de l'image" className="h-11 rounded-xl" />
+              <label className="flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-caramel/35 px-4 text-sm font-black text-caramel hover:bg-butter/20">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                Importer
+                <input type="file" accept="image/*" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadImage(file); }} />
+              </label>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <Field icon={Type} label="Titre de l'événement">
-        <Input value={settings.event_title} onChange={(event) => setSettings({ ...settings, event_title: event.target.value })} maxLength={100} />
-      </Field>
+        <aside className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm xl:sticky xl:top-4 xl:self-start">
+          <div className="mb-4 flex items-center justify-between"><div><p className="text-xs font-black uppercase tracking-wider text-caramel">Aperçu en direct</p><h2 className="font-display text-xl font-black text-espresso">Écran mobile</h2></div><MonitorSmartphone className="h-5 w-5 text-caramel" /></div>
+          <div className="mx-auto max-w-[340px] rounded-[2.6rem] bg-espresso p-2 shadow-xl">
+            <div className="relative flex aspect-[9/16] flex-col justify-end overflow-hidden rounded-[2.15rem] p-6 text-center" style={{ background: settings.background_image_url ? `linear-gradient(180deg,rgba(20,10,4,.12),rgba(20,10,4,.82)),url(${settings.background_image_url}) center/cover` : "linear-gradient(180deg,#f7ead8,#d6ad7f)" }}>
+              <div className="relative z-10 rounded-3xl border border-white/20 bg-black/20 p-5 backdrop-blur-sm">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/75">{settings.game_line || "Votre accroche"}</p>
+                <h3 className="mt-3 font-display text-3xl font-black leading-tight text-white">{settings.event_title || "Titre de l'accueil"}</h3>
+                <p className="mt-3 text-sm leading-relaxed text-white/85">{settings.event_subtitle || "Votre sous-titre s'affichera ici."}</p>
+                <div className="mt-5 rounded-2xl bg-white px-5 py-3 text-sm font-black text-espresso shadow-lg">{settings.cta_text || "Découvrir"}</div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs font-bold text-herb"><CheckCircle2 className="h-4 w-4" />Aperçu synchronisé avec les champs</div>
+        </aside>
+      </section>
 
-      <Field icon={MessageSquare} label="Sous-titre">
-        <Input value={settings.event_subtitle} onChange={(event) => setSettings({ ...settings, event_subtitle: event.target.value })} maxLength={180} />
-      </Field>
-
-      <Field icon={Sparkles} label="Ligne d'accroche">
-        <Input value={settings.game_line} onChange={(event) => setSettings({ ...settings, game_line: event.target.value })} maxLength={120} />
-      </Field>
-
-      <Field icon={MousePointer} label="Texte du bouton">
-        <Input value={settings.cta_text} onChange={(event) => setSettings({ ...settings, cta_text: event.target.value })} maxLength={60} />
-      </Field>
-
-      <Field icon={ImageIcon} label="Image de fond (URL)">
-        <Input type="url" value={settings.background_image_url || ""} onChange={(event) => setSettings({ ...settings, background_image_url: event.target.value || null })} placeholder="https://…" />
-      </Field>
-
-      <div className="card-glow">
-        <Label className="mb-3 block font-semibold">Aperçu</Label>
-        <div className="relative flex aspect-[9/16] max-h-[320px] flex-col items-center justify-center overflow-hidden rounded-xl p-4 text-center" style={{ background: settings.background_image_url ? `linear-gradient(rgba(0,0,0,.35),rgba(0,0,0,.55)),url(${settings.background_image_url}) center/cover` : "linear-gradient(180deg,hsl(40 33% 96%),hsl(35 45% 90%))" }}>
-          <h3 className={`font-display text-lg font-semibold ${settings.background_image_url ? "text-white" : "text-espresso"}`}>{settings.event_title}</h3>
-          <p className={`mt-1 text-sm ${settings.background_image_url ? "text-white/80" : "text-muted-foreground"}`}>{settings.event_subtitle}</p>
-          <p className={`mt-2 text-xs uppercase tracking-wider ${settings.background_image_url ? "text-white/75" : "text-caramel"}`}>{settings.game_line}</p>
-          <div className="mt-4 rounded-full bg-primary px-4 py-2 text-sm text-primary-foreground">{settings.cta_text}</div>
-        </div>
-      </div>
-
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <Button onClick={save} disabled={saving} className="btn-hero w-full">
-          {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer les modifications</>}
-        </Button>
-      </motion.div>
+      <Button onClick={save} disabled={saving} className="h-14 w-full rounded-2xl bg-caramel font-black text-white">
+        {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><Save className="mr-2 h-5 w-5" />Enregistrer l'accueil</>}
+      </Button>
     </div>
   );
 };
 
-const Field = ({ icon: Icon, label, children }: { icon: typeof Type; label: string; children: React.ReactNode }) => (
-  <div className="card-warm">
-    <Label className="mb-2 flex items-center gap-2 font-semibold"><Icon className="h-4 w-4 text-primary" aria-hidden="true" />{label}</Label>
-    {children}
-  </div>
-);
+const Metric = ({ label, value }: { label: string; value: string }) => <div className="rounded-xl border border-caramel/15 bg-white px-3 py-2 shadow-sm"><p className="font-display text-lg font-black leading-none text-espresso">{value}</p><p className="mt-1 text-[9px] font-black uppercase tracking-wide text-muted-foreground">{label}</p></div>;
+const Field = ({ label, count, children }: { label: string; count: string; children: React.ReactNode }) => <div><div className="mb-1.5 flex items-center justify-between"><Label className="text-xs font-black text-espresso">{label}</Label><span className="text-[10px] text-muted-foreground">{count}</span></div>{children}</div>;
 
 export default SplashSettingsPanel;
