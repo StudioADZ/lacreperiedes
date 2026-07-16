@@ -53,8 +53,7 @@ begin
 
   insert into public.user_weekly_offer_access_codes (user_id, access_code)
   values (current_user_id, generated_code)
-  on conflict (user_id) do update
-    set updated_at = now()
+  on conflict (user_id) do update set updated_at = now()
   returning access_code into existing_code;
 
   return existing_code;
@@ -78,38 +77,15 @@ $$;
 
 grant execute on function public.validate_weekly_offer_code(text) to anon, authenticated;
 
-create or replace view public.secret_menu_public
-with (security_invoker = true)
-as
+drop view if exists public.secret_menu_public;
+create view public.secret_menu_public as
 select
-  id,
-  week_start,
-  menu_name,
-  galette_special,
-  galette_special_description,
-  galette_special_price,
-  galette_special_image_url,
-  galette_special_video_url,
-  crepe_special,
-  crepe_special_description,
-  crepe_special_price,
-  crepe_special_image_url,
-  crepe_special_video_url,
-  milkshake_special,
-  milkshake_special_description,
-  milkshake_special_price,
-  milkshake_special_image_url,
-  milkshake_special_video_url,
-  smoothie_special,
-  smoothie_special_description,
-  smoothie_special_price,
-  smoothie_special_image_url,
-  smoothie_special_video_url,
-  valid_from,
-  valid_to,
-  is_active,
-  created_at,
-  updated_at
+  id, week_start, menu_name,
+  galette_special, galette_special_description, galette_special_price, galette_special_image_url, galette_special_video_url,
+  crepe_special, crepe_special_description, crepe_special_price, crepe_special_image_url, crepe_special_video_url,
+  milkshake_special, milkshake_special_description, milkshake_special_price, milkshake_special_image_url, milkshake_special_video_url,
+  smoothie_special, smoothie_special_description, smoothie_special_price, smoothie_special_image_url, smoothie_special_video_url,
+  valid_from, valid_to, is_active, created_at, updated_at
 from public.secret_menu
 where is_active = true;
 
