@@ -8,7 +8,7 @@ export const useWeeklyOfferAccess = () => {
     const normalized = code.trim().toUpperCase();
     if (!normalized) return false;
 
-    const { data: validPersonalCode, error } = await supabase.rpc("validate_weekly_offer_code", { p_code: normalized });
+    const { data: validPersonalCode, error } = await (supabase as any).rpc("validate_weekly_offer_code", { p_code: normalized });
     if (!error && validPersonalCode === true) {
       const token = await base.grantAccessFromQuiz(
         "weekly-offer@access.local",
