@@ -185,9 +185,7 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
         body: JSON.stringify({ adminPassword }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !Array.isArray(data.customers) || data.customers.length === 0) {
-        throw new Error(data.message || "CRM enrichi momentanément indisponible");
-      }
+      if (!response.ok || !Array.isArray(data.customers) || data.customers.length === 0) throw new Error(data.message || "CRM enrichi momentanément indisponible");
       const sortedCustomers = [...data.customers].sort(alphabeticSort);
       setCustomers(sortedCustomers);
       setMeta(data.meta || null);
@@ -211,18 +209,16 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    return customers
-      .filter((customer) => {
-        const matchesSearch = !needle || [customer.name, customer.email, customer.phone, customer.city, ...customer.sources].filter(Boolean).join(" ").toLowerCase().includes(needle);
-        if (!matchesSearch) return false;
-        if (filter === "recent") return daysSince(customer.firstSeen) <= 30;
-        if (filter === "vip") return customer.effectiveVisits >= 5 || customer.loyaltyPoints >= 100;
-        if (filter === "reward") return customer.activeRewards > 0;
-        if (filter === "inactive") return daysSince(customer.lastSeen) > 60;
-        if (filter === "consent") return customer.rgpdConsent;
-        return true;
-      })
-      .sort(alphabeticSort);
+    return customers.filter((customer) => {
+      const matchesSearch = !needle || [customer.name, customer.email, customer.phone, customer.city, ...customer.sources].filter(Boolean).join(" ").toLowerCase().includes(needle);
+      if (!matchesSearch) return false;
+      if (filter === "recent") return daysSince(customer.firstSeen) <= 30;
+      if (filter === "vip") return customer.effectiveVisits >= 5 || customer.loyaltyPoints >= 100;
+      if (filter === "reward") return customer.activeRewards > 0;
+      if (filter === "inactive") return daysSince(customer.lastSeen) > 60;
+      if (filter === "consent") return customer.rgpdConsent;
+      return true;
+    }).sort(alphabeticSort);
   }, [customers, query, filter]);
 
   const selected = customers.find((customer) => customer.id === selectedId) || null;
@@ -255,8 +251,7 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
 
   return (
     <div className="space-y-4">
-      {meta?.fallbackMode && <div className="rounded-2xl border border-caramel/25 bg-butter/30 p-3 text-sm font-semibold text-espresso">Mode de secours actif : tes clients historiques sont affichés. Aucun client n’est masqué pendant la remise en service de l’agrégateur.</div>}
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-5 gap-2">
         <Kpi icon={Users} label="Clients uniques" value={customers.length} />
         <Kpi icon={Sparkles} label="Nouveaux 30 j" value={recentCount} />
         <Kpi icon={Trophy} label="Clients VIP" value={vipCount} />
@@ -275,20 +270,8 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
       <section className="grid min-h-[640px] overflow-hidden rounded-3xl border border-caramel/15 bg-white shadow-warm xl:grid-cols-[minmax(0,1.55fr)_minmax(340px,.45fr)]">
         <div className="min-w-0 overflow-auto border-b xl:border-b-0 xl:border-r">
           <table className="w-full min-w-[1180px] text-left text-sm">
-            <thead className="sticky top-0 z-10 bg-butter/80 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur">
-              <tr><th className="w-14 p-4">N°</th><th>Client</th><th><span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-herb" />Téléphone</span></th><th><span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-herb" />E-mail</span></th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Messages</th><th>Points</th><th>Gains</th><th>Dernière activité</th></tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 ? <tr><td colSpan={11} className="p-12 text-center text-muted-foreground">Aucun client ne correspond à cette vue.</td></tr> : filtered.map((customer, index) => (
-                <tr key={customer.id} onClick={() => setSelectedId(customer.id)} className={`cursor-pointer border-t transition hover:bg-butter/20 ${selectedId === customer.id ? 'bg-caramel/10' : ''}`}>
-                  <td className="p-4 font-black text-espresso">{index + 1}</td>
-                  <td><strong className="block whitespace-nowrap text-espresso">{customer.name}</strong></td>
-                  <td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Phone className="h-4 w-4 shrink-0 text-herb" />{customer.phone || 'Non renseigné'}</span></td>
-                  <td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Mail className="h-4 w-4 shrink-0 text-herb" />{customer.email || 'Non renseigné'}</span></td>
-                  <td className="font-black">{customer.effectiveVisits}</td><td>{customer.quizParticipations}</td><td>{customer.reservations}</td><td>{customer.messages}</td><td>{customer.loyaltyPoints}</td><td className={customer.activeRewards ? 'font-black text-herb' : ''}>{customer.activeRewards}</td><td className="whitespace-nowrap">{formatDate(customer.lastSeen)}</td>
-                </tr>
-              ))}
-            </tbody>
+            <thead className="sticky top-0 z-10 bg-butter/80 text-[10px] uppercase tracking-wider text-muted-foreground backdrop-blur"><tr><th className="w-14 p-4">N°</th><th>Client</th><th><span className="inline-flex items-center gap-1"><Phone className="h-3.5 w-3.5 text-herb" />Téléphone</span></th><th><span className="inline-flex items-center gap-1"><Mail className="h-3.5 w-3.5 text-herb" />E-mail</span></th><th>Visites</th><th>Quiz</th><th>Réservations</th><th>Messages</th><th>Points</th><th>Gains</th><th>Dernière activité</th></tr></thead>
+            <tbody>{filtered.length === 0 ? <tr><td colSpan={11} className="p-12 text-center text-muted-foreground">Aucun client ne correspond à cette vue.</td></tr> : filtered.map((customer, index) => <tr key={customer.id} onClick={() => setSelectedId(customer.id)} className={`cursor-pointer border-t transition hover:bg-butter/20 ${selectedId === customer.id ? 'bg-caramel/10' : ''}`}><td className="p-4 font-black text-espresso">{index + 1}</td><td><strong className="block whitespace-nowrap text-espresso">{customer.name}</strong></td><td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Phone className="h-4 w-4 shrink-0 text-herb" />{customer.phone || 'Non renseigné'}</span></td><td><span className="inline-flex items-center gap-2 whitespace-nowrap"><Mail className="h-4 w-4 shrink-0 text-herb" />{customer.email || 'Non renseigné'}</span></td><td className="font-black">{customer.effectiveVisits}</td><td>{customer.quizParticipations}</td><td>{customer.reservations}</td><td>{customer.messages}</td><td>{customer.loyaltyPoints}</td><td className={customer.activeRewards ? 'font-black text-herb' : ''}>{customer.activeRewards}</td><td className="whitespace-nowrap">{formatDate(customer.lastSeen)}</td></tr>)}</tbody>
           </table>
         </div>
 
@@ -298,7 +281,7 @@ const CustomerDirectoryPanel = ({ adminPassword }: { adminPassword: string }) =>
   );
 };
 
-const Kpi = ({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) => <div className="rounded-3xl border border-caramel/15 bg-white p-4 shadow-sm"><div className="flex items-center justify-between"><p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{label}</p><Icon className="h-4 w-4 text-caramel" /></div><p className="mt-3 font-display text-3xl font-black text-espresso">{value}</p></div>;
+const Kpi = ({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) => <div className="flex min-w-0 items-center gap-2 rounded-xl border border-caramel/15 bg-white px-2.5 py-2 shadow-sm"><Icon className="h-4 w-4 shrink-0 text-caramel" /><div className="min-w-0"><p className="font-display text-lg font-black leading-none text-espresso">{value}</p><p className="truncate text-[9px] font-black uppercase tracking-wide text-muted-foreground">{label}</p></div></div>;
 const Detail = ({ label, value }: { label: string; value: number }) => <div className="rounded-2xl border bg-white p-3 text-center"><p className="font-display text-xl font-black text-espresso">{value}</p><p className="text-[10px] font-bold uppercase text-muted-foreground">{label}</p></div>;
 
 export default CustomerDirectoryPanel;
