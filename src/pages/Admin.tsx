@@ -98,8 +98,8 @@ const ADMIN_TABS: AdminTabDefinition[] = [
   { id: "clients", label: "Clients", description: "Fiches clients", icon: Database },
   { id: "quiz", label: "Quiz", description: "Statistiques", icon: BarChart3 },
   { id: "carte", label: "Proposition du moment", description: "Créations après quiz", icon: UtensilsCrossed },
-  { id: "actus", label: "Actus & réseaux", description: "Publications", icon: Newspaper },
-  { id: "payment", label: "Paiement", description: "Réglages paiement", icon: CreditCard },
+  { id: "actus", label: "Publications", description: "Réseaux sociaux", icon: Newspaper },
+  { id: "payment", label: "Commandes & paiements", description: "Click & collect", icon: CreditCard },
   { id: "splash", label: "Accueil", description: "Écran d’arrivée", icon: Sparkles },
 ];
 
