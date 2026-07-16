@@ -86,6 +86,9 @@ jobs:
       - name: Deploy admin-customers
         run: supabase functions deploy admin-customers --project-ref "$SUPABASE_PROJECT_ID"
 
+      - name: Deploy admin-weekly-proposals
+        run: supabase functions deploy admin-weekly-proposals --project-ref "$SUPABASE_PROJECT_ID"
+
       - name: Deploy admin-social-posts
         run: supabase functions deploy admin-social-posts --project-ref "$SUPABASE_PROJECT_ID"
 
