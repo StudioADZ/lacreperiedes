@@ -154,13 +154,22 @@ const MessagesPanel = ({ adminPassword }: { adminPassword: string }) => {
         ))}
       </div>
 
+      <div className="rounded-3xl border border-caramel/15 bg-white p-3 shadow-sm sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+            <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher un client, un sujet ou un message" className="pl-9" />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {(["all", "new", "in_progress", "replied", "archived"] as const).map((value) => <button key={value} onClick={() => setFilter(value)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === value ? "bg-caramel text-white" : "bg-muted text-muted-foreground hover:bg-caramel/10"}`}>{value === "all" ? "Tous" : statusLabel[value]}</button>)}
+          </div>
+          <Button variant="outline" onClick={loadMessages} className="shrink-0"><RefreshCw className="mr-2 h-4 w-4" />Actualiser</Button>
+        </div>
+      </div>
+
       <div className="grid min-h-[620px] overflow-hidden rounded-3xl border border-caramel/15 bg-white shadow-warm lg:grid-cols-[360px_minmax(0,1fr)]">
         <aside className="border-b border-caramel/10 bg-muted/20 lg:border-b-0 lg:border-r">
-          <div className="space-y-3 border-b p-3">
-            <div className="flex gap-2"><div className="relative flex-1"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Rechercher" className="pl-9" /></div><Button variant="outline" size="icon" onClick={loadMessages}><RefreshCw className="h-4 w-4" /></Button></div>
-            <div className="flex flex-wrap gap-1.5">{(["all", "new", "in_progress", "replied", "archived"] as const).map((value) => <button key={value} onClick={() => setFilter(value)} className={`rounded-full px-3 py-1.5 text-xs font-bold ${filter === value ? "bg-caramel text-white" : "bg-white text-muted-foreground"}`}>{value === "all" ? "Tous" : statusLabel[value]}</button>)}</div>
-          </div>
-          <div className="max-h-[540px] overflow-y-auto p-2">
+          <div className="max-h-[620px] overflow-y-auto p-2">
             {filtered.length === 0 ? <div className="p-8 text-center text-sm text-muted-foreground">Aucun message dans cette vue.</div> : filtered.map((msg) => {
               const status = msg.admin_status || (msg.is_read ? "in_progress" : "new");
               return <button key={msg.id} onClick={() => setSelectedId(msg.id)} className={`mb-2 w-full rounded-2xl border p-3 text-left transition ${selectedId === msg.id ? "border-caramel bg-butter/25" : "border-transparent bg-white hover:border-caramel/15"}`}><div className="flex items-start justify-between gap-2"><div className="min-w-0"><p className="truncate text-sm font-black text-espresso">{msg.sender_name}</p><p className="truncate text-xs font-semibold">{msg.subject || "Sans objet"}</p></div><span className="shrink-0 rounded-full bg-muted px-2 py-1 text-[10px] font-bold">{statusLabel[status]}</span></div><p className="mt-2 line-clamp-2 text-xs text-muted-foreground">{msg.message}</p><p className="mt-2 text-[10px] text-muted-foreground">{new Date(msg.created_at).toLocaleString("fr-FR")}</p></button>;
