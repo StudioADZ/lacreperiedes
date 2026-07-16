@@ -80,6 +80,12 @@ jobs:
       - name: Deploy admin-overview
         run: supabase functions deploy admin-overview --project-ref "$SUPABASE_PROJECT_ID"
 
+      - name: Deploy admin-messages
+        run: supabase functions deploy admin-messages --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Deploy admin-customers
+        run: supabase functions deploy admin-customers --project-ref "$SUPABASE_PROJECT_ID"
+
       - name: Deploy admin-social-posts
         run: supabase functions deploy admin-social-posts --project-ref "$SUPABASE_PROJECT_ID"
 
