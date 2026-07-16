@@ -1,8 +1,7 @@
-import { motion } from 'framer-motion';
-import { Calendar, Trophy, Gift, CheckCircle, TrendingUp, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { CheckCircle, Gift, RefreshCw, Trophy, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-interface Stats {
+type Stats = {
   weekStart: string;
   stock: {
     formule_complete_remaining: number;
@@ -15,165 +14,40 @@ interface Stats {
   totalParticipations: number;
   totalWinners: number;
   totalClaimed: number;
-}
-
-interface QuizStatsHeroProps {
-  stats: Stats | null;
-  onRefresh: () => void;
-  isLoading?: boolean;
-}
-
-const QuizStatsHero = ({ stats, onRefresh, isLoading }: QuizStatsHeroProps) => {
-  if (!stats) {
-    return (
-      <div className="card-warm text-center py-8">
-        <p className="text-muted-foreground">Chargement des stats...</p>
-      </div>
-    );
-  }
-
-  const claimRate = stats.totalWinners > 0 
-    ? Math.round((stats.totalClaimed / stats.totalWinners) * 100) 
-    : 0;
-
-  return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className="space-y-4"
-    >
-      {/* Week Header */}
-      <div className="card-warm bg-gradient-to-br from-primary/5 to-caramel/10 border-primary/20">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="w-5 h-5 text-primary" />
-            <span className="font-display font-bold text-lg">Semaine en cours</span>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={onRefresh}
-            disabled={isLoading}
-            className="gap-1"
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-            <span className="text-xs">Actualiser</span>
-          </Button>
-        </div>
-        
-        <p className="text-center text-lg font-medium mb-4">
-          {new Date(stats.weekStart).toLocaleDateString('fr-FR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric'
-          })}
-        </p>
-
-        {/* Main Stats Grid */}
-        <div className="grid grid-cols-4 gap-2">
-          <div className="text-center p-3 rounded-xl bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp className="w-4 h-4 text-primary" />
-            </div>
-            <p className="text-2xl font-bold text-primary">{stats.totalParticipations}</p>
-            <p className="text-[10px] text-muted-foreground">Participations</p>
-          </div>
-          
-          <div className="text-center p-3 rounded-xl bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Trophy className="w-4 h-4 text-caramel" />
-            </div>
-            <p className="text-2xl font-bold text-caramel">{stats.totalWinners}</p>
-            <p className="text-[10px] text-muted-foreground">Gagnants</p>
-          </div>
-          
-          <div className="text-center p-3 rounded-xl bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <CheckCircle className="w-4 h-4 text-herb" />
-            </div>
-            <p className="text-2xl font-bold text-herb">{stats.totalClaimed}</p>
-            <p className="text-[10px] text-muted-foreground">Réclamés</p>
-          </div>
-          
-          <div className="text-center p-3 rounded-xl bg-background/50">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Gift className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <p className="text-2xl font-bold">{claimRate}%</p>
-            <p className="text-[10px] text-muted-foreground">Taux claim</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Stock Table */}
-      {stats.stock && (
-        <div className="card-warm">
-          <h3 className="font-display font-semibold mb-3 flex items-center gap-2">
-            <Gift className="w-4 h-4 text-caramel" />
-            Stocks restants
-          </h3>
-          
-          <div className="overflow-hidden rounded-xl border border-border">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50">
-                <tr>
-                  <th className="text-left py-2 px-3 font-medium">Lot</th>
-                  <th className="text-center py-2 px-3 font-medium">Restant</th>
-                  <th className="text-center py-2 px-3 font-medium">Total</th>
-                  <th className="text-right py-2 px-3 font-medium">%</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-border">
-                  <td className="py-2 px-3">🏆 Formules</td>
-                  <td className="text-center py-2 px-3 font-bold text-herb">
-                    {stats.stock.formule_complete_remaining}
-                  </td>
-                  <td className="text-center py-2 px-3 text-muted-foreground">
-                    {stats.stock.formule_complete_total}
-                  </td>
-                  <td className="text-right py-2 px-3">
-                    <span className={`font-medium ${stats.stock.formule_complete_remaining === 0 ? 'text-destructive' : 'text-herb'}`}>
-                      {Math.round((stats.stock.formule_complete_remaining / stats.stock.formule_complete_total) * 100)}%
-                    </span>
-                  </td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="py-2 px-3">🥈 Galettes</td>
-                  <td className="text-center py-2 px-3 font-bold text-herb">
-                    {stats.stock.galette_remaining}
-                  </td>
-                  <td className="text-center py-2 px-3 text-muted-foreground">
-                    {stats.stock.galette_total}
-                  </td>
-                  <td className="text-right py-2 px-3">
-                    <span className={`font-medium ${stats.stock.galette_remaining === 0 ? 'text-destructive' : 'text-herb'}`}>
-                      {Math.round((stats.stock.galette_remaining / stats.stock.galette_total) * 100)}%
-                    </span>
-                  </td>
-                </tr>
-                <tr className="border-t border-border">
-                  <td className="py-2 px-3">🥉 Crêpes</td>
-                  <td className="text-center py-2 px-3 font-bold text-herb">
-                    {stats.stock.crepe_remaining}
-                  </td>
-                  <td className="text-center py-2 px-3 text-muted-foreground">
-                    {stats.stock.crepe_total}
-                  </td>
-                  <td className="text-right py-2 px-3">
-                    <span className={`font-medium ${stats.stock.crepe_remaining === 0 ? 'text-destructive' : 'text-herb'}`}>
-                      {Math.round((stats.stock.crepe_remaining / stats.stock.crepe_total) * 100)}%
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-    </motion.div>
-  );
 };
+
+const percent = (remaining: number, total: number) => total > 0 ? Math.round((remaining / total) * 100) : 0;
+
+const QuizStatsHero = ({ stats, onRefresh, isLoading }: { stats: Stats | null; onRefresh: () => void; isLoading?: boolean }) => {
+  if (!stats) return <div className="rounded-2xl border bg-white p-8 text-center text-sm text-muted-foreground">Statistiques indisponibles.</div>;
+  const pending = Math.max(stats.totalWinners - stats.totalClaimed, 0);
+  const winRate = stats.totalParticipations > 0 ? Math.round((stats.totalWinners / stats.totalParticipations) * 100) : 0;
+  const stockRows = [
+    ["Formules complètes", stats.stock?.formule_complete_remaining || 0, stats.stock?.formule_complete_total || 0],
+    ["Galettes", stats.stock?.galette_remaining || 0, stats.stock?.galette_total || 0],
+    ["Crêpes", stats.stock?.crepe_remaining || 0, stats.stock?.crepe_total || 0],
+  ] as const;
+
+  return <div className="space-y-3">
+    <section className="grid grid-cols-4 gap-2">
+      <Metric icon={Users} label="Participations" value={stats.totalParticipations} />
+      <Metric icon={Trophy} label="Gagnants" value={stats.totalWinners} />
+      <Metric icon={CheckCircle} label="Lots remis" value={stats.totalClaimed} />
+      <Metric icon={Gift} label="En attente" value={pending} />
+    </section>
+    <section className="overflow-hidden rounded-3xl border border-caramel/15 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <div><h2 className="font-display text-lg font-black text-espresso">Stocks du quiz</h2><p className="text-xs text-muted-foreground">Taux de gagnants : {winRate}%</p></div>
+        <Button variant="outline" size="sm" onClick={onRefresh} disabled={isLoading} className="rounded-xl"><RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />Actualiser</Button>
+      </div>
+      <table className="w-full text-sm">
+        <thead className="bg-butter/40 text-[10px] uppercase tracking-wider text-muted-foreground"><tr><th className="px-4 py-3 text-left">Lot</th><th className="text-center">Restant</th><th className="text-center">Total</th><th className="px-4 text-right">Disponible</th></tr></thead>
+        <tbody>{stockRows.map(([label, remaining, total]) => <tr key={label} className="border-t"><td className="px-4 py-3 font-bold text-espresso">{label}</td><td className="text-center font-black">{remaining}</td><td className="text-center text-muted-foreground">{total}</td><td className={`px-4 text-right font-black ${remaining === 0 ? "text-destructive" : "text-herb"}`}>{percent(remaining, total)}%</td></tr>)}</tbody>
+      </table>
+    </section>
+  </div>;
+};
+
+const Metric = ({ icon: Icon, label, value }: { icon: typeof Users; label: string; value: number }) => <div className="flex min-w-0 items-center gap-2 rounded-xl border border-caramel/15 bg-white px-2.5 py-2 shadow-sm"><Icon className="h-4 w-4 shrink-0 text-caramel" /><div className="min-w-0"><p className="font-display text-lg font-black leading-none text-espresso">{value}</p><p className="truncate text-[9px] font-black uppercase tracking-wide text-muted-foreground">{label}</p></div></div>;
 
 export default QuizStatsHero;
