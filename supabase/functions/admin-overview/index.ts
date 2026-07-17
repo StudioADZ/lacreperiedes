@@ -23,21 +23,30 @@ const getVerifiedAdmin = async (
   const headerToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
   const bodyCredential = typeof body.adminPassword === 'string' ? body.adminPassword.trim() : ''
 
-  if (headerToken) {
-    const { data, error } = await supabase.auth.getUser(headerToken)
-    if (!error && data.user?.id) {
-      const { data: hasAdminRole, error: roleError } = await supabase.rpc('has_role', {
-        _user_id: data.user.id,
-        _role: 'admin',
-      })
-      if (!roleError && hasAdminRole === true) return { id: data.user.id, email: data.user.email || null }
-    }
+  const tryJwt = async (token: string): Promise<AdminUser | null> => {
+    if (!token) return null
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data.user?.id) return null
+    const { data: hasAdminRole, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: data.user.id,
+      _role: 'admin',
+    })
+    if (roleError || hasAdminRole !== true) return null
+    return { id: data.user.id, email: data.user.email || null }
   }
+
+  const viaHeader = await tryJwt(headerToken)
+  if (viaHeader) return viaHeader
 
   const fallbackPassword = Deno.env.get('ADMIN_PASSWORD')
   if (bodyCredential && (bodyCredential === fallbackPassword || bodyCredential === LEGACY_ADMIN_PASSWORD)) {
     return { id: '00000000-0000-0000-0000-000000000000', email: 'Accès par mot de passe administrateur' }
   }
+
+  // Transitional compatibility: some admin panels send the Supabase session token
+  // through the adminPassword body field instead of the Authorization header.
+  const viaBody = await tryJwt(bodyCredential)
+  if (viaBody) return viaBody
 
   return null
 }
