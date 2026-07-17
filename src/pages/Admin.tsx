@@ -40,6 +40,7 @@ import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 import CustomerDirectoryPanel from "@/components/admin/CustomerDirectoryPanel";
 import AdminKPIDashboard from "@/components/admin/AdminKPIDashboard";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
