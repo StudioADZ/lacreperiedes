@@ -13,8 +13,6 @@ const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.
 
 type AdminUser = { id: string; email: string | null }
 
-const LEGACY_ADMIN_PASSWORD = 'j007!'
-
 const verifyAdmin = async (
   req: Request,
   body: Record<string, unknown>,
@@ -45,7 +43,7 @@ const verifyAdmin = async (
 
   const configuredPassword = Deno.env.get('ADMIN_PASSWORD')
   const passwordCandidates = [headerCredential, bodyCredential].filter(Boolean)
-  if (passwordCandidates.some((credential) => credential === configuredPassword || credential === LEGACY_ADMIN_PASSWORD)) {
+  if (configuredPassword && passwordCandidates.some((credential) => credential === configuredPassword)) {
     return {
       id: '00000000-0000-0000-0000-000000000000',
       email: 'Accès par mot de passe administrateur',
