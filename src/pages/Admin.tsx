@@ -40,6 +40,7 @@ import PaymentQRPanel from "@/components/admin/PaymentQRPanel";
 import CustomerDirectoryPanel from "@/components/admin/CustomerDirectoryPanel";
 import AdminKPIDashboard from "@/components/admin/AdminKPIDashboard";
 import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -197,12 +198,20 @@ const Admin = () => {
   const handleGoogleLogin = async () => {
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/admin` },
-    });
-    if (error) {
-      setAuthError(error.message || "Connexion Google impossible");
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) {
+        setAuthError(result.error.message || "Connexion Google impossible");
+        setAuthLoading(false);
+        return;
+      }
+      if (result.redirected) return;
+      await verifyGoogleSession();
+    } catch (e) {
+      setAuthError(e instanceof Error ? e.message : "Connexion Google impossible");
+    } finally {
       setAuthLoading(false);
     }
   };

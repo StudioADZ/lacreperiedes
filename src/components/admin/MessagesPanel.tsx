@@ -142,14 +142,14 @@ const MessagesPanel = ({ adminPassword }: { adminPassword: string }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-3">
-        {[
+        {([
           ["À traiter", counts.new, Inbox],
           ["En cours", counts.in_progress, Clock3],
           ["Répondus", counts.replied, CheckCircle2],
-        ].map(([label, value, Icon]) => (
-          <div key={String(label)} className="rounded-2xl border border-caramel/15 bg-white p-4 shadow-sm">
-            <div className="flex items-center justify-between"><span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{String(label)}</span><Icon className="h-4 w-4 text-caramel" /></div>
-            <div className="mt-2 font-display text-3xl font-black text-espresso">{String(value)}</div>
+        ] as const).map(([label, value, Icon]) => (
+          <div key={label} className="rounded-2xl border border-caramel/15 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between"><span className="text-xs font-black uppercase tracking-wider text-muted-foreground">{label}</span><Icon className="h-4 w-4 text-caramel" /></div>
+            <div className="mt-2 font-display text-3xl font-black text-espresso">{value}</div>
           </div>
         ))}
       </div>
