@@ -89,7 +89,26 @@ Deno.serve(async (req) => {
     }
 
     const expectedPassword = Deno.env.get('ADMIN_PASSWORD')
-    if (!expectedPassword || adminPassword !== expectedPassword) {
+    const headerToken = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+    const bodyToken = typeof adminPassword === 'string' ? adminPassword.trim() : ''
+    const isPasswordMatch = !!expectedPassword && bodyToken === expectedPassword
+
+    let isAdmin = isPasswordMatch
+    if (!isAdmin) {
+      const supabaseAuth = createClient(supabaseUrl, serviceRoleKey)
+      for (const token of [headerToken, bodyToken]) {
+        if (!token) continue
+        const { data, error } = await supabaseAuth.auth.getUser(token)
+        if (error || !data.user?.id) continue
+        const { data: hasRole } = await supabaseAuth.rpc('has_role', {
+          _user_id: data.user.id,
+          _role: 'admin',
+        })
+        if (hasRole === true) { isAdmin = true; break }
+      }
+    }
+
+    if (!isAdmin) {
       return jsonResponse(
         {
           success: false,
