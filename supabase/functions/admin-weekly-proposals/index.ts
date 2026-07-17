@@ -60,11 +60,11 @@ Deno.serve(async (req) => {
 
     if (action === 'get') {
       const { data: weekStart } = await supabase.rpc('get_current_week_start')
-      const { data, error } = await supabase.from('secret_menu').select('*').eq('week_start', weekStart).limit(1).maybeSingle()
+      const { data, error } = await supabase.from('weekly_proposals').select('*').eq('week_start', weekStart).limit(1).maybeSingle()
       if (error) return json({ message: error.message }, 500)
       if (data) return json({ proposal: data })
 
-      const { data: latest, error: latestError } = await supabase.from('secret_menu').select('*').order('week_start', { ascending: false }).limit(1).maybeSingle()
+      const { data: latest, error: latestError } = await supabase.from('weekly_proposals').select('*').order('week_start', { ascending: false }).limit(1).maybeSingle()
       if (latestError) return json({ message: latestError.message }, 500)
       return json({ proposal: latest })
     }
@@ -98,12 +98,12 @@ Deno.serve(async (req) => {
 
       const proposalId = typeof body.proposalId === 'string' ? body.proposalId : ''
       let query
-      if (proposalId) query = supabase.from('secret_menu').update(payload).eq('id', proposalId).select().single()
+      if (proposalId) query = supabase.from('weekly_proposals').update(payload).eq('id', proposalId).select().single()
       else {
-        const { data: existing } = await supabase.from('secret_menu').select('id').eq('week_start', weekStart).limit(1).maybeSingle()
+        const { data: existing } = await supabase.from('weekly_proposals').select('id').eq('week_start', weekStart).limit(1).maybeSingle()
         query = existing?.id
-          ? supabase.from('secret_menu').update(payload).eq('id', existing.id).select().single()
-          : supabase.from('secret_menu').insert(payload).select().single()
+          ? supabase.from('weekly_proposals').update(payload).eq('id', existing.id).select().single()
+          : supabase.from('weekly_proposals').insert(payload).select().single()
       }
 
       const { data, error } = await query
