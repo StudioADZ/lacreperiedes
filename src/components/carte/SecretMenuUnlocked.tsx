@@ -21,7 +21,7 @@ const SecretMenuUnlocked = ({ justUnlocked = false, isAdminAccess = false }: { j
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await supabase.from("secret_menu_public").select("*").eq("is_active", true).order("week_start", { ascending: false }).limit(1).maybeSingle();
+      const { data, error } = await (supabase as any).from("weekly_proposals_public").select("*").eq("is_active", true).order("week_start", { ascending: false }).limit(1).maybeSingle();
       if (!error && data) setProposal(data as Proposal);
       setLoading(false);
     };
