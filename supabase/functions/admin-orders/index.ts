@@ -11,14 +11,46 @@ const json = (body: Record<string, unknown>, status = 200) => new Response(JSON.
   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 })
 
-const verifyAdmin = async (req: Request, body: Record<string, unknown>, supabase: ReturnType<typeof createClient>) => {
-  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
-    || (typeof body.adminPassword === 'string' ? body.adminPassword.trim() : '')
-  if (!token) return null
-  const { data } = await supabase.auth.getUser(token)
-  if (!data.user?.id) return null
-  const { data: allowed } = await supabase.rpc('has_role', { _user_id: data.user.id, _role: 'admin' })
-  return allowed === true ? data.user : null
+type AdminUser = { id: string; email: string | null }
+
+const verifyAdmin = async (
+  req: Request,
+  body: Record<string, unknown>,
+  supabase: ReturnType<typeof createClient>,
+): Promise<AdminUser | null> => {
+  const headerCredential = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  const bodyCredential = typeof body.adminPassword === 'string' ? body.adminPassword.trim() : ''
+
+  const tryJwt = async (token: string): Promise<AdminUser | null> => {
+    if (!token) return null
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data.user?.id) return null
+
+    const { data: allowed, error: roleError } = await supabase.rpc('has_role', {
+      _user_id: data.user.id,
+      _role: 'admin',
+    })
+    if (roleError || allowed !== true) return null
+
+    return { id: data.user.id, email: data.user.email || null }
+  }
+
+  const viaHeaderJwt = await tryJwt(headerCredential)
+  if (viaHeaderJwt) return viaHeaderJwt
+
+  const viaBodyJwt = await tryJwt(bodyCredential)
+  if (viaBodyJwt) return viaBodyJwt
+
+  const configuredPassword = Deno.env.get('ADMIN_PASSWORD')
+  const passwordCandidates = [headerCredential, bodyCredential].filter(Boolean)
+  if (configuredPassword && passwordCandidates.some((credential) => credential === configuredPassword)) {
+    return {
+      id: '00000000-0000-0000-0000-000000000000',
+      email: 'Accès par mot de passe administrateur',
+    }
+  }
+
+  return null
 }
 
 Deno.serve(async (req) => {
