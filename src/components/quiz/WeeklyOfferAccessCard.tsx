@@ -11,7 +11,7 @@ const WeeklyOfferAccessCard = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data, error } = await (supabase as any).rpc("get_or_create_weekly_offer_access_code");
+      const { data, error } = await (supabase as any).rpc("get_or_create_proposal_access_code");
       if (!error && typeof data === "string") setCode(data);
       setLoading(false);
     };
