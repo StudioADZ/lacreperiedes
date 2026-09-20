@@ -9,14 +9,14 @@ const GoogleMap = () => {
           </p>
         </div>
         <a
-          href="https://maps.app.goo.gl/6KdHfHSUs1MbzakLA"
+          href="https://www.google.com/maps/search/?api=1&query=La%20Cr%C3%AAperie%20des%20Saveurs%2C%2017%20Place%20Carnot%2C%2072600%20Mamers"
           target="_blank"
           rel="noopener noreferrer"
           className="block"
         >
           <div className="relative rounded-2xl overflow-hidden shadow-elevated border border-border/50 hover:shadow-warm transition-shadow duration-300">
             <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2665.4!2d0.3656!3d48.3506!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47e2c1f3f3f3f3f3%3A0x47e2c1f3f3f3f3f3!2s17%20Place%20Carnot%2C%2072600%20Mamers!5e0!3m2!1sfr!2sfr!4v1699999999999!5m2!1sfr!2sfr"
+              src="https://www.google.com/maps?q=17%20Place%20Carnot%2C%2072600%20Mamers&output=embed"
               width="100%"
               height="250"
               style={{ border: 0 }}
