@@ -64,7 +64,7 @@ const INFO_CARDS = [
   {
     icon: Clock,
     title: "Horaires",
-    text: ["Tous les jours", "12h00 – 22h00", "Service continu"],
+    text: ["Lun–Jeu : 12h–14h", "Ven–Dim : 12h–14h & 19h–22h"],
     href: HOURS_LINK,
     external: true,
     action: "Voir sur Google",
@@ -214,7 +214,7 @@ const Index = () => {
 
           <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/95 backdrop-blur-md">
             <Star className="h-3.5 w-3.5 text-[hsl(43_85%_65%)]" aria-hidden="true" />
-            Ouvert tous les jours · 12h–22h
+            Déjeuner 7j/7 · Dîner ven–dim
           </p>
 
           <h1 id="home-title" className="font-display font-bold leading-[0.95] text-white drop-shadow-[0_12px_35px_rgba(0,0,0,0.55)]">
@@ -324,7 +324,7 @@ const Index = () => {
           </div>
 
           <div className="mb-4 rounded-3xl border-2 border-primary/30 bg-gradient-to-r from-primary/15 via-[hsl(43_85%_65%/0.22)] to-primary/10 px-4 py-4 text-center shadow-[0_16px_45px_rgba(218,165,32,0.18)]">
-            <p className="font-display text-xl font-black leading-tight text-espresso">Service continu de 12h à 22h</p>
+            <p className="font-display text-xl font-black leading-tight text-espresso">Déjeuner 12h–14h · Dîner ven–dim 19h–22h</p>
             <p className="mt-1 text-xs font-semibold text-muted-foreground">Disponibilités et composition détaillée à vérifier sur la carte.</p>
           </div>
 
