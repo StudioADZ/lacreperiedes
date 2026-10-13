@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable";
 import type { User, Session } from "@supabase/supabase-js";
 
 export interface Profile {
@@ -40,6 +39,7 @@ interface AuthContextValue extends AuthState {
   signIn: (email: string, password: string) => Promise<unknown>;
   signInWithGoogle: () => Promise<unknown>;
   signInWithApple: () => Promise<unknown>;
+  signInWithMicrosoft: () => Promise<unknown>;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<Profile>;
   refreshProfile: () => Promise<void>;
@@ -180,21 +180,35 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return data;
   }, []);
 
+  // Direct OAuth against Supabase Auth (requires provider credentials and allowlisted redirect URL).
   const signInWithGoogle = useCallback(async () => {
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: getAuthRedirectUrl(),
-      extraParams: { prompt: "select_account" },
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: getAuthRedirectUrl(),
+        queryParams: { prompt: "select_account" },
+      },
     });
-    if (result.error) throw result.error;
-    return result;
+    if (error) throw error;
+    return data;
   }, []);
 
   const signInWithApple = useCallback(async () => {
-    const result = await lovable.auth.signInWithOAuth("apple", {
-      redirect_uri: getAuthRedirectUrl(),
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "apple",
+      options: { redirectTo: getAuthRedirectUrl() },
     });
-    if (result.error) throw result.error;
-    return result;
+    if (error) throw error;
+    return data;
+  }, []);
+
+  const signInWithMicrosoft = useCallback(async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: "azure",
+      options: { redirectTo: getAuthRedirectUrl(), scopes: "email" },
+    });
+    if (error) throw error;
+    return data;
   }, []);
 
   const signOut = useCallback(async () => {
@@ -236,6 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signInWithGoogle,
       signInWithApple,
+      signInWithMicrosoft,
       signOut,
       updateProfile,
       refreshProfile,
@@ -246,6 +261,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       signIn,
       signInWithGoogle,
       signInWithApple,
+      signInWithMicrosoft,
       signOut,
       updateProfile,
       refreshProfile,
