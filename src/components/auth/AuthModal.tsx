@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2,
+  Building2,
   Eye,
   EyeOff,
   Loader2,
@@ -49,10 +50,10 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) =
   const [firstName, setFirstName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<"google" | "apple" | "microsoft" | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
-  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple, signInWithMicrosoft } = useAuth();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -104,6 +105,16 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) =
     } catch (error) {
       setOauthLoading(null);
       toast.error(getAuthErrorMessage(error, "Erreur de connexion Apple"));
+    }
+  };
+
+  const handleMicrosoftSignIn = async () => {
+    setOauthLoading("microsoft");
+    try {
+      await signInWithMicrosoft();
+    } catch (error) {
+      setOauthLoading(null);
+      toast.error(getAuthErrorMessage(error, "Erreur de connexion Microsoft"));
     }
   };
 
@@ -207,6 +218,10 @@ const AuthModal = ({ isOpen, onClose, defaultMode = "login" }: AuthModalProps) =
                 >
                   {oauthLoading === "apple" ? <Loader2 className="h-4 w-4 animate-spin" /> : <AppleIcon />}
                   Continuer avec Apple
+                </Button>
+                <Button type="button" variant="outline" className="h-11 w-full justify-center gap-3" onClick={handleMicrosoftSignIn} disabled={disabled}>
+                  {oauthLoading === "microsoft" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Building2 className="h-5 w-5" />}
+                  Continuer avec Microsoft
                 </Button>
               </div>
 
